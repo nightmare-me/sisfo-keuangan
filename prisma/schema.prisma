@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  FINANCE
+  CS
+  PENGAJAR
+  AKADEMIK
+}
+
+enum TipeKelas {
+  PRIVATE
+  REGULAR
+  SEMI_PRIVATE
+}
+
+enum StatusSiswa {
+  AKTIF
+  TIDAK_AKTIF
+  ALUMNI
+}
+
+enum StatusKelas {
+  AKTIF
+  SELESAI
+  DIJADWALKAN
+}
+
+enum MetodeBayar {
+  CASH
+  TRANSFER
+  QRIS
+}
+
+enum StatusBayar {
+  LUNAS
+  BELUM_BAYAR
+  BATAL
+}
+
+enum KategoriPengeluaran {
+  GAJI_PENGAJAR
+  GAJI_STAF
+  SEWA_TEMPAT
+  UTILITAS
+  ATK
+  MARKETING
+  PERALATAN
+  PEMELIHARAAN
+  LAINNYA
+}
+
+enum PlatformAds {
+  GOOGLE
+  META
+  TIKTOK
+  INSTAGRAM
+  YOUTUBE
+  LAINNYA
+}
+
+enum KondisiInventaris {
+  BAIK
+  RUSAK_RINGAN
+  RUSAK_BERAT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(CS)
+  aktif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pemasukan      Pemasukan[]       @relation("CSPemasukan")
+  pengeluaran    Pengeluaran[]
+  spentAds       SpentAds[]
+  gajiPengajar   GajiPengajar[]
+  kelasAjar      Kelas[]           @relation("PengajarKelas")
+}
+
+model Program {
+  id          String   @id @default(cuid())
+  nama        String
+  deskripsi   String?
+  tipe        TipeKelas @default(REGULAR)
+  harga       Float
+  durasiBuilan Int     @default(3)
+  aktif       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  kelas     Kelas[]
+  pemasukan Pemasukan[]
+}
+
+model Siswa {
+  id             String      @id @default(cuid())
+  noSiswa        String      @unique
+  nama           String
+  telepon        String?
+  email          String?
+  alamat         String?
+  tanggalLahir   DateTime?
+  tanggalDaftar  DateTime    @default(now())
+  status         StatusSiswa @default(AKTIF)
+  catatan        String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  pendaftaran Pendaftaran[]
+  pemasukan   Pemasukan[]
+  invoice     Invoice[]
+}
+
+model Kelas {
+  id          String      @id @default(cuid())
+  namaKelas   String
+  programId   String
+  pengajarId  String?
+  jadwal      String?
+  hari        String?
+  jam         String?
+  kapasitas   Int         @default(10)
+  durasi      String?     // "2_MINGGU" | "1_BULAN" | "3_BULAN" | lainnya
+  status      StatusKelas @default(AKTIF)
+  tanggalMulai DateTime?
+  tanggalSelesai DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  program     Program       @relation(fields: [programId], references: [id])
+  pengajar    User?         @relation("PengajarKelas", fields: [pengajarId], references: [id])
+  pendaftaran Pendaftaran[]
+  gajiPengajar GajiPengajar[]
+}
+
+model Pendaftaran {
+  id             String      @id @default(cuid())
+  siswaId        String
+  kelasId        String
+  tanggalDaftar  DateTime    @default(now())
+  tanggalMulai   DateTime?
+  tanggalSelesai DateTime?
+  aktif          Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+
+  siswa Siswa @relation(fields: [siswaId], references: [id])
+  kelas Kelas @relation(fields: [kelasId], references: [id])
+
+  @@unique([siswaId, kelasId])
+}
+
+model Pemasukan {
+  id           String      @id @default(cuid())
+  tanggal      DateTime    @default(now())
+  siswaId      String?
+  programId    String?
+  csId         String?
+  hargaNormal  Float
+  diskon       Float       @default(0)
+  hargaFinal   Float
+  metodeBayar  MetodeBayar @default(CASH)
+  keterangan   String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  siswa   Siswa?   @relation(fields: [siswaId], references: [id])
+  program Program? @relation(fields: [programId], references: [id])
+  cs      User?    @relation("CSPemasukan", fields: [csId], references: [id])
+  invoice Invoice?
+}
+
+model Pengeluaran {
+  id          String              @id @default(cuid())
+  tanggal     DateTime            @default(now())
+  jumlah      Float
+  kategori    KategoriPengeluaran
+  metodeBayar MetodeBayar         @default(CASH)
+  keterangan  String?
+  dibuatOleh  String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  user User? @relation(fields: [dibuatOleh], references: [id])
+}
+
+model SpentAds {
+  id          String      @id @default(cuid())
+  tanggal     DateTime    @default(now())
+  platform    PlatformAds
+  jumlah      Float
+  keterangan  String?
+  dibuatOleh  String?
+  createdAt   DateTime    @default(now())
+
+  user User? @relation(fields: [dibuatOleh], references: [id])
+}
+
+model Invoice {
+  id          String      @id @default(cuid())
+  noInvoice   String      @unique
+  pemasukanId String      @unique
+  siswaId     String?
+  tanggal     DateTime    @default(now())
+  total       Float
+  diskon      Float       @default(0)
+  totalFinal  Float
+  statusBayar StatusBayar @default(LUNAS)
+  catatan     String?
+  createdAt   DateTime    @default(now())
+
+  pemasukan Pemasukan @relation(fields: [pemasukanId], references: [id])
+  siswa     Siswa?    @relation(fields: [siswaId], references: [id])
+}
+
+model TarifPengajar {
+  id        String    @id @default(cuid())
+  tipeKelas TipeKelas
+  tarif     Float
+  keterangan String?
+  berlakuDari DateTime @default(now())
+  aktif     Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model GajiPengajar {
+  id            String      @id @default(cuid())
+  pengajarId    String
+  kelasId       String?
+  bulan         Int
+  tahun         Int
+  jumlahSesi    Int         @default(0)
+  tarifPerSesi  Float
+  totalGaji     Float
+  statusBayar   StatusBayar @default(BELUM_BAYAR)
+  tanggalBayar  DateTime?
+  metodeBayar   MetodeBayar @default(TRANSFER)
+  keterangan    String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  pengajar User  @relation(fields: [pengajarId], references: [id])
+  kelas    Kelas? @relation(fields: [kelasId], references: [id])
+}
+
+model Inventaris {
+  id          String            @id @default(cuid())
+  nama        String
+  kategori    String
+  jumlah      Int               @default(0)
+  satuan      String            @default("pcs")
+  hargaBeli   Float?
+  kondisi     KondisiInventaris @default(BAIK)
+  tanggalBeli DateTime?
+  keterangan  String?
+  stokMinimum Int               @default(1)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}

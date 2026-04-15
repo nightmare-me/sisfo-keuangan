@@ -1,0 +1,94 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+
+export async function GET(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+  const kategori = searchParams.get("kategori");
+  const metodeBayar = searchParams.get("metodeBayar");
+  const page = parseInt(searchParams.get("page") ?? "1");
+  const limit = parseInt(searchParams.get("limit") ?? "20");
+
+  const where: any = {};
+  if (from && to) where.tanggal = { gte: new Date(from), lte: new Date(to) };
+  if (kategori) where.kategori = kategori;
+  if (metodeBayar) where.metodeBayar = metodeBayar;
+
+  const [data, total, summary] = await Promise.all([
+    prisma.pengeluaran.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { tanggal: "desc" },
+      include: { user: { select: { name: true } } },
+    }),
+    prisma.pengeluaran.count({ where }),
+    prisma.pengeluaran.aggregate({
+      where,
+      _sum: { jumlah: true },
+      _count: true,
+    }),
+  ]);
+
+  // Group by kategori
+  const byKategori = await prisma.pengeluaran.groupBy({
+    by: ["kategori"],
+    where,
+    _sum: { jumlah: true },
+    _count: true,
+  });
+
+  return NextResponse.json({
+    data,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+    summary: {
+      totalPengeluaran: summary._sum.jumlah ?? 0,
+      jumlahTransaksi: summary._count,
+    },
+    byKategori,
+  });
+}
+
+export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json();
+  const { jumlah, kategori, metodeBayar, keterangan, tanggal } = body;
+
+  if (!jumlah || jumlah <= 0) {
+    return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
+  }
+
+  const pengeluaran = await prisma.pengeluaran.create({
+    data: {
+      tanggal: tanggal ? new Date(tanggal) : new Date(),
+      jumlah,
+      kategori: kategori ?? "LAINNYA",
+      metodeBayar: metodeBayar ?? "CASH",
+      keterangan,
+      dibuatOleh: (session.user as any).id,
+    },
+  });
+
+  return NextResponse.json(pengeluaran, { status: 201 });
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+  await prisma.pengeluaran.delete({ where: { id } });
+  return NextResponse.json({ success: true });
+}

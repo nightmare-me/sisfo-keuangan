@@ -118,6 +118,7 @@ model Program {
   tipe        TipeKelas @default(REGULAR)
   harga       Float
   durasiBuilan Int     @default(3)
+  durasi      String?   // "2_MINGGU" | "1_BULAN" | "3_BULAN" | "6_BULAN" | "LAINNYA"
   aktif       Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

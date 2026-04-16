@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json();
-  const { nama, deskripsi, tipe, harga, durasiBuilan } = body;
+  const { nama, deskripsi, tipe, harga, durasi } = body;
   if (!nama || !harga) return NextResponse.json({ error: "Nama dan harga diperlukan" }, { status: 400 });
-  const program = await prisma.program.create({ data: { nama, deskripsi, tipe: tipe ?? "REGULAR", harga, durasiBuilan: durasiBuilan ?? 3 } });
+  const program = await prisma.program.create({ data: { nama, deskripsi, tipe: tipe ?? "REGULAR", harga, durasi: durasi ?? null } });
   return NextResponse.json(program, { status: 201 });
 }
 

@@ -10,7 +10,20 @@ const TIPE_BADGE: Record<string, string> = {
   SEMI_PRIVATE: "badge-info", ONLINE: "badge-success", LAINNYA: "badge-muted",
 };
 
-const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", durasiBuilan: "3" };
+const DURASI_OPTIONS = [
+  { value: "2_MINGGU", label: "2 Minggu" },
+  { value: "1_BULAN",  label: "1 Bulan" },
+  { value: "3_BULAN",  label: "3 Bulan" },
+  { value: "6_BULAN",  label: "6 Bulan" },
+  { value: "LAINNYA",  label: "Lainnya / Kustom" },
+];
+
+const DURASI_LABEL: Record<string, string> = {
+  "2_MINGGU": "2 Minggu", "1_BULAN": "1 Bulan",
+  "3_BULAN": "3 Bulan",   "6_BULAN": "6 Bulan", "LAINNYA": "Lainnya",
+};
+
+const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", durasi: "" };
 
 export default function ProgramPage() {
   const { data: session } = useSession();
@@ -42,14 +55,14 @@ export default function ProgramPage() {
 
   function openEdit(p: any) {
     setEditId(p.id);
-    setForm({ nama: p.nama, deskripsi: p.deskripsi ?? "", tipe: p.tipe, harga: String(p.harga), durasiBuilan: String(p.durasiBuilan ?? 3) });
+    setForm({ nama: p.nama, deskripsi: p.deskripsi ?? "", tipe: p.tipe, harga: String(p.harga), durasi: p.durasi ?? "" });
     setShowModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const payload = { ...form, harga: parseFloat(form.harga), durasiBuilan: parseInt(form.durasiBuilan) };
+    const payload = { ...form, harga: parseFloat(form.harga) };
     if (editId) {
       await fetch("/api/program", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editId, ...payload }) });
     } else {
@@ -145,7 +158,7 @@ export default function ProgramPage() {
                   <td style={{ fontWeight: 600 }}>{p.nama}</td>
                   <td><span className={`badge ${TIPE_BADGE[p.tipe] ?? "badge-muted"}`}>{p.tipe}</span></td>
                   <td style={{ fontWeight: 700, color: "var(--success)" }}>{formatCurrency(p.harga)}</td>
-                  <td style={{ color: "var(--text-muted)", fontSize: 13 }}>{p.durasiBuilan} bulan</td>
+                  <td style={{ color: "var(--text-muted)", fontSize: 13 }}>{DURASI_LABEL[p.durasi] ?? p.durasi ?? "—"}</td>
                   <td style={{ fontSize: 12, color: "var(--text-muted)", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.deskripsi || "—"}</td>
                   <td>
                     <span className={`badge ${p.aktif ? "badge-success" : "badge-danger"}`}>
@@ -211,8 +224,11 @@ export default function ProgramPage() {
                     <input type="number" className="form-control" placeholder="0" value={form.harga} onChange={e => setForm(f => ({ ...f, harga: e.target.value }))} required min={0} />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Durasi (bulan)</label>
-                    <input type="number" className="form-control" placeholder="3" value={form.durasiBuilan} onChange={e => setForm(f => ({ ...f, durasiBuilan: e.target.value }))} min={1} max={24} />
+                    <label className="form-label">Durasi Program</label>
+                    <select className="form-control" value={form.durasi} onChange={e => setForm(f => ({ ...f, durasi: e.target.value }))}>
+                      <option value="">Pilih Durasi</option>
+                      {DURASI_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                    </select>
                   </div>
                 </div>
                 <div className="form-group">

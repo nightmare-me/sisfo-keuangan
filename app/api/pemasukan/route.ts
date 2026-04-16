@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { generateInvoiceNumber } from "@/lib/utils";
+import { generateInvoiceNumber, generateSiswaNumber } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -64,7 +64,28 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { siswaId, programId, csId, hargaNormal, diskon, hargaFinal: rawHargaFinal, metodeBayar, keterangan, tanggal } = body;
+  const { siswaId, namaSiswa, programId, csId, hargaNormal, diskon, hargaFinal: rawHargaFinal, metodeBayar, keterangan, tanggal } = body;
+
+  let finalSiswaId = siswaId || null;
+
+  // Auto-create / search Siswa jika siswaId kosong tapi namaSiswa ada
+  if (!finalSiswaId && namaSiswa) {
+    const existing = await prisma.siswa.findFirst({
+      where: { nama: { equals: namaSiswa, mode: "insensitive" } }
+    });
+    if (existing) {
+      finalSiswaId = existing.id;
+    } else {
+      const newSiswa = await prisma.siswa.create({
+        data: {
+          noSiswa: generateSiswaNumber(),
+          nama: namaSiswa,
+          status: "AKTIF",
+        }
+      });
+      finalSiswaId = newSiswa.id;
+    }
+  }
 
   const hargaNormalNum = parseFloat(hargaNormal) || 0;
   const diskonNum = parseFloat(diskon) || 0;
@@ -81,7 +102,7 @@ export async function POST(request: NextRequest) {
   const pemasukan = await prisma.pemasukan.create({
     data: {
       tanggal: tanggal ? new Date(tanggal) : new Date(),
-      siswaId: siswaId || null,
+      siswaId: finalSiswaId,
       programId: programId || null,
       csId: csId || null,
       hargaNormal: hargaNormalNum || hargaFinal,
@@ -92,7 +113,7 @@ export async function POST(request: NextRequest) {
       invoice: {
         create: {
           noInvoice,
-          siswaId: siswaId || null,
+          siswaId: finalSiswaId,
           tanggal: tanggal ? new Date(tanggal) : new Date(),
           total: hargaNormalNum || hargaFinal,
           diskon: diskonNum,

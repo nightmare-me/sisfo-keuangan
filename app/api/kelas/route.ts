@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { namaKelas, programId, pengajarId, jadwal, hari, jam, kapasitas, durasi, tanggalMulai, tanggalSelesai } = body;
+  const { namaKelas, programId, pengajarId, jadwal, hari, jam, kapasitas, durasi, tanggalMulai, tanggalSelesai, linkGrup } = body;
 
   if (!namaKelas || !programId) {
     return NextResponse.json({ error: "Nama kelas dan program diperlukan" }, { status: 400 });
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
       jadwal, hari, jam,
       kapasitas: kapasitas ?? 10,
       durasi: durasi || null,
+      linkGrup: linkGrup || null,
       tanggalMulai: tanggalMulai ? new Date(tanggalMulai) : null,
       tanggalSelesai: tanggalSelesai ? new Date(tanggalSelesai) : null,
     },

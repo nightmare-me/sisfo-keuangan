@@ -8,6 +8,7 @@ import { getInitials } from "@/lib/utils";
 const navItems = [
   { group: "UTAMA", items: [
     { href: "/dashboard", label: "Dashboard", icon: "⚡" },
+    { href: "/crm", label: "CRM / Leads", icon: "🤝", hideFor: ["PENGAJAR", "AKADEMIK"] },
   ]},
   { group: "KEUANGAN", items: [
     { href: "/pemasukan", label: "Pemasukan", icon: "💰", hideFor: ["AKADEMIK"] },
@@ -17,9 +18,12 @@ const navItems = [
   ]},
   { group: "AKADEMIK", items: [
     { href: "/siswa", label: "Siswa", icon: "👨‍🎓" },
-    { href: "/kelas", label: "Kelas", icon: "📚" },
+    { href: "/kelas", label: "Manajemen Kelas", icon: "📚" },
     { href: "/program", label: "Produk / Program", icon: "🎯" },
     { href: "/gaji", label: "Gaji Pengajar", icon: "👨‍🏫", hideFor: ["CS", "PENGAJAR"] },
+  ]},
+  { group: "PENGAJAR", items: [
+    { href: "/pengajar/dashboard", label: "Kelas Saya", icon: "👨‍🏫", pengajarOnly: true },
   ]},
   { group: "OPERASIONAL", items: [
     { href: "/invoice", label: "Invoice", icon: "🧾", hideFor: ["AKADEMIK"] },
@@ -57,6 +61,7 @@ export default function Sidebar() {
               .filter((item) => {
                 if ((item as any).adminOnly && role !== "ADMIN") return false;
                 if ((item as any).akademikOnly && role !== "AKADEMIK") return false;
+                if ((item as any).pengajarOnly && role !== "PENGAJAR") return false;
                 if (!(item as any).akademikOnly && role === "AKADEMIK" && (item as any).adminOnly === undefined && false) return false;
                 if ((item as any).hideFor?.includes(role)) return false;
                 return true;

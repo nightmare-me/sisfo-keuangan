@@ -13,4 +13,4 @@ export default defineConfig({
     url: connectionString,
   },
   adapter: () => new PrismaPg({ connectionString }),
-});
+} as any);

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import Papa from "papaparse";
 
 const PLATFORMS = ["GOOGLE","META","TIKTOK","INSTAGRAM","YOUTUBE","LAINNYA"];
 const PLATFORM_COLOR: Record<string,string> = {
@@ -14,8 +15,10 @@ export default function AdsPage() {
   const [summary, setSummary] = useState({ total:0, count:0 });
   const [byPlatform, setByPlatform] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [csvLoading, setCsvLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState({ from:"", to:"", platform:"" });
   const [form, setForm] = useState({ platform:"META", jumlah:"", keterangan:"", tanggal: new Date().toISOString().slice(0,10) });
 
@@ -48,7 +51,93 @@ export default function AdsPage() {
     fetchData();
   }
 
-  const chartData = byPlatform.map(p=>({ platform: p.platform, total: p._sum.jumlah??0 }));
+  function downloadCsvTemplate() {
+    const header = "tanggal,platform,jumlah,keterangan\n";
+    const examples = [
+      "2024-03-01,META,500000,Iklan Promo Maret",
+      "2024-03-02,GOOGLE,1000000,Search Engine Campaign",
+      "2024-03-03,TIKTOK,750000,Video kreatif",
+    ].join("\n") + "\n";
+    const notes = [
+      "",
+      "# PANDUAN:",
+      "# - tanggal: format YYYY-MM-DD",
+      "# - platform: GOOGLE / META / TIKTOK / INSTAGRAM / YOUTUBE / LAINNYA",
+      "# - jumlah: angka saja tanpa titik/koma (contoh: 1500000)",
+    ].join("\n");
+    const blob = new Blob([header + examples + notes], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "template_ads.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvLoading(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const rows = results.data.filter((row: any) => row.tanggal && !row.tanggal.toString().startsWith("#"));
+          if (rows.length === 0) {
+            alert("⚠️ File CSV kosong atau tidak memiliki data yang valid.");
+            setCsvLoading(false);
+            if (fileRef.current) fileRef.current.value = "";
+            return;
+          }
+
+          const res = await fetch("/api/ads", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(rows),
+          });
+          
+          if (!res.ok) {
+            const err = await res.json();
+            alert("❌ Gagal import: " + (err.error ?? "Terjadi kesalahan"));
+          } else {
+            alert(`✅ Berhasil import ${rows.length} data ads!`);
+            fetchData();
+          }
+        } catch (error: any) {
+          alert("❌ Terjadi kesalahan saat import.");
+        }
+        setCsvLoading(false);
+        if (fileRef.current) fileRef.current.value = "";
+      },
+    });
+  }
+
+  // Siapkan data untuk LineChart (tren harian per platform)
+  const trendMap: Record<string, any> = {};
+  data.forEach(item => {
+    const d = item.tanggal.slice(0, 10); // "YYYY-MM-DD"
+    if (!trendMap[d]) trendMap[d] = { date: d };
+    trendMap[d][item.platform] = (trendMap[d][item.platform] || 0) + item.jumlah;
+  });
+  const lineChartData = Object.values(trendMap)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map(d => ({ ...d, dateFormatted: formatDate(d.date, "dd MMM") }));
+
+  // Custom Tooltip untuk LineChart
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-default)", borderRadius: 10, padding: "12px 16px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: 12, marginBottom: 8 }}>{label}</p>
+          {payload.map((p: any) => (
+            <p key={p.name} style={{ color: p.color, fontSize: 13, fontWeight: 600 }}>
+              {p.name}: {formatCurrency(p.value)}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div>
@@ -58,6 +147,11 @@ export default function AdsPage() {
           <div className="topbar-subtitle">Lacak pengeluaran iklan per platform</div>
         </div>
         <div className="topbar-actions">
+          <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate}>⬇ Template CSV</button>
+          <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer" }}>
+            {csvLoading ? "Importing..." : "📥 Import CSV"}
+            <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
+          </label>
           <button id="btn-tambah-ads" className="btn btn-primary" onClick={()=>setShowModal(true)}>+ Input Ads</button>
         </div>
       </div>
@@ -92,22 +186,41 @@ export default function AdsPage() {
           </div>
 
           <div className="card">
-            <div className="card-header"><div className="card-title">Grafik per Platform</div></div>
-            <div style={{ height:260 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="platform" tick={{ fill:"#64748b", fontSize:12 }} />
-                  <YAxis tick={{ fill:"#64748b", fontSize:11 }} tickFormatter={v=>`${(v/1000000).toFixed(1)}jt`} />
-                  <Tooltip formatter={(v:any)=>formatCurrency(v)} />
-                  <Bar dataKey="total" radius={[6,6,0,0]} name="Total Ads">
-                    {chartData.map((entry,i)=>(
-                      <Cell key={i} fill={PLATFORM_COLOR[entry.platform]??"#6366f1"} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <div className="card-header"><div className="card-title">Tren Ads per Platform</div></div>
+            {lineChartData.length === 0 ? (
+              <div className="empty-state" style={{ height: 260 }}>
+                <p>Belum ada data untuk ditampilkan</p>
+              </div>
+            ) : (
+              <div style={{ height:260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={lineChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="dateFormatted" tick={{ fill:"#64748b", fontSize:11 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fill:"#64748b", fontSize:11 }} tickLine={false} axisLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}k`} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                    {PLATFORMS.map(platform => {
+                      // Cek apakah platform ini punya data di periode ini
+                      const hasData = lineChartData.some(d => d[platform] !== undefined);
+                      if (!hasData) return null;
+                      return (
+                        <Line
+                          key={platform}
+                          type="monotone"
+                          dataKey={platform}
+                          name={platform}
+                          stroke={PLATFORM_COLOR[platform] ?? "#6366f1"}
+                          strokeWidth={2}
+                          dot={{ r: 4, fill: PLATFORM_COLOR[platform] ?? "#6366f1", strokeWidth: 0 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      );
+                    })}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </div>
 

@@ -241,9 +241,8 @@ export default function PemasukanPage() {
       const programId = namaProgram ? (programMap[namaProgram.toLowerCase()] ?? null) : null;
       const csId = namaCS ? (csMap[namaCS.toLowerCase()] ?? null) : null;
 
-      // Peringatan jika nama tidak ditemukan (tapi tetap proses)
+      // Peringatan jika program/CS tidak ditemukan
       const warns: string[] = [];
-      if (namaSiswa && !siswaId) warns.push(`siswa "${namaSiswa}" tidak ditemukan`);
       if (namaProgram && !programId) warns.push(`program "${namaProgram}" tidak ditemukan`);
       if (namaCS && !csId) warns.push(`CS "${namaCS}" tidak ditemukan`);
 
@@ -252,7 +251,9 @@ export default function PemasukanPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tanggal: tanggal || new Date().toISOString().slice(0, 10),
-          siswaId, programId, csId,
+          siswaId,
+          namaSiswa: namaSiswa || undefined, // Kirim nama untuk auto-create jika siswaId kosong
+          programId, csId,
           hargaNormal, diskon,
           hargaFinal: hargaFinal || hargaNormal,
           metodeBayar, keterangan,

@@ -53,7 +53,7 @@ async function main() {
   const kasir = await prisma.user.upsert({
     where: { email: "kasir@speakingpartner.id" },
     update: {},
-    create: { name: "Dina Kasir", email: "kasir@speakingpartner.id", password: kasirPw, role: "KASIR" },
+    create: { name: "Dina Kasir", email: "kasir@speakingpartner.id", password: kasirPw, role: "FINANCE" },
   });
   console.log("✅ Kasir:", kasir.email);
 

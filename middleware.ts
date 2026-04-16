@@ -11,6 +11,8 @@ export default withAuth(
         const { pathname } = req.nextUrl;
         if (pathname.startsWith("/login")) return true;
         if (pathname.startsWith("/api/auth")) return true;
+        if (pathname.startsWith("/register")) return true;
+        if (pathname.startsWith("/api/public")) return true;
         return !!token;
       },
     },

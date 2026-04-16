@@ -11,7 +11,7 @@ const TIPE_BADGE: Record<string, string> = { REGULAR: "badge-info", PRIVATE: "ba
 const STATUS_BADGE: Record<string, string> = { AKTIF: "badge-success", SELESAI: "badge-muted", DIJADWALKAN: "badge-warning" };
 const STATUS_SISWA_BADGE: Record<string, string> = { AKTIF: "badge-success", TIDAK_AKTIF: "badge-danger", ALUMNI: "badge-muted" };
 
-const emptyForm = { namaKelas: "", programId: "", pengajarId: "", jadwal: "", hari: "", jam: "", kapasitas: "10", durasi: "", tanggalMulai: "", tanggalSelesai: "" };
+const emptyForm = { namaKelas: "", programId: "", pengajarId: "", jadwal: "", hari: "", jam: "", kapasitas: "10", durasi: "", tanggalMulai: "", tanggalSelesai: "", linkGrup: "" };
 
 export default function KelasPage() {
   const { data: session } = useSession();
@@ -23,7 +23,7 @@ export default function KelasPage() {
   const [loading, setLoading] = useState(true);
   const [programs, setPrograms] = useState<any[]>([]);
   const [pengajarList, setPengajarList] = useState<any[]>([]);
-  const [siswaDrop, setSiswaDrop] = useState<any[]>([]);
+  const [siswaEligible, setSiswaEligible] = useState<any[]>([]); // Khusus plotting murid cerdas
   const [filterStatus, setFilterStatus] = useState("");
   const [filterTipe, setFilterTipe] = useState("");
 
@@ -56,17 +56,25 @@ export default function KelasPage() {
   useEffect(() => {
     fetch("/api/program").then(r => r.json()).then(d => setPrograms(d ?? [])).catch(() => {});
     fetch("/api/users?role=PENGAJAR").then(r => r.json()).then(d => setPengajarList(d ?? [])).catch(() => {});
-    fetch("/api/siswa?limit=200").then(r => r.json()).then(d => setSiswaDrop(d.data ?? [])).catch(() => {});
   }, []);
 
   // ── Load detail kelas ──
   async function loadDetail(kelas: any) {
     setSelectedKelas(kelas);
     setLoadingDetail(true);
-    const res = await fetch(`/api/kelas/${kelas.id}`);
-    const detail = await res.json();
+    
+    // Fetch detail & siswa eligible paralel
+    const [resDetail, resEligible] = await Promise.all([
+      fetch(`/api/kelas/${kelas.id}`),
+      fetch(`/api/kelas/${kelas.id}/eligible-siswa`)
+    ]);
+
+    const detail = await resDetail.json();
+    const eligible = await resEligible.json();
+
     setSelectedKelas(detail);
     setPendaftaranList(detail.pendaftaran ?? []);
+    setSiswaEligible(Array.isArray(eligible) ? eligible : []);
     setLoadingDetail(false);
   }
 
@@ -88,6 +96,7 @@ export default function KelasPage() {
       jam: kelas.jam ?? "",
       kapasitas: String(kelas.kapasitas),
       durasi: kelas.durasi ?? "",
+      linkGrup: kelas.linkGrup ?? "",
       tanggalMulai: kelas.tanggalMulai ? kelas.tanggalMulai.slice(0, 10) : "",
       tanggalSelesai: kelas.tanggalSelesai ? kelas.tanggalSelesai.slice(0, 10) : "",
     });
@@ -148,9 +157,9 @@ export default function KelasPage() {
     fetchData();
   }
 
-  // ── Siswa yang belum di kelas ini ──
+  // ── Siswa yang belum di kelas ini (Smart Plotting) ──
   const siswaInKelas = new Set(pendaftaranList.map((p: any) => p.siswa.id));
-  const siswaAvailable = siswaDrop.filter(s =>
+  const siswaAvailable = siswaEligible.filter(s =>
     !siswaInKelas.has(s.id) &&
     (searchSiswa === "" || s.nama.toLowerCase().includes(searchSiswa.toLowerCase()) || s.noSiswa.toLowerCase().includes(searchSiswa.toLowerCase()))
   );
@@ -305,6 +314,7 @@ export default function KelasPage() {
                 { label: "Pengajar", value: selectedKelas.pengajar?.name ?? "Belum ditentukan" },
                 { label: "Jadwal", value: selectedKelas.hari ? `${selectedKelas.hari}, ${selectedKelas.jam || "—"}` : selectedKelas.jadwal || "—" },
                 { label: "Kapasitas", value: `${pendaftaranList.length} / ${selectedKelas.kapasitas} siswa` },
+                { label: "Link Grup WA", value: selectedKelas.linkGrup ? <a href={selectedKelas.linkGrup.startsWith('http') ? selectedKelas.linkGrup : `https://${selectedKelas.linkGrup}`} target="_blank" rel="noreferrer" style={{color: "#3b82f6", textDecoration: "none"}}>Buka Grup 🔗</a> : "—" },
                 { label: "Durasi", value: { "2_MINGGU": "2 Minggu", "1_BULAN": "1 Bulan", "3_BULAN": "3 Bulan", "6_BULAN": "6 Bulan" }[selectedKelas.durasi as string] ?? selectedKelas.durasi ?? "—" },
                 { label: "Tanggal Mulai", value: selectedKelas.tanggalMulai ? formatDate(selectedKelas.tanggalMulai) : "—" },
                 { label: "Tanggal Selesai", value: selectedKelas.tanggalSelesai ? formatDate(selectedKelas.tanggalSelesai) : "—" },
@@ -498,6 +508,10 @@ export default function KelasPage() {
                       <option value="6_BULAN">6 Bulan</option>
                       <option value="LAINNYA">Lainnya / Kustom</option>
                     </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Link Grup WhatsApp</label>
+                    <input type="url" className="form-control" placeholder="https://chat.whatsapp.com/..." value={form.linkGrup} onChange={e => setForm(f => ({ ...f, linkGrup: e.target.value }))} />
                   </div>
                 </div>
                 <div className="form-grid-3">

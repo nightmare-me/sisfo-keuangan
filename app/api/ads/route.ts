@@ -37,13 +37,28 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+
+  // Bulk create
+  if (Array.isArray(body)) {
+    const data = body.map((item: any) => ({
+      tanggal: item.tanggal ? new Date(item.tanggal) : new Date(),
+      platform: item.platform ?? "META",
+      jumlah: parseFloat(item.jumlah),
+      keterangan: item.keterangan || null,
+      dibuatOleh: (session.user as any).id,
+    }));
+    const result = await prisma.spentAds.createMany({ data });
+    return NextResponse.json({ success: result.count }, { status: 201 });
+  }
+
+  // Single create
   const { platform, jumlah, keterangan, tanggal } = body;
 
   const ads = await prisma.spentAds.create({
     data: {
       tanggal: tanggal ? new Date(tanggal) : new Date(),
       platform: platform ?? "META",
-      jumlah,
+      jumlah: parseFloat(jumlah),
       keterangan,
       dibuatOleh: (session.user as any).id,
     },

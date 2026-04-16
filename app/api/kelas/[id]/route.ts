@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { namaKelas, programId, pengajarId, jadwal, hari, jam, kapasitas, durasi, tanggalMulai, tanggalSelesai, status } = body;
+  const { namaKelas, programId, pengajarId, jadwal, hari, jam, kapasitas, durasi, tanggalMulai, tanggalSelesai, status, linkGrup } = body;
 
   const kelas = await prisma.kelas.update({
     where: { id: params.id },
@@ -42,6 +42,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       ...(jam !== undefined && { jam }),
       ...(kapasitas !== undefined && { kapasitas: parseInt(kapasitas) }),
       ...(durasi !== undefined && { durasi: durasi || null }),
+      ...(linkGrup !== undefined && { linkGrup: linkGrup || null }),
       ...(tanggalMulai !== undefined && { tanggalMulai: tanggalMulai ? new Date(tanggalMulai) : null }),
       ...(tanggalSelesai !== undefined && { tanggalSelesai: tanggalSelesai ? new Date(tanggalSelesai) : null }),
       ...(status && { status }),

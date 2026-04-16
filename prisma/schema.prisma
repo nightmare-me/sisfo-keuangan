@@ -26,6 +26,28 @@ enum StatusSiswa {
   ALUMNI
 }
 
+enum StatusKehadiran {
+  HADIR
+  IZIN
+  SAKIT
+  ALPA
+}
+
+enum StatusSesi {
+  DIJADWALKAN
+  BERLANGSUNG
+  SELESAI
+  BATAL
+}
+
+enum LeadStatus {
+  NEW
+  FOLLOW_UP
+  PENDING
+  PAID
+  CANCELLED
+}
+
 enum StatusKelas {
   AKTIF
   SELESAI
@@ -86,6 +108,7 @@ model User {
   spentAds       SpentAds[]
   gajiPengajar   GajiPengajar[]
   kelasAjar      Kelas[]           @relation("PengajarKelas")
+  leads          Lead[]            @relation("CSLeads")
 }
 
 model Program {
@@ -101,6 +124,7 @@ model Program {
 
   kelas     Kelas[]
   pemasukan Pemasukan[]
+  leads     Lead[]
 }
 
 model Siswa {
@@ -117,9 +141,11 @@ model Siswa {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  pendaftaran Pendaftaran[]
-  pemasukan   Pemasukan[]
-  invoice     Invoice[]
+  pendaftaran   Pendaftaran[]
+  pemasukan     Pemasukan[]
+  invoice       Invoice[]
+  absensi       Absensi[]
+  kendalaMurid  KendalaMurid[]
 }
 
 model Kelas {
@@ -131,6 +157,7 @@ model Kelas {
   hari        String?
   jam         String?
   kapasitas   Int         @default(10)
+  linkGrup    String?
   durasi      String?     // "2_MINGGU" | "1_BULAN" | "3_BULAN" | lainnya
   status      StatusKelas @default(AKTIF)
   tanggalMulai DateTime?
@@ -140,8 +167,11 @@ model Kelas {
 
   program     Program       @relation(fields: [programId], references: [id])
   pengajar    User?         @relation("PengajarKelas", fields: [pengajarId], references: [id])
-  pendaftaran Pendaftaran[]
+  pendaftaran  Pendaftaran[]
   gajiPengajar GajiPengajar[]
+  sesiKelas    SesiKelas[]
+  materiKelas  MateriKelas[]
+  kendalaMurid KendalaMurid[]
 }
 
 model Pendaftaran {
@@ -267,4 +297,82 @@ model Inventaris {
   stokMinimum Int               @default(1)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
+}
+
+model Lead {
+  id               String     @id @default(cuid())
+  nama             String
+  whatsapp         String
+  email            String?
+  preferensiJadwal String?
+  programId        String?
+  status           LeadStatus @default(NEW)
+  kodeUnik         Int?
+  nominalTagihan   Float?
+  csId             String?
+  keterangan       String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  program Program? @relation(fields: [programId], references: [id])
+  cs      User?    @relation("CSLeads", fields: [csId], references: [id])
+}
+
+model SesiKelas {
+  id          String      @id @default(cuid())
+  kelasId     String
+  topik       String
+  tanggal     DateTime
+  status      StatusSesi  @default(DIJADWALKAN)
+  catatan     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  kelas     Kelas     @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  absensi   Absensi[]
+}
+
+model Absensi {
+  id          String         @id @default(cuid())
+  sesiKelasId String
+  siswaId     String
+  status      StatusKehadiran @default(HADIR)
+  nilaiHuruf  String?        // A, B, C, D, E (opsional)
+  nilaiAngka  Float?         // Skala nilai (opsional)
+  catatan     String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  sesiKelas SesiKelas @relation(fields: [sesiKelasId], references: [id], onDelete: Cascade)
+  siswa     Siswa     @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@unique([sesiKelasId, siswaId])
+}
+
+model MateriKelas {
+  id          String    @id @default(cuid())
+  kelasId     String
+  judul       String
+  deskripsi   String?
+  urlFile     String    // Link ke Google Drive / Cloud
+  diunggahOleh String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+}
+
+model KendalaMurid {
+  id          String    @id @default(cuid())
+  kelasId     String
+  siswaId     String
+  dilaporkanOleh String
+  topik       String
+  deskripsi   String
+  status      String    @default("OPEN") // OPEN, RESOLVED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  siswa Siswa @relation(fields: [siswaId], references: [id], onDelete: Cascade)
 }

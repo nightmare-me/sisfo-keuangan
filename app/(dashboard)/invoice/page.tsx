@@ -2,6 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import { 
+  FileText, 
+  Search, 
+  RefreshCw, 
+  Download, 
+  Share2, 
+  Eye, 
+  Printer, 
+  ChevronRight,
+  User,
+  Hash,
+  Clock,
+  CheckCircle
+} from "lucide-react";
 
 export default function InvoicePage() {
   const [data, setData] = useState<any[]>([]);
@@ -18,6 +32,10 @@ export default function InvoicePage() {
   }
 
   useEffect(()=>{ fetchData(); },[search]);
+
+  const totalInvoice = data.length;
+  const totalAmount = data.reduce((acc, inv) => acc + (inv.total || 0), 0);
+  const pendingCount = data.filter(inv => inv.status === 'BELUM_LUNAS').length;
 
   async function printInvoice(inv: any) {
     setPrinting(true);
@@ -86,18 +104,48 @@ export default function InvoicePage() {
   }
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Invoice</div>
-          <div className="topbar-subtitle">Kelola dan cetak invoice pembayaran</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
+             <FileText size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Financial Documentation</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>E-Invoice Siswa</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Arsip bukti pembayaran dan penagihan resmi lembaga</p>
         </div>
       </div>
 
-      <div className="page-container">
-        <div className="filter-bar">
-          <input type="text" className="form-control" placeholder="🔍 Cari no invoice atau nama siswa..." value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1, maxWidth:360 }} />
-          <button className="btn btn-secondary btn-sm" onClick={()=>setSearch("")}>Reset</button>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+        {/* KPI Grid */}
+        <div className="kpi-grid" style={{ marginBottom: 48 }}>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--primary)" }}><FileText size={24} /></div>
+            <div className="kpi-label">Volume Invoice</div>
+            <div className="kpi-value">{totalInvoice} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>Dokumen</span></div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--warning)" }}><Clock size={24} /></div>
+            <div className="kpi-label">Menunggu Pelunasan</div>
+            <div className="kpi-value">{pendingCount}</div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)" }}><CheckCircle size={24} /></div>
+            <div className="kpi-label">Total Omzet (Invoice)</div>
+            <div className="kpi-value">{formatCurrency(totalAmount)}</div>
+          </div>
+        </div>
+        <div className="card" style={{ padding: '24px 32px', marginBottom: 32 }}>
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:24 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:16, flex:1, minWidth:300 }}>
+              <Search size={20} style={{ color:'var(--secondary)' }} />
+              <input type="text" className="form-control" placeholder="Cari nomor invoice atau nama siswa..." value={search} onChange={e=>setSearch(e.target.value)} style={{ border:'none', borderBottom:'1px solid var(--ghost-border)', background:'transparent', borderRadius:0 }} />
+            </div>
+            <button className="btn btn-secondary btn-sm" onClick={()=>setSearch("")} style={{ borderRadius:'var(--radius-full)' }}>
+              <RefreshCw size={14} /> Reset
+            </button>
+          </div>
         </div>
 
         <div className="table-wrapper">

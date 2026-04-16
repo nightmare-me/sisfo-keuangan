@@ -10,6 +10,21 @@ const TIPE_BADGE: Record<string, string> = {
   SEMI_PRIVATE: "badge-info", ONLINE: "badge-success", LAINNYA: "badge-muted",
 };
 
+import { 
+  Package, 
+  Plus, 
+  Eye, 
+  EyeOff, 
+  TrendingUp, 
+  Type, 
+  CheckCircle, 
+  Edit3, 
+  Trash2,
+  Clock,
+  Layout,
+  Tag
+} from "lucide-react";
+
 const DURASI_OPTIONS = [
   { value: "2_MINGGU", label: "2 Minggu" },
   { value: "1_BULAN",  label: "1 Bulan" },
@@ -89,42 +104,51 @@ export default function ProgramPage() {
   const nonaktif = data.filter(d => !d.aktif);
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Produk / Program</div>
-          <div className="topbar-subtitle">Kelola program kursus dan harga</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
+             <Package size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Product Portfolio</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Katalog Program</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Kelola standar harga, durasi, dan klasifikasi produk layanan</p>
         </div>
-        <div className="topbar-actions">
+        <div style={{ display: 'flex', gap: 12 }}>
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => setShowNonaktif(v => !v)}
-            style={{ opacity: showNonaktif ? 1 : 0.6 }}
+            style={{ opacity: showNonaktif ? 1 : 0.6, borderRadius: 'var(--radius-full)', padding: '8px 20px' }}
           >
-            {showNonaktif ? "👁 Sembunyikan Nonaktif" : "👁 Tampilkan Nonaktif"}
+            {showNonaktif ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showNonaktif ? " Sembunyikan Nonaktif" : " Tampilkan Nonaktif"}
           </button>
           {isAdmin && (
-            <button className="btn btn-primary" onClick={openAdd}>+ Tambah Produk</button>
+            <button className="btn btn-primary" onClick={openAdd} style={{ borderRadius: 'var(--radius-full)' }}>
+              <Plus size={18} /> Tambah Produk
+            </button>
           )}
         </div>
       </div>
 
-      <div className="page-container">
-        {/* Summary cards */}
-        <div className="summary-grid">
-          {TIPE_OPTIONS.map(t => {
-            const cnt = aktif.filter(p => p.tipe === t).length;
-            if (cnt === 0) return null;
-            return (
-              <div key={t} className="summary-card">
-                <label>{t}</label>
-                <div className="value">{cnt} produk</div>
-              </div>
-            );
-          })}
-          <div className="summary-card">
-            <label>Total Aktif</label>
-            <div className="value green">{aktif.length}</div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+        {/* KPI Grid */}
+        <div className="kpi-grid" style={{ marginBottom: 48 }}>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)" }}><CheckCircle size={24} /></div>
+            <div className="kpi-label">Total Aktif</div>
+            <div className="kpi-value">{aktif.length} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>produk</span></div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--primary)" }}><Layout size={24} /></div>
+            <div className="kpi-label">Variasi Program</div>
+            <div className="kpi-value">{TIPE_OPTIONS.filter(t => aktif.some(p => p.tipe === t)).length} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>tipe</span></div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--warning)" }}><Tag size={24} /></div>
+            <div className="kpi-label">Private Program</div>
+            <div className="kpi-value">{aktif.filter(p => p.tipe === "PRIVATE").length}</div>
           </div>
         </div>
 

@@ -2,6 +2,24 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { 
+  Download, 
+  Upload, 
+  Trash2, 
+  Plus, 
+  Filter, 
+  Search, 
+  Edit3, 
+  Wallet, 
+  TrendingUp, 
+  History,
+  FileText,
+  X,
+  CreditCard,
+  Banknote,
+  QrCode,
+  RefreshCw
+} from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 
 interface Pemasukan {
@@ -49,7 +67,6 @@ export default function PemasukanPage() {
     const params = new URLSearchParams();
     if (filter.from) params.set("from", filter.from);
     if (filter.to) params.set("to", filter.to + "T23:59:59");
-    // CS hanya melihat transaksi miliknya
     if (isCS && userId) {
       params.set("csId", userId);
     } else if (filter.csId) {
@@ -57,7 +74,7 @@ export default function PemasukanPage() {
     }
     if (filter.programId) params.set("programId", filter.programId);
     if (filter.metodeBayar) params.set("metodeBayar", filter.metodeBayar);
-    params.set("limit", "50");
+    params.set("limit", "100");
 
     setLoading(true);
     fetch(`/api/pemasukan?${params}`)
@@ -69,11 +86,10 @@ export default function PemasukanPage() {
 
   useEffect(() => {
     fetch("/api/program").then(r => r.json()).then(d => setPrograms(d)).catch(() => {});
-    fetch("/api/siswa?limit=100").then(r => r.json()).then(d => setSiswaDrop(d.data ?? [])).catch(() => {});
+    fetch("/api/siswa?limit=500").then(r => r.json()).then(d => setSiswaDrop(d.data ?? [])).catch(() => {});
     fetch("/api/users?role=CS").then(r => r.json()).then(d => setCsList(d)).catch(() => {});
   }, []);
 
-  // Auto-calculate hargaFinal
   useEffect(() => {
     const normal = parseFloat(form.hargaNormal) || 0;
     const diskon = parseFloat(form.diskon) || 0;
@@ -82,7 +98,6 @@ export default function PemasukanPage() {
 
   function openAddModal() {
     setEditId(null);
-    // CS otomatis terisi sebagai CS yang handle
     setForm({ ...emptyForm, csId: isCS ? (userId ?? "") : "" });
     setShowModal(true);
   }
@@ -104,28 +119,9 @@ export default function PemasukanPage() {
   }
 
   async function handleDelete(item: Pemasukan) {
-    if (!confirm(`Hapus transaksi ${item.invoice?.noInvoice ?? ""} senilai ${formatCurrency(item.hargaFinal)}?\n\nData invoice terkait juga akan dihapus.`)) return;
+    if (!confirm(`Hapus transaksi ${item.invoice?.noInvoice ?? ""} ?`)) return;
     const res = await fetch(`/api/pemasukan/${item.id}`, { method: "DELETE" });
-    if (res.ok) {
-      fetchData();
-    } else {
-      const err = await res.json().catch(() => ({}));
-      alert("Gagal hapus: " + (err.error ?? "Error"));
-    }
-  }
-
-  async function handleDeleteAll() {
-    if (!confirm(`⚠️ HAPUS SEMUA DATA PEMASUKAN?\n\nSemua transaksi dan invoice akan dihapus permanen.\nAksi ini tidak bisa dibatalkan!`)) return;
-    if (!confirm(`Konfirmasi sekali lagi: yakin hapus SEMUA data pemasukan?`)) return;
-    const res = await fetch("/api/pemasukan/delete-all", { method: "DELETE" });
-    if (res.ok) {
-      const d = await res.json();
-      alert(`✅ Berhasil menghapus ${d.deleted} transaksi.`);
-      fetchData();
-    } else {
-      const err = await res.json().catch(() => ({}));
-      alert("Gagal: " + (err.error ?? "Error"));
-    }
+    if (res.ok) fetchData();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -137,24 +133,30 @@ export default function PemasukanPage() {
       diskon: parseFloat(form.diskon),
       hargaFinal: parseFloat(form.hargaFinal),
     };
-    if (editId) {
-      await fetch(`/api/pemasukan/${editId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await fetch("/api/pemasukan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    const res = await fetch(editId ? `/api/pemasukan/${editId}` : "/api/pemasukan", {
+      method: editId ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      setSaving(false);
+      setShowModal(false);
+      fetchData();
     }
-    setSaving(false);
-    setShowModal(false);
-    setEditId(null);
-    setForm(emptyForm);
-    fetchData();
+  }
+
+  // ── CSV & Bulk Operations ──
+  function downloadCsvTemplate() {
+    const header = "Tanggal(YYYY-MM-DD),Nama Siswa,Nama Program,Harga Normal,Diskon,Metode(CASH/TRANSFER/QRIS),Keterangan\n";
+    const examples = "2024-01-20,Budi Sudarsono,TOEFL Preparation,1500000,100000,TRANSFER,Lunas\n2024-01-21,Siti Aminah,General English,800000,0,CASH,DP Awal\n";
+    const notes = "\n# Catatan:\n# 1. Tanggal format YYYY-MM-DD\n# 2. Jika Siswa belum ada di database, sistem akan otomatis membuatnya\n# 3. Nama Program harus mirip dengan yang ada di sistem\n# 4. Metode pilih salah satu: CASH, TRANSFER, atau QRIS";
+    
+    const blob = new Blob([header + examples + notes], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "template_pemasukan.csv";
+    a.click();
   }
 
   async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -162,380 +164,294 @@ export default function PemasukanPage() {
     if (!file) return;
     setCsvLoading(true);
 
-    // Buat lookup map dari nama ke ID (case-insensitive)
-    const siswaMap: Record<string, string> = {};
-    siswaDrop.forEach((s: any) => {
-      siswaMap[s.nama.toLowerCase()] = s.id;
-      if (s.noSiswa) siswaMap[s.noSiswa.toLowerCase()] = s.id;
-    });
-    const programMap: Record<string, string> = {};
-    programs.forEach((p: any) => { programMap[p.nama.toLowerCase()] = p.id; });
-    const csMap: Record<string, string> = {};
-    csList.forEach((u: any) => { csMap[u.name.toLowerCase()] = u.id; });
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split("\n").filter(l => l.trim() && !l.startsWith("#"));
+      const dataRows = lines.slice(1); // skip header
 
-    const text = await file.text();
-    // Fix Windows \r\n line endings
-    const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    const lines = normalized.split("\n").slice(1).filter(l => l.trim().length > 0);
+      let successCount = 0;
+      for (const row of dataRows) {
+        const [tanggal, namaSiswa, namaProgram, hargaNormal, diskon, metode, keterangan] = row.split(",").map(s => s.trim());
+        if (!namaSiswa) continue;
 
-    let success = 0;
-    const errors: string[] = [];
+        // Cari programId berdasarkan nama (opsional, jika tidak ketemu biarkan null)
+        const prog = programs.find((p: any) => p.nama.toLowerCase() === namaProgram.toLowerCase());
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const delimiter = line.includes(";") ? ";" : ",";
-      const cols = line.split(delimiter).map(c => c.trim().replace(/^"|"$/g, ""));
-
-      if (cols.length < 2) {
-        errors.push(`Baris ${i + 2}: kolom tidak cukup`);
-        continue;
+        try {
+          await fetch("/api/pemasukan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tanggal,
+              namaSiswa,
+              programId: prog?.id || "",
+              csId: isCS ? (userId ?? "") : "",
+              hargaNormal: parseFloat(hargaNormal) || 0,
+              diskon: parseFloat(diskon) || 0,
+              metodeBayar: ["CASH", "TRANSFER", "QRIS"].includes(metode?.toUpperCase()) ? metode.toUpperCase() : "CASH",
+              keterangan: keterangan || "Import CSV"
+            })
+          });
+          successCount++;
+        } catch (err) {
+          console.error("Failed to import row:", row);
+        }
       }
 
-      // Format baru: tanggal,namaSiswa,namaProgram,namaCS,hargaNormal,diskon,metodeBayar,keterangan
-      // Format lama: tanggal,hargaNormal,diskon,metodeBayar,keterangan
-      // Deteksi: jika kolom ke-2 berupa angka → format lama
-      const isLegacyFormat = !isNaN(parseFloat(cols[1])) && cols[1].trim() !== "";
+      alert(`Berhasil mengimpor ${successCount} data pemasukan.`);
+      setCsvLoading(false);
+      fetchData();
+      if (fileRef.current) fileRef.current.value = "";
+    };
+    reader.readAsText(file);
+  }
 
-      let tanggal: string;
-      let namaSiswa: string;
-      let namaProgram: string;
-      let namaCS: string;
-      let hargaNormalStr: string;
-      let diskonStr: string;
-      let metodeBayarRaw: string;
-      let keterangan: string;
+  async function handleDeleteAll() {
+    if (role !== "ADMIN") return;
+    if (!confirm("⚠️ PERINGATAN KRITIS: Anda akan menghapus SELURUH data pemasukan dan invoice terkait. Tindakan ini tidak dapat dibatalkan. Lanjutkan?")) return;
+    if (!confirm("Konfirmasi sekali lagi: Hapus SEMUA data?")) return;
 
-      if (isLegacyFormat) {
-        // Format lama: tanggal,hargaNormal,diskon,metodeBayar,keterangan,...
-        tanggal       = cols[0] ?? "";
-        hargaNormalStr = cols[1] ?? "0";
-        diskonStr      = cols[2] ?? "0";
-        metodeBayarRaw = cols[3] ?? "CASH";
-        namaSiswa = ""; namaProgram = ""; namaCS = "";
-        keterangan = cols.slice(4).join(",").trim();
-      } else {
-        // Format baru: tanggal,namaSiswa,namaProgram,namaCS,hargaNormal,diskon,metodeBayar,keterangan,...
-        tanggal        = cols[0] ?? "";
-        namaSiswa      = cols[1] ?? "";
-        namaProgram    = cols[2] ?? "";
-        namaCS         = cols[3] ?? "";
-        hargaNormalStr = cols[4] ?? "0";
-        diskonStr      = cols[5] ?? "0";
-        metodeBayarRaw = cols[6] ?? "CASH";
-        keterangan = cols.slice(7).join(",").trim();
-      }
-
-      const hargaNormal = parseFloat(hargaNormalStr) || 0;
-      const diskon = parseFloat(diskonStr || "0") || 0;
-      const hargaFinal = Math.max(0, hargaNormal - diskon);
-      const metodeBayar = ["CASH","TRANSFER","QRIS"].includes((metodeBayarRaw||"CASH").toUpperCase())
-        ? (metodeBayarRaw||"CASH").toUpperCase() : "CASH";
-
-      if (hargaNormal <= 0) {
-        errors.push(`Baris ${i + 2}: harga normal tidak valid ("${hargaNormalStr}")`);
-        continue;
-      }
-
-      // Cocokkan nama ke ID
-      const siswaId = namaSiswa ? (siswaMap[namaSiswa.toLowerCase()] ?? null) : null;
-      const programId = namaProgram ? (programMap[namaProgram.toLowerCase()] ?? null) : null;
-      const csId = namaCS ? (csMap[namaCS.toLowerCase()] ?? null) : null;
-
-      // Peringatan jika program/CS tidak ditemukan
-      const warns: string[] = [];
-      if (namaProgram && !programId) warns.push(`program "${namaProgram}" tidak ditemukan`);
-      if (namaCS && !csId) warns.push(`CS "${namaCS}" tidak ditemukan`);
-
-      const res = await fetch("/api/pemasukan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tanggal: tanggal || new Date().toISOString().slice(0, 10),
-          siswaId,
-          namaSiswa: namaSiswa || undefined, // Kirim nama untuk auto-create jika siswaId kosong
-          programId, csId,
-          hargaNormal, diskon,
-          hargaFinal: hargaFinal || hargaNormal,
-          metodeBayar, keterangan,
-        }),
-      });
-
-      if (res.ok) {
-        success++;
-        if (warns.length > 0) errors.push(`Baris ${i + 2} ⚠️ berhasil (tapi ${warns.join(", ")})`);
-      } else {
-        const err = await res.json().catch(() => ({}));
-        errors.push(`Baris ${i + 2}: ${err.error ?? res.status}`);
-      }
+    setLoading(true);
+    const res = await fetch("/api/pemasukan/delete-all", { method: "DELETE" });
+    if (res.ok) {
+      alert("Seluruh data telah dibersihkan.");
+      fetchData();
+    } else {
+      alert("Gagal menghapus data.");
     }
-
-    setCsvLoading(false);
-    if (fileRef.current) fileRef.current.value = "";
-
-    let msg = `✅ Import selesai: ${success} dari ${lines.length} transaksi berhasil.`;
-    if (errors.length > 0) msg += `\n\n⚠️ Catatan (${errors.length}):\n` + errors.slice(0, 7).join("\n");
-    alert(msg);
-    fetchData();
+    setLoading(false);
   }
 
-  function downloadCsvTemplate() {
-    const today = new Date().toISOString().slice(0, 10);
-    // Ambil contoh nama dari data yang ada
-    const contohSiswa = siswaDrop[0]?.nama ?? "Budi Santoso";
-    const contohProgram = programs[0]?.nama ?? "Speaking Regular";
-    const contohCS = csList[0]?.name ?? "Rizky Pratama";
-
-    const header = "tanggal,namaSiswa,namaProgram,namaCS,hargaNormal,diskon,metodeBayar,keterangan\n";
-    const examples = [
-      `${today},${contohSiswa},${contohProgram},${contohCS},1500000,0,CASH,Pembayaran kursus`,
-      `${today},Dewi Lestari,Speaking Private,${contohCS},3000000,500000,TRANSFER,Promo member lama`,
-      `${today},,Grammar Intensive,,1200000,0,QRIS,Siswa baru (tanpa data siswa)`,
-      `${today},,,${contohCS},2500000,0,CASH,Tanpa program spesifik`,
-    ].join("\n") + "\n";
-
-    // Tambahkan panduan di bawah
-    const notes = [
-      "",
-      "# PANDUAN:",
-      "# - namaSiswa: nama lengkap siswa (harus persis sama dengan data di sistem, boleh kosong)",
-      "# - namaProgram: nama program kursus (boleh kosong)",
-      "# - namaCS: nama CS yang handle (boleh kosong)",
-      "# - metodeBayar: CASH / TRANSFER / QRIS (boleh huruf kecil)",
-      "# - diskon: isi 0 jika tidak ada diskon",
-    ].join("\n");
-
-    const blob = new Blob([header + examples + notes], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "template_pemasukan.csv"; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // role & userId sudah dipindah ke atas (sebelum fetchData)
+  const getMethodIcon = (method: string) => {
+    switch (method) {
+      case "TRANSFER":
+        return <CreditCard size={14} />;
+      case "QRIS":
+        return <QrCode size={14} />;
+      default:
+        return <Banknote size={14} />;
+    }
+  };
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: "flex", flexDirection: "column", height: "100vh", paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Pemasukan</div>
-          <div className="topbar-subtitle">Kelola data pemasukan harian</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
+             <Wallet size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Financial Management</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Data Pemasukan</h1>
         </div>
-        <div className="topbar-actions">
-          {role !== "PENGAJAR" && (
-            <>
-              <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate}>⬇ Template CSV</button>
-              <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer" }}>
-                {csvLoading ? "Importing..." : "📥 Import CSV"}
-                <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
-              </label>
-              {role === "ADMIN" && (
-                <button
-                  className="btn btn-sm"
-                  onClick={handleDeleteAll}
-                  style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171" }}
-                >
-                  🗑️ Hapus Semua
-                </button>
-              )}
-              <button id="btn-tambah-pemasukan" className="btn btn-primary" onClick={openAddModal}>
-                + Tambah Pemasukan
-              </button>
-            </>
-          )}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+           {role !== "PENGAJAR" && (
+             <>
+               <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} title="Download Template CSV" style={{ borderRadius: 'var(--radius-full)' }}>
+                 <Download size={14} /> Template
+               </button>
+               
+               <button 
+                 className="btn btn-secondary btn-sm" 
+                 onClick={() => fileRef.current?.click()} 
+                 disabled={csvLoading}
+                 style={{ borderRadius: 'var(--radius-full)' }}
+               >
+                 <Upload size={14} /> {csvLoading ? "Importing..." : "Import CSV"}
+               </button>
+               <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
+
+               {role === "ADMIN" && data.length > 0 && (
+                 <button className="btn btn-sm" onClick={handleDeleteAll} style={{ borderRadius: 'var(--radius-full)', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                   <Trash2 size={14} /> Hapus Semua
+                 </button>
+               )}
+
+               <div style={{ width: 1, height: 24, background: 'var(--border-default)', margin: '0 4px' }} />
+
+               <button className="btn btn-primary" onClick={openAddModal} style={{ borderRadius: 'var(--radius-full)' }}>
+                 <Plus size={18} /> Tambah Transaksi
+               </button>
+             </>
+           )}
         </div>
       </div>
 
-      <div className="page-container">
-        {/* Summary */}
-        <div className="summary-grid">
-          <div className="summary-card">
-            <label>Total Pemasukan</label>
-            <div className="value green">{formatCurrency(summary.totalPemasukan)}</div>
-          </div>
-          <div className="summary-card">
-            <label>Total Diskon</label>
-            <div className="value yellow">{formatCurrency(summary.totalDiskon)}</div>
-          </div>
-          <div className="summary-card">
-            <label>Jumlah Transaksi</label>
-            <div className="value">{summary.jumlahTransaksi}</div>
-          </div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+      {/* Summary Cards */}
+      <div className="kpi-grid" style={{ marginBottom: 24 }}>
+        <div className="kpi-card" style={{ "--kpi-color": "#10b981", "--kpi-bg": "rgba(16,185,129,0.1)" } as any}>
+          <div className="kpi-icon" style={{ color: "#10b981" }}><TrendingUp size={24} /></div>
+          <div className="kpi-label">Total Pemasukan</div>
+          <div className="kpi-value">{formatCurrency(summary.totalPemasukan)}</div>
         </div>
+        <div className="kpi-card" style={{ "--kpi-color": "#f59e0b", "--kpi-bg": "rgba(245,158,11,0.1)" } as any}>
+          <div className="kpi-icon" style={{ color: "#f59e0b" }}><FileText size={24} /></div>
+          <div className="kpi-label">Potongan & Diskon</div>
+          <div className="kpi-value">{formatCurrency(summary.totalDiskon)}</div>
+        </div>
+        <div className="kpi-card" style={{ "--kpi-color": "#3b82f6", "--kpi-bg": "rgba(59,130,246,0.1)" } as any}>
+          <div className="kpi-icon" style={{ color: "#3b82f6" }}><History size={24} /></div>
+          <div className="kpi-label">Volume Transaksi</div>
+          <div className="kpi-value">{summary.jumlahTransaksi} <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>trx</span></div>
+        </div>
+      </div>
 
-        {/* Filter — CS tidak bisa ganti filter CS */}
-        <div className="filter-bar">
-          <input type="date" className="form-control" value={filter.from} onChange={e => setFilter(f => ({ ...f, from: e.target.value }))} style={{ maxWidth: 160 }} />
-          <span style={{ color: "var(--text-muted)", fontSize: 13 }}>s/d</span>
-          <input type="date" className="form-control" value={filter.to} onChange={e => setFilter(f => ({ ...f, to: e.target.value }))} style={{ maxWidth: 160 }} />
-          <select className="form-control" value={filter.programId} onChange={e => setFilter(f => ({ ...f, programId: e.target.value }))}>
-            <option value="">Semua Program</option>
-            {programs.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
-          </select>
-          <select className="form-control" value={filter.metodeBayar} onChange={e => setFilter(f => ({ ...f, metodeBayar: e.target.value }))}>
-            <option value="">Semua Metode</option>
-            {METODE_BAYAR.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-          {/* Filter CS hanya tampil untuk ADMIN & KASIR */}
-          {!isCS && (
-            <select className="form-control" value={filter.csId} onChange={e => setFilter(f => ({ ...f, csId: e.target.value }))}>
-              <option value="">Semua CS</option>
-              {csList.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+      {/* Filter Bar */}
+      <div className="card glass" style={{ marginBottom: 24, padding: '16px 24px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200 }}>
+             <Filter size={16} className="text-muted" />
+             <input type="date" className="form-control" value={filter.from} onChange={e => setFilter(f => ({ ...f, from: e.target.value }))} placeholder="Dari Tanggal" />
+             <span className="text-muted">→</span>
+             <input type="date" className="form-control" value={filter.to} onChange={e => setFilter(f => ({ ...f, to: e.target.value }))} placeholder="Sampai Tanggal" />
+          </div>
+          
+          <div style={{ display: 'flex', gap: 12, flex: 1, minWidth: 300 }}>
+            <select className="form-control" value={filter.programId} onChange={e => setFilter(f => ({ ...f, programId: e.target.value }))}>
+              <option value="">Semua Program</option>
+              {programs.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
             </select>
-          )}
-          <button className="btn btn-secondary btn-sm" onClick={() => setFilter({ from: "", to: "", csId: "", programId: "", metodeBayar: "" })}>Reset</button>
-        </div>
+            
+            <select className="form-control" value={filter.metodeBayar} onChange={e => setFilter(f => ({ ...f, metodeBayar: e.target.value }))}>
+              <option value="">Metode Bayar</option>
+              {METODE_BAYAR.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
 
-        {/* Table */}
-        <div className="table-wrapper">
-          <table>
-            <thead>
+            {!isCS && (
+              <select className="form-control" value={filter.csId} onChange={e => setFilter(f => ({ ...f, csId: e.target.value }))}>
+                <option value="">Tampilkan CS</option>
+                {csList.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            )}
+            
+            <button className="btn btn-secondary btn-sm" onClick={() => setFilter({ from: "", to: "", csId: "", programId: "", metodeBayar: "" })} style={{ borderRadius: 'var(--radius-full)' }}>
+              <RefreshCw size={14} /> Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Table Section */}
+      <div className="table-wrapper">
+        <table>
+          <thead>
               <tr>
-                <th>Tanggal</th>
-                <th>Siswa</th>
-                <th>Program</th>
-                <th>CS</th>
-                <th>Metode</th>
-                <th>Harga Normal</th>
-                <th>Diskon</th>
-                <th>Harga Final</th>
-                <th>Invoice</th>
-                {role !== "PENGAJAR" && <th style={{ width: 90 }}>Aksi</th>}
+                <th>TANGGAL</th>
+                <th>SISWA</th>
+                <th>PROGRAM</th>
+                <th>PETUGAS (CS)</th>
+                <th>METODE</th>
+                <th style={{ textAlign: 'right' }}>NOMINAL</th>
+                <th style={{ textAlign: 'center' }}>NO. INVOICE</th>
+                {role !== "PENGAJAR" && <th style={{ textAlign: 'right' }}>OPSI</th>}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={role !== "PENGAJAR" ? 10 : 9} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>Loading...</td></tr>
+                 [1, 2, 3].map(i => <tr key={i}><td colSpan={8}><div className="skeleton" style={{ height: 40, margin: '10px 0' }} /></td></tr>)
               ) : data.length === 0 ? (
-                <tr><td colSpan={role !== "PENGAJAR" ? 10 : 9}>
-                  <div className="empty-state">
-                    <div className="empty-state-icon">💰</div>
-                    <h3>Belum ada data pemasukan</h3>
-                    <p>Klik "+ Tambah Pemasukan" untuk mencatat pemasukan baru</p>
-                  </div>
-                </td></tr>
+                <tr><td colSpan={8}><div className="empty-state">Belum ada transaksi</div></td></tr>
               ) : data.map(item => (
                 <tr key={item.id}>
-                  <td style={{ whiteSpace: "nowrap", color: "var(--text-muted)", fontSize: 12 }}>{formatDateTime(item.tanggal)}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(item.tanggal, "dd MMM yyyy")}</td>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{item.siswa?.nama ?? "—"}</div>
+                    <div style={{ fontWeight: 700 }}>{item.siswa?.nama ?? "Umum"}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{item.siswa?.noSiswa}</div>
                   </td>
-                  <td>{item.program?.nama ?? "—"}</td>
-                  <td>{item.cs?.name ?? "—"}</td>
-                  <td><span className={`badge ${item.metodeBayar === "CASH" ? "badge-warning" : item.metodeBayar === "TRANSFER" ? "badge-info" : "badge-success"}`}>{item.metodeBayar}</span></td>
-                  <td>{formatCurrency(item.hargaNormal)}</td>
-                  <td style={{ color: item.diskon > 0 ? "var(--danger)" : "var(--text-muted)" }}>{item.diskon > 0 ? `-${formatCurrency(item.diskon)}` : "—"}</td>
-                  <td style={{ fontWeight: 700, color: "var(--success)" }}>{formatCurrency(item.hargaFinal)}</td>
-                  <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{item.invoice?.noInvoice ?? "—"}</td>
+                  <td><span className="badge badge-muted">{item.program?.nama ?? "—"}</span></td>
+                  <td style={{ fontWeight: 500 }}>{item.cs?.name ?? "—"}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {getMethodIcon(item.metodeBayar)}
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>{item.metodeBayar}</span>
+                    </div>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--success)' }}>{formatCurrency(item.hargaFinal)}</div>
+                    {item.diskon > 0 && <div style={{ fontSize: 10, color: 'var(--danger)' }}>Disc: -{formatCurrency(item.diskon)}</div>}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                     <code style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: 4 }}>{item.invoice?.noInvoice ?? "—"}</code>
+                  </td>
                   {role !== "PENGAJAR" && (
-                    <td>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button
-                          onClick={() => openEditModal(item)}
-                          style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "#818cf8", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
-                          title="Edit"
-                        >✏️</button>
-                  {role === "ADMIN" && (
-                    <button
-                      onClick={() => handleDelete(item)}
-                      style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
-                      title="Hapus"
-                    >🗑️</button>
-                  )}
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: "flex", gap: 8, justifyContent: 'flex-end' }}>
+                        <button className="btn btn-secondary btn-icon" onClick={() => openEditModal(item)}><Edit3 size={14} /></button>
+                        {role === "ADMIN" && (
+                          <button className="btn btn-secondary btn-icon" onClick={() => handleDelete(item)} style={{ color: 'var(--danger)' }}><Trash2 size={14} /></button>
+                        )}
                       </div>
                     </td>
                   )}
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
+        </table>
+      </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowModal(false); setEditId(null); } }}>
-          <div className="modal modal-lg">
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
+          <div className="modal" style={{ width: 600 }}>
             <div className="modal-header">
-              <div className="modal-title">{editId ? "✏️ Edit Pemasukan" : "+ Tambah Pemasukan"}</div>
-              <button className="modal-close" onClick={() => { setShowModal(false); setEditId(null); }}>✕</button>
+               <div className="modal-title">{editId ? "Ubah Data Pemasukan" : "Catat Pemasukan Baru"}</div>
+               <button className="modal-close" onClick={() => setShowModal(false)}><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Siswa</label>
-                    <select id="sel-siswa" className="form-control" value={form.siswaId} onChange={e => setForm(f => ({ ...f, siswaId: e.target.value }))}>
-                      <option value="">Pilih Siswa (opsional)</option>
-                      {siswaDrop.map((s: any) => <option key={s.id} value={s.id}>{s.nama} — {s.noSiswa}</option>)}
-                    </select>
+               <div className="modal-body">
+                  <div className="form-grid-2">
+                     <div className="form-group">
+                        <label className="form-label">Siswa</label>
+                        <select className="form-control" value={form.siswaId} onChange={e => setForm(f => ({ ...f, siswaId: e.target.value }))}>
+                          <option value="">Pilih Siswa</option>
+                          {siswaDrop.map((s: any) => <option key={s.id} value={s.id}>{s.nama}</option>)}
+                        </select>
+                     </div>
+                     <div className="form-group">
+                        <label className="form-label">Program</label>
+                        <select className="form-control" value={form.programId} onChange={e => setForm(f => ({ ...f, programId: e.target.value }))}>
+                          <option value="">Pilih Program</option>
+                          {programs.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
+                        </select>
+                     </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Program / Produk</label>
-                    <select id="sel-program" className="form-control" value={form.programId} onChange={e => setForm(f => ({ ...f, programId: e.target.value }))}>
-                      <option value="">Pilih Program (opsional)</option>
-                      {programs.map((p: any) => <option key={p.id} value={p.id}>{p.nama} ({p.tipe})</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">CS yang Handle</label>
-                    {isCS ? (
-                      // CS hanya bisa memilih dirinya sendiri
-                      <input className="form-control" value={session?.user?.name ?? ""} disabled style={{ opacity: 0.7 }} />
-                    ) : (
-                      <select id="sel-cs" className="form-control" value={form.csId} onChange={e => setForm(f => ({ ...f, csId: e.target.value }))}>
-                        <option value="">Pilih CS (opsional)</option>
-                        {csList.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                      </select>
-                    )}
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label required">Tanggal</label>
-                    <input type="date" className="form-control" value={form.tanggal} onChange={e => setForm(f => ({ ...f, tanggal: e.target.value }))} required />
-                  </div>
-                </div>
-                <div className="form-grid-3">
-                  <div className="form-group">
-                    <label className="form-label required">Harga Normal (Rp)</label>
-                    <input id="inp-harga-normal" type="number" className="form-control" placeholder="0" value={form.hargaNormal} onChange={e => setForm(f => ({ ...f, hargaNormal: e.target.value }))} required min={0} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Diskon / Promo (Rp)</label>
-                    <input id="inp-diskon" type="number" className="form-control" placeholder="0" value={form.diskon} onChange={e => setForm(f => ({ ...f, diskon: e.target.value }))} min={0} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label required">Harga Final (Rp)</label>
-                    <input id="inp-harga-final" type="number" className="form-control" value={form.hargaFinal} onChange={e => setForm(f => ({ ...f, hargaFinal: e.target.value }))} required min={0} style={{ color: "var(--success)", fontWeight: 700 }} />
-                  </div>
-                </div>
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label required">Metode Bayar</label>
-                    <select id="sel-metode" className="form-control" value={form.metodeBayar} onChange={e => setForm(f => ({ ...f, metodeBayar: e.target.value }))}>
-                      {METODE_BAYAR.map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Keterangan</label>
-                    <input type="text" className="form-control" placeholder="Opsional..." value={form.keterangan} onChange={e => setForm(f => ({ ...f, keterangan: e.target.value }))} />
-                  </div>
-                </div>
 
-                {form.hargaFinal && (
-                  <div style={{ background: "var(--success-bg)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 10, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ color: "var(--text-muted)", fontSize: 13 }}>Total yang akan diterima:</span>
-                    <span style={{ color: "var(--success)", fontWeight: 800, fontSize: 18 }}>{formatCurrency(parseFloat(form.hargaFinal) || 0)}</span>
+                  <div className="form-grid-3">
+                     <div className="form-group">
+                        <label className="form-label required">Harga Normal</label>
+                        <input type="number" className="form-control" value={form.hargaNormal} onChange={e => setForm(f => ({ ...f, hargaNormal: e.target.value }))} required />
+                     </div>
+                     <div className="form-group">
+                        <label className="form-label">Diskon</label>
+                        <input type="number" className="form-control" value={form.diskon} onChange={e => setForm(f => ({ ...f, diskon: e.target.value }))} />
+                     </div>
+                     <div className="form-group">
+                        <label className="form-label">Total Terima</label>
+                        <input type="number" className="form-control" value={form.hargaFinal} disabled style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--success)', fontWeight: 800 }} />
+                     </div>
                   </div>
-                )}
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => { setShowModal(false); setEditId(null); }}>Batal</button>
-                <button id="btn-simpan-pemasukan" type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? "Menyimpan..." : editId ? "💾 Simpan Perubahan" : "💰 Simpan & Buat Invoice"}
-                </button>
-              </div>
+
+                  <div className="form-grid-2">
+                     <div className="form-group">
+                        <label className="form-label required">Metode</label>
+                        <select className="form-control" value={form.metodeBayar} onChange={e => setForm(f => ({ ...f, metodeBayar: e.target.value }))}>
+                          {METODE_BAYAR.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                     </div>
+                     <div className="form-group">
+                        <label className="form-label required">Tanggal</label>
+                        <input type="date" className="form-control" value={form.tanggal} onChange={e => setForm(f => ({ ...f, tanggal: e.target.value }))} required />
+                     </div>
+                  </div>
+               </div>
+               <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={saving}>
+                    {saving ? "Menyimpan..." : (editId ? "🔄 Perbarui Data" : "💰 Simpan & Buat Invoice")}
+                  </button>
+               </div>
             </form>
           </div>
         </div>

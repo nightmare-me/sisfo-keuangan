@@ -2,6 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { 
+  TrendingDown, 
+  Activity, 
+  Plus, 
+  Search, 
+  Calendar, 
+  Filter, 
+  RefreshCw, 
+  Wallet,
+  CreditCard,
+  Trash2,
+  PieChart
+} from "lucide-react";
 
 const KATEGORI = ["GAJI_PENGAJAR","GAJI_STAF","SEWA_TEMPAT","UTILITAS","ATK","MARKETING","PERALATAN","PEMELIHARAAN","LAINNYA"];
 const METODE = ["CASH","TRANSFER"];
@@ -55,27 +68,41 @@ export default function PengeluaranPage() {
   const maxKategori = Math.max(...byKategori.map(k=>k._sum.jumlah??0), 1);
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Pengeluaran Operasional</div>
-          <div className="topbar-subtitle">Kelola data pengeluaran lembaga</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--danger)", marginBottom: 8 }}>
+             <TrendingDown size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Financial Management</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Pengeluaran Operasional</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Kelola dan lacak pengeluaran operasional lembaga</p>
         </div>
-        <div className="topbar-actions">
-          <button id="btn-tambah-pengeluaran" className="btn btn-primary" onClick={()=>setShowModal(true)}>+ Tambah Pengeluaran</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button id="btn-tambah-pengeluaran" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowModal(true)}>
+            <Plus size={18} /> Tambah Pengeluaran
+          </button>
         </div>
       </div>
 
-      <div className="page-container">
-        {/* Summary */}
-        <div className="summary-grid" style={{ gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))" }}>
-          <div className="summary-card">
-            <label>Total Pengeluaran</label>
-            <div className="value red">{formatCurrency(summary.totalPengeluaran)}</div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+        {/* KPI Grid */}
+        <div className="kpi-grid" style={{ marginBottom: 32 }}>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--danger)" }}><TrendingDown size={24} /></div>
+            <div className="kpi-label">Total Pengeluaran</div>
+            <div className="kpi-value">{formatCurrency(summary.totalPengeluaran)}</div>
           </div>
-          <div className="summary-card">
-            <label>Jumlah Transaksi</label>
-            <div className="value">{summary.jumlahTransaksi}</div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--info)", "--kpi-bg": "var(--info-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--info)" }}><Activity size={24} /></div>
+            <div className="kpi-label">Jumlah Transaksi</div>
+            <div className="kpi-value">{summary.jumlahTransaksi} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>trx</span></div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--warning)" }}><PieChart size={24} /></div>
+            <div className="kpi-label">Kategori Aktif</div>
+            <div className="kpi-value">{byKategori.length}</div>
           </div>
         </div>
 
@@ -99,23 +126,40 @@ export default function PengeluaranPage() {
           </div>
         )}
 
-        {/* Filter */}
-        <div className="filter-bar">
-          <input type="date" className="form-control" value={filter.from} onChange={e=>setFilter(f=>({...f,from:e.target.value}))} style={{ maxWidth:160 }} />
-          <span style={{ color:"var(--text-muted)", fontSize:13 }}>s/d</span>
-          <input type="date" className="form-control" value={filter.to} onChange={e=>setFilter(f=>({...f,to:e.target.value}))} style={{ maxWidth:160 }} />
-          <select className="form-control" value={filter.kategori} onChange={e=>setFilter(f=>({...f,kategori:e.target.value}))}>
-            <option value="">Semua Kategori</option>
-            {KATEGORI.map(k=><option key={k} value={k}>{KATEGORI_LABEL[k]}</option>)}
-          </select>
-          <select className="form-control" value={filter.metodeBayar} onChange={e=>setFilter(f=>({...f,metodeBayar:e.target.value}))}>
-            <option value="">Semua Metode</option>
-            {METODE.map(m=><option key={m} value={m}>{m}</option>)}
-          </select>
-          <button className="btn btn-secondary btn-sm" onClick={()=>setFilter({from:"",to:"",kategori:"",metodeBayar:""})}>Reset</button>
+        {/* Filter Section */}
+        <div className="card" style={{ padding: '24px 32px', marginBottom: 32 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Calendar size={18} style={{ color: "var(--primary)" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="date" className="form-control" value={filter.from} onChange={e=>setFilter(f=>({...f,from:e.target.value}))} style={{ maxWidth:150, padding: '8px 12px' }} />
+                <span style={{ color:"var(--text-muted)", fontSize:13 }}>s/d</span>
+                <input type="date" className="form-control" value={filter.to} onChange={e=>setFilter(f=>({...f,to:e.target.value}))} style={{ maxWidth:150, padding: '8px 12px' }} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+              <Filter size={18} style={{ color: "var(--primary)" }} />
+              <div style={{ display: "flex", gap: 12, flex: 1 }}>
+                <select className="form-control" value={filter.kategori} onChange={e=>setFilter(f=>({...f,kategori:e.target.value}))} style={{ padding: '8px 12px' }}>
+                  <option value="">Semua Kategori</option>
+                  {KATEGORI.map(k=><option key={k} value={k}>{KATEGORI_LABEL[k]}</option>)}
+                </select>
+                <select className="form-control" value={filter.metodeBayar} onChange={e=>setFilter(f=>({...f,metodeBayar:e.target.value}))} style={{ padding: '8px 12px' }}>
+                  <option value="">Semua Metode</option>
+                  {METODE.map(m=><option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <button className="btn btn-secondary btn-sm" onClick={()=>setFilter({from:"",to:"",kategori:"",metodeBayar:""})} style={{ borderRadius: 'var(--radius-full)' }}>
+              <RefreshCw size={14} /> Reset
+            </button>
+          </div>
         </div>
 
         {/* Table */}
+        {/* Table Section */}
         <div className="table-wrapper">
           <table>
             <thead>
@@ -126,30 +170,41 @@ export default function PengeluaranPage() {
                 <th>Metode</th>
                 <th>Dibuat Oleh</th>
                 <th className="text-right">Jumlah</th>
-                <th>Aksi</th>
+                <th className="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign:"center",padding:32,color:"var(--text-muted)" }}>Loading...</td></tr>
+                <tr><td colSpan={7} style={{ textAlign:"center",padding:48,color:"var(--text-muted)" }}>Loading data...</td></tr>
               ) : data.length===0 ? (
                 <tr><td colSpan={7}>
                   <div className="empty-state">
-                    <div className="empty-state-icon">💸</div>
-                    <h3>Belum ada data pengeluaran</h3>
-                    <p>Klik "+ Tambah Pengeluaran" untuk mencatat</p>
+                    <div className="empty-state-icon"><TrendingDown size={48} /></div>
+                    <h3 className="title-lg">Belum ada data pengeluaran</h3>
+                    <p>Klik "+ Tambah Pengeluaran" untuk mencatat pengeluaran operasional</p>
                   </div>
                 </td></tr>
               ) : data.map(item=>(
                 <tr key={item.id}>
-                  <td style={{ fontSize:12, color:"var(--text-muted)", whiteSpace:"nowrap" }}>{formatDateTime(item.tanggal)}</td>
-                  <td><span className="badge badge-danger">{KATEGORI_LABEL[item.kategori]??item.kategori}</span></td>
-                  <td style={{ color:"var(--text-secondary)", fontSize:13 }}>{item.keterangan||"—"}</td>
-                  <td><span className={`badge ${item.metodeBayar==="CASH"?"badge-warning":"badge-info"}`}>{item.metodeBayar}</span></td>
-                  <td style={{ fontSize:12, color:"var(--text-muted)" }}>{item.user?.name??"—"}</td>
-                  <td className="text-right" style={{ fontWeight:700, color:"var(--danger)" }}>{formatCurrency(item.jumlah)}</td>
+                  <td style={{ fontSize:14, color:"var(--text-muted)", whiteSpace:"nowrap" }}>{formatDateTime(item.tanggal)}</td>
                   <td>
-                    <button className="btn btn-danger btn-sm" onClick={()=>handleDelete(item.id)}>🗑</button>
+                    <span className="badge badge-danger" style={{ padding: '6px 14px', borderRadius: 100 }}>
+                      {KATEGORI_LABEL[item.kategori]??item.kategori}
+                    </span>
+                  </td>
+                  <td style={{ color:"var(--text-secondary)", fontSize:14 }}>{item.keterangan||"—"}</td>
+                  <td>
+                    <span className={`badge ${item.metodeBayar==="CASH"?"badge-warning":"badge-info"}`} style={{ padding: '6px 14px', borderRadius: 100 }}>
+                      {item.metodeBayar==="CASH" ? <Wallet size={12} style={{marginRight:6}} /> : <CreditCard size={12} style={{marginRight:6}} />}
+                      {item.metodeBayar}
+                    </span>
+                  </td>
+                  <td style={{ fontSize:14, color:"var(--text-muted)" }}>{item.user?.name??"—"}</td>
+                  <td className="text-right" style={{ fontWeight:800, color:"var(--danger)", fontSize: 16 }}>{formatCurrency(item.jumlah)}</td>
+                  <td className="text-center">
+                    <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
+                      <Trash2 size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}

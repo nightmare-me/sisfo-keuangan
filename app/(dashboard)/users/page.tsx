@@ -2,6 +2,25 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { 
+  Users, 
+  UserPlus, 
+  Download, 
+  Upload, 
+  Search, 
+  Filter, 
+  RefreshCw, 
+  Shield, 
+  CheckCircle, 
+  XCircle, 
+  MoreVertical,
+  Edit2,
+  Trash2,
+  ChevronRight,
+  Info,
+  Layers,
+  Briefcase
+} from "lucide-react";
 
 
 const ROLES = ["ADMIN", "FINANCE", "CS", "PENGAJAR", "AKADEMIK"];
@@ -176,78 +195,106 @@ export default function UsersPage() {
   }
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Manajemen User</div>
-          <div className="topbar-subtitle">Kelola akun, hak akses, CS dan Pengajar</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
+             <Users size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Security & Access Control</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Manajemen Personil</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Otorisasi akun dan pengaturan hak akses tim Speaking Partner</p>
         </div>
-        <div className="topbar-actions">
+        <div style={{ display: 'flex', gap: 12 }}>
           {!isAkademik && (
             <>
-              <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate}>⬇ Template CSV</button>
-              <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer" }}>
-                {csvLoading ? "Importing..." : "📥 Import CSV"}
+              <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
+                <Download size={16} /> Template
+              </button>
+              <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", borderRadius: 'var(--radius-full)', margin: 0, display: 'flex', alignItems: 'center' }}>
+                <Upload size={16} style={{ marginRight: 6 }} /> {csvLoading ? "..." : "Import CSV"}
                 <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
               </label>
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => { setMode("bulk"); setEditUser(null); setShowModal(true); }}
-                style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "#818cf8" }}
+                style={{ background: "rgba(99,102,241,0.1)", border: "1px solid var(--ghost-border)", color: "#818cf8", borderRadius: 'var(--radius-full)' }}
               >
-                👥 Tambah Banyak
+                <Layers size={16} /> Bulk Add
               </button>
             </>
           )}
-          <button id="btn-tambah-user" className="btn btn-primary" onClick={openAdd}>+ Tambah User</button>
+          <button id="btn-tambah-user" className="btn btn-primary" onClick={openAdd} style={{ borderRadius: 'var(--radius-full)' }}>
+             <UserPlus size={18} /> Tambah User
+          </button>
         </div>
       </div>
 
-      <div className="page-container">
-        {/* Summary cards */}
-        <div className="summary-grid">
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+        {/* KPI Grid */}
+        <div className="kpi-grid" style={{ marginBottom: 48 }}>
           {summary.map(s => (
-            <div key={s.role} className="summary-card" style={{ cursor: "pointer", border: filterRole === s.role ? `1px solid ${ROLE_COLORS[s.role]}` : "1px solid var(--border-default)" }} onClick={() => setFilterRole(filterRole === s.role ? "" : s.role)}>
-              <label><span className={`badge ${ROLE_BADGE[s.role]}`}>{s.role}</span></label>
-              <div className="value" style={{ color: ROLE_COLORS[s.role] }}>{s.count} aktif</div>
+            <div key={s.role} className="kpi-card" onClick={() => setFilterRole(filterRole === s.role ? "" : s.role)} style={{ cursor: 'pointer', opacity: filterRole && filterRole !== s.role ? 0.5 : 1 }}>
+              <div className="kpi-icon" style={{ color: ROLE_COLORS[s.role] }}><Shield size={24} /></div>
+              <div className="kpi-label">{s.role}</div>
+              <div className="kpi-value">{s.count} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>Staff</span></div>
             </div>
           ))}
-        </div>
-
-        {/* Panduan role */}
-        {!isAkademik && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div className="card-title" style={{ marginBottom: 12 }}>Hak Akses per Role</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12 }}>
-            {[
-              { role: "ADMIN", desc: "Full access — semua fitur + manajemen user" },
-              { role: "FINANCE", desc: "Pemasukan, pengeluaran, invoice, laporan keuangan" },
-              { role: "CS", desc: "Input pemasukan, data siswa, invoice" },
-              { role: "PENGAJAR", desc: "Lihat jadwal kelas dan daftar siswa" },
-              { role: "AKADEMIK", desc: "Kelola siswa, kelas, program, gaji pengajar" },
-            ].map(r => (
-              <div key={r.role} style={{ padding: "10px 14px", background: "var(--bg-elevated)", borderRadius: 10 }}>
-                <span className={`badge ${ROLE_BADGE[r.role] ?? ""}`}>{r.role}</span>
-                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>{r.desc}</p>
-              </div>
-            ))}
+          <div className="kpi-card" onClick={() => setFilterStatus(filterStatus === 'nonaktif' ? '' : 'nonaktif')} style={{ cursor: 'pointer' }}>
+            <div className="kpi-icon" style={{ color: 'var(--text-muted)' }}><XCircle size={24} /></div>
+            <div className="kpi-label">Disabled</div>
+            <div className="kpi-value">{data.filter(u => !u.aktif).length}</div>
           </div>
         </div>
+
+        {/* Access Guide Section */}
+        {!isAkademik && (
+          <div className="card" style={{ padding: '32px', marginBottom: 48, background: 'var(--surface-container-lowest)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+               <Info size={20} style={{ color: 'var(--primary)' }} />
+               <h3 style={{ margin: 0, fontWeight: 800, fontSize: 18 }}>Panduan Otoritas Role</h3>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 16 }}>
+              {[
+                { role: "ADMIN", desc: "Full authority system, audit log, dan pengaturan platform" },
+                { role: "FINANCE", desc: "Pencatatan kas, invoice keluar, dan rekapitulasi laporan" },
+                { role: "CS", desc: "Manajemen leads, pendaftaran siswa, dan operasional harian" },
+                { role: "AKADEMIK", desc: "Manajemen kurikulum, kelas, dan penjadwalan tutor" },
+              ].map(r => (
+                <div key={r.role} style={{ padding: "16px 20px", background: "white", borderRadius: 12, border: '1px solid var(--ghost-border)' }}>
+                  <span className={`badge ${ROLE_BADGE[r.role] ?? ""}`} style={{ fontSize: 10 }}>{r.role}</span>
+                  <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 10, lineHeight: 1.5 }}>{r.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
-        {/* Filter */}
-        <div className="filter-bar">
-          <input type="text" className="form-control" placeholder="🔍 Cari nama atau email..." value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, maxWidth: 280 }} />
-          <select className="form-control" value={filterRole} onChange={e => setFilterRole(e.target.value)}>
-            <option value="">Semua Role</option>
-            {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-          <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-            <option value="">Semua Status</option>
-            <option value="aktif">Aktif</option>
-            <option value="nonaktif">Nonaktif</option>
-          </select>
-          <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(""); setFilterRole(""); setFilterStatus(""); }}>Reset</button>
+        {/* Filter Section */}
+        <div className="card" style={{ padding: '24px 32px', marginBottom: 32 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 280 }}>
+               <Search size={18} style={{ color: "var(--secondary)" }} />
+               <input type="text" className="form-control" placeholder="Cari nama atau email..." value={search} onChange={e => setSearch(e.target.value)} style={{ border: 'none', borderBottom: '1px solid var(--ghost-border)', background: 'transparent', borderRadius: 0, width: '100%' }} />
+            </div>
+            
+            <div style={{ display: 'flex', gap: 12 }}>
+              <select className="form-control" value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ width: 160, padding: '8px 16px', borderRadius: 100 }}>
+                <option value="">Semua Role</option>
+                {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ width: 140, padding: '8px 16px', borderRadius: 100 }}>
+                <option value="">Semua Status</option>
+                <option value="aktif">Aktif</option>
+                <option value="nonaktif">Nonaktif</option>
+              </select>
+            </div>
+
+            <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(""); setFilterRole(""); setFilterStatus(""); }} style={{ borderRadius: 'var(--radius-full)' }}>
+              <RefreshCw size={14} /> Reset
+            </button>
+          </div>
         </div>
 
         {/* Table */}

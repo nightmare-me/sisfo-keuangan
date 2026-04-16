@@ -3,6 +3,22 @@
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { 
+  BarChart2, 
+  FileText, 
+  Table as TableIcon, 
+  TrendingUp, 
+  Tag, 
+  TrendingDown, 
+  Megaphone, 
+  Award,
+  Calendar,
+  Layers,
+  Search,
+  Download,
+  Share2,
+  RefreshCw
+} from "lucide-react";
 
 const PERIOD_OPTIONS = [
   { value:"today", label:"Hari Ini" },
@@ -143,33 +159,70 @@ export default function LaporanPage() {
   const pieData = data?.pengeluaranPerKategori?.map((k:any,i:number)=>({ name: KATEGORI_LABEL[k.kategori]??k.kategori, value: k.total, color: PIE_COLORS[i%PIE_COLORS.length] })) ?? [];
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Laporan Keuangan</div>
-          <div className="topbar-subtitle">Laba/Rugi, breakdown lengkap</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
+             <BarChart2 size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Executive Insights</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Laporan Keuangan</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Analisis mendalam laba/rugi dan performa bisnis</p>
         </div>
-        <div className="topbar-actions">
-          <button className="btn btn-secondary" onClick={exportExcel} disabled={exporting || loading}>📊 Export Excel</button>
-          <button className="btn btn-primary" onClick={exportPDF} disabled={exporting || loading}>📄 Export PDF</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-secondary btn-sm" style={{ borderRadius: 'var(--radius-full)' }} onClick={exportExcel} disabled={exporting || loading}>
+            <TableIcon size={16} /> Export Excel
+          </button>
+          <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={exportPDF} disabled={exporting || loading}>
+            <FileText size={18} /> Export PDF
+          </button>
         </div>
       </div>
 
-      <div className="page-container">
-        {/* Period Selector */}
-        <div style={{ display:"flex", gap:12, alignItems:"center", marginBottom:20, flexWrap:"wrap" }}>
-          <div className="tabs">
-            {PERIOD_OPTIONS.map(opt=>(
-              <button key={opt.value} className={`tab ${period===opt.value?"active":""}`} onClick={()=>setPeriod(opt.value)}>{opt.label}</button>
-            ))}
-          </div>
-          {period==="custom" && (
-            <div style={{ display:"flex",gap:8,alignItems:"center" }}>
-              <input type="date" className="form-control" value={from} onChange={e=>setFrom(e.target.value)} style={{ maxWidth:160 }} />
-              <span style={{ color:"var(--text-muted)" }}>s/d</span>
-              <input type="date" className="form-control" value={to} onChange={e=>setTo(e.target.value)} style={{ maxWidth:160 }} />
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+        {/* Filter Section */}
+        <div className="card" style={{ padding: '24px 32px', marginBottom: 48 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 32 }}>
+            <div className="tabs" style={{ background: 'var(--surface-container-low)', padding: 6, borderRadius: 100 }}>
+              {PERIOD_OPTIONS.map(opt => (
+                <button 
+                  key={opt.value} 
+                  className={`tab ${period === opt.value ? "active" : ""}`} 
+                  onClick={() => setPeriod(opt.value)}
+                  style={{ 
+                    padding: '8px 24px', 
+                    borderRadius: 100, 
+                    fontSize: 13, 
+                    fontWeight: 600,
+                    border: 'none',
+                    background: period === opt.value ? 'white' : 'transparent',
+                    boxShadow: period === opt.value ? 'var(--shadow-sm)' : 'none',
+                    color: period === opt.value ? 'var(--primary)' : 'var(--text-muted)'
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-          )}
+
+            {period === "custom" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <Calendar size={18} style={{ color: "var(--primary)" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="date" className="form-control" value={from} onChange={e => setFrom(e.target.value)} style={{ padding: '8px 16px', borderRadius: 100, fontSize: 13 }} />
+                  <span style={{ color: "var(--text-muted)", fontSize: 13 }}>to</span>
+                  <input type="date" className="form-control" value={to} onChange={e => setTo(e.target.value)} style={{ padding: '8px 16px', borderRadius: 100, fontSize: 13 }} />
+                </div>
+              </div>
+            )}
+
+            <div style={{ flex: 1 }} />
+
+            <button className="btn btn-secondary btn-sm" onClick={fetchData} style={{ borderRadius: 'var(--radius-full)' }}>
+               <RefreshCw size={14} /> Refresh Data
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -179,19 +232,18 @@ export default function LaporanPage() {
         ) : !data ? null : (
           <>
             {/* Laba/Rugi Summary */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:14, marginBottom:20 }}>
+            <div className="kpi-grid" style={{ marginBottom: 48 }}>
               {[
-                { label:"Total Pemasukan", value: data.ringkasan.totalPemasukan, color:"var(--success)", icon:"💰" },
-                { label:"Total Diskon", value: data.ringkasan.totalDiskon, color:"var(--warning)", icon:"🏷" },
-                { label:"Pengeluaran Ops", value: data.ringkasan.totalPengeluaran, color:"var(--danger)", icon:"💸" },
-                { label:"Spent Ads", value: data.ringkasan.totalAds, color:"#f59e0b", icon:"📣" },
-                { label:"Laba Kotor", value: data.ringkasan.labaKotor, color: data.ringkasan.labaKotor>=0?"var(--success)":"var(--danger)", icon:"📈" },
-                { label:"Laba Bersih", value: labaBersih, color: labaBersih>=0?"var(--success)":"var(--danger)", icon:"🏆", big:true },
+                { label:"Total Pemasukan", value: data.ringkasan.totalPemasukan, color:"var(--success)", bg: "var(--success-bg)", icon:<TrendingUp size={24} /> },
+                { label:"Total Diskon", value: data.ringkasan.totalDiskon, color:"var(--warning)", bg: "var(--warning-bg)", icon:<Tag size={24} /> },
+                { label:"Pengeluaran Ops", value: data.ringkasan.totalPengeluaran, color:"var(--danger)", bg: "var(--danger-bg)", icon:<TrendingDown size={24} /> },
+                { label:"Spent Ads", value: data.ringkasan.totalAds, color:"#f59e0b", bg: "rgba(245,158,11,0.1)", icon:<Megaphone size={24} /> },
+                { label:"Laba Bersih", value: labaBersih, color: "var(--on-surface)", bg: "var(--primary-container)", icon:<Award size={24} /> },
               ].map(item=>(
-                <div key={item.label} className="kpi-card" style={{ "--kpi-color":item.color, "--kpi-bg":`${item.color}18` } as any}>
-                  <div className="kpi-icon">{item.icon}</div>
+                <div key={item.label} className="kpi-card" style={{ "--kpi-color":item.color, "--kpi-bg":item.bg } as any}>
+                  <div className="kpi-icon" style={{ color: item.color }}>{item.icon}</div>
                   <div className="kpi-label">{item.label}</div>
-                  <div className="kpi-value" style={{ color:item.color, fontSize: item.big ? 26 : 20 }}>{formatCurrency(item.value)}</div>
+                  <div className="kpi-value">{formatCurrency(item.value)}</div>
                 </div>
               ))}
             </div>

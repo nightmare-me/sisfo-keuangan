@@ -103,21 +103,22 @@ export default function PengajarKelasDetail({ params }: { params: { id: string }
   }
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">{kelas.namaKelas}</div>
-          <div className="topbar-subtitle">{kelas.program?.nama} · {pendaftaran.length} Siswa Terdaftar</div>
+          <h1 className="headline-lg" style={{ marginBottom: 8, fontSize: '2.5rem' }}>{kelas.namaKelas}</h1>
+          <p className="body-lg" style={{ margin: 0 }}>{kelas.program?.nama} · {pendaftaran.length} Siswa Terdaftar</p>
         </div>
-        <div className="topbar-actions">
-           <button className="btn btn-secondary" onClick={() => window.history.back()}>Kembali</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+           <button className="btn btn-secondary" onClick={() => window.history.back()} style={{ borderRadius: 'var(--radius-full)' }}>Kembali</button>
            {kelas.linkGrup && (
-             <a href={kelas.linkGrup.startsWith('http') ? kelas.linkGrup : `https://${kelas.linkGrup}`} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ textDecoration: "none" }}>📱 Buka Grup WA</a>
+             <a href={kelas.linkGrup.startsWith('http') ? kelas.linkGrup : `https://${kelas.linkGrup}`} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ textDecoration: "none", borderRadius: 'var(--radius-full)', display: 'flex', alignItems: 'center' }}>📱 Buka Grup WA</a>
            )}
         </div>
       </div>
 
-      <div className="page-container">
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
         {/* TABS */}
         <div style={{ display: "flex", gap: 10, borderBottom: "1px solid var(--border-default)", marginBottom: 20 }}>
           {["SESI", "INFO", "MATERI", "KENDALA"].map(tab => (

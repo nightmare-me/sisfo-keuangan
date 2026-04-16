@@ -4,6 +4,19 @@ import { useEffect, useState, useRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import Papa from "papaparse";
+import { 
+  TrendingUp, 
+  Activity, 
+  Search, 
+  Plus, 
+  Download, 
+  Trash2, 
+  Megaphone, 
+  Filter,
+  RefreshCw,
+  Calendar,
+  Layers
+} from "lucide-react";
 
 const PLATFORMS = ["GOOGLE","META","TIKTOK","INSTAGRAM","YOUTUBE","LAINNYA"];
 const PLATFORM_COLOR: Record<string,string> = {
@@ -140,45 +153,69 @@ export default function AdsPage() {
   };
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Spent Ads</div>
-          <div className="topbar-subtitle">Lacak pengeluaran iklan per platform</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
+             <Megaphone size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Marketing Performance</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Spent Ads</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Lacak pengeluaran iklan harian per platform</p>
         </div>
-        <div className="topbar-actions">
-          <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate}>⬇ Template CSV</button>
-          <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer" }}>
-            {csvLoading ? "Importing..." : "📥 Import CSV"}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
+            <Download size={16} /> Template
+          </button>
+          <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", borderRadius: 'var(--radius-full)', margin: 0 }}>
+            <Activity size={16} /> {csvLoading ? "Importing..." : "Import CSV"}
             <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
           </label>
-          <button id="btn-tambah-ads" className="btn btn-primary" onClick={()=>setShowModal(true)}>+ Input Ads</button>
+          <button id="btn-tambah-ads" className="btn btn-primary" onClick={()=>setShowModal(true)} style={{ borderRadius: 'var(--radius-full)' }}>
+            <Plus size={18} /> Input Ads
+          </button>
         </div>
       </div>
 
-      <div className="page-container">
-        {/* Summary & Chart */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:16, marginBottom:16 }}>
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            <div className="summary-card">
-              <label>Total Spent Ads</label>
-              <div className="value yellow">{formatCurrency(summary.total)}</div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+        {/* KPI Grid - Top of Content */}
+        <div className="kpi-grid" style={{ marginBottom: 32 }}>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--warning)" }}><TrendingUp size={24} /></div>
+            <div className="kpi-label">Total Spent Ads</div>
+            <div className="kpi-value">{formatCurrency(summary.total)}</div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--info)", "--kpi-bg": "var(--info-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--info)" }}><Layers size={24} /></div>
+            <div className="kpi-label">Jumlah Input</div>
+            <div className="kpi-value">{summary.count} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>records</span></div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)" }}><Activity size={24} /></div>
+            <div className="kpi-label">Active Platforms</div>
+            <div className="kpi-value">{byPlatform.length}</div>
+          </div>
+        </div>
+        {/* Summary Breakdown & Chart */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:32, marginBottom:48 }}>
+          <div className="card" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
+            <div className="card-header" style={{ marginBottom: 24 }}>
+              <div className="card-title" style={{ fontSize: '1.2rem' }}>Pecahan per Platform</div>
             </div>
-            <div className="summary-card">
-              <label>Jumlah Input</label>
-              <div className="value">{summary.count}</div>
-            </div>
-            {/* Platform breakdown list */}
-            <div className="card" style={{ flex:1 }}>
-              <div className="card-title" style={{ marginBottom:12 }}>Per Platform</div>
-              {byPlatform.length===0 ? <p style={{ color:"var(--text-muted)", fontSize:12 }}>Belum ada data</p> :
+            <div style={{ flex: 1 }}>
+              {byPlatform.length===0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+                   <p style={{ fontSize: 13 }}>Belum ada data iklan di periode ini</p>
+                </div>
+              ) :
                 byPlatform.map(p=>(
-                  <div key={p.platform} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:"1px solid var(--border-default)" }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <div style={{ width:10, height:10, borderRadius:"50%", background: PLATFORM_COLOR[p.platform]??"#6366f1" }} />
-                      <span style={{ fontSize:13, fontWeight:600 }}>{p.platform}</span>
+                  <div key={p.platform} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 0", borderBottom:"1px solid var(--ghost-border)" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                      <div style={{ width:12, height:12, borderRadius:"50%", background: PLATFORM_COLOR[p.platform]??"#6366f1" }} />
+                      <span style={{ fontSize:14, fontWeight:600, color: 'var(--text-primary)' }}>{p.platform}</span>
                     </div>
-                    <span style={{ fontSize:13, fontWeight:700, color:"var(--warning)" }}>{formatCurrency(p._sum.jumlah??0)}</span>
+                    <span style={{ fontSize:14, fontWeight:700, color: "var(--on-surface)" }}>{formatCurrency(p._sum.jumlah??0)}</span>
                   </div>
                 ))
               }
@@ -224,19 +261,34 @@ export default function AdsPage() {
           </div>
         </div>
 
-        {/* Filter */}
-        <div className="filter-bar">
-          <input type="date" className="form-control" value={filter.from} onChange={e=>setFilter(f=>({...f,from:e.target.value}))} style={{ maxWidth:160 }} />
-          <span style={{ color:"var(--text-muted)", fontSize:13 }}>s/d</span>
-          <input type="date" className="form-control" value={filter.to} onChange={e=>setFilter(f=>({...f,to:e.target.value}))} style={{ maxWidth:160 }} />
-          <select className="form-control" value={filter.platform} onChange={e=>setFilter(f=>({...f,platform:e.target.value}))}>
-            <option value="">Semua Platform</option>
-            {PLATFORMS.map(p=><option key={p} value={p}>{p}</option>)}
-          </select>
-          <button className="btn btn-secondary btn-sm" onClick={()=>setFilter({from:"",to:"",platform:""})}>Reset</button>
+        {/* Filter Section */}
+        <div className="card" style={{ padding: '24px 32px', marginBottom: 32 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Calendar size={18} style={{ color: "var(--primary)" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="date" className="form-control" value={filter.from} onChange={e=>setFilter(f=>({...f,from:e.target.value}))} style={{ maxWidth:160, padding: '8px 12px' }} />
+                <span style={{ color:"var(--text-muted)", fontSize:13 }}>s/d</span>
+                <input type="date" className="form-control" value={filter.to} onChange={e=>setFilter(f=>({...f,to:e.target.value}))} style={{ maxWidth:160, padding: '8px 12px' }} />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 200 }}>
+              <Filter size={18} style={{ color: "var(--primary)" }} />
+              <select className="form-control" value={filter.platform} onChange={e=>setFilter(f=>({...f,platform:e.target.value}))} style={{ padding: '8px 12px' }}>
+                <option value="">Semua Platform</option>
+                {PLATFORMS.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+
+            <button className="btn btn-secondary btn-sm" onClick={()=>setFilter({from:"",to:"",platform:""})} style={{ borderRadius: 'var(--radius-full)' }}>
+              <RefreshCw size={14} /> Reset Filter
+            </button>
+          </div>
         </div>
 
         {/* Table */}
+        {/* Table Section */}
         <div className="table-wrapper">
           <table>
             <thead>
@@ -245,34 +297,37 @@ export default function AdsPage() {
                 <th>Platform</th>
                 <th>Keterangan</th>
                 <th>Dibuat Oleh</th>
-                <th className="text-right">Jumlah</th>
-                <th>Aksi</th>
+                <th className="text-right">Jumlah Spent</th>
+                <th className="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ textAlign:"center",padding:32,color:"var(--text-muted)" }}>Loading...</td></tr>
+                <tr><td colSpan={6} style={{ textAlign:"center",padding:48,color:"var(--text-muted)" }}>Loading data...</td></tr>
               ) : data.length===0 ? (
                 <tr><td colSpan={6}>
                   <div className="empty-state">
-                    <div className="empty-state-icon">📣</div>
-                    <h3>Belum ada data iklan</h3>
-                    <p>Klik "+ Input Ads" untuk mencatat pengeluaran iklan</p>
+                    <div className="empty-state-icon"><Megaphone size={48} /></div>
+                    <h3 className="title-lg">Belum ada data iklan</h3>
+                    <p>Klik "+ Input Ads" untuk mencatat pengeluaran iklan Anda</p>
                   </div>
                 </td></tr>
               ) : data.map(item=>(
                 <tr key={item.id}>
-                  <td style={{ fontSize:12,color:"var(--text-muted)",whiteSpace:"nowrap" }}>{formatDate(item.tanggal,"dd MMM yyyy")}</td>
+                  <td style={{ fontSize:14, color:"var(--text-muted)", whiteSpace:"nowrap" }}>{formatDate(item.tanggal,"dd MMM yyyy")}</td>
                   <td>
-                    <span style={{ display:"inline-flex",alignItems:"center",gap:6,padding:"3px 10px",borderRadius:100,fontSize:12,fontWeight:700,background:`${PLATFORM_COLOR[item.platform]}20`,color:PLATFORM_COLOR[item.platform]??"var(--text-primary)" }}>
-                      ● {item.platform}
+                    <span style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"6px 14px", borderRadius:100, fontSize:12, fontWeight:700, background:`${PLATFORM_COLOR[item.platform]}15`, color:PLATFORM_COLOR[item.platform]??"var(--text-primary)" }}>
+                      <span style={{ width:6, height:6, borderRadius:"50%", background: PLATFORM_COLOR[item.platform] }} />
+                      {item.platform}
                     </span>
                   </td>
-                  <td style={{ color:"var(--text-secondary)",fontSize:13 }}>{item.keterangan||"—"}</td>
-                  <td style={{ fontSize:12,color:"var(--text-muted)" }}>{item.user?.name??"—"}</td>
-                  <td className="text-right" style={{ fontWeight:700,color:"var(--warning)" }}>{formatCurrency(item.jumlah)}</td>
-                  <td>
-                    <button className="btn btn-danger btn-sm" onClick={()=>handleDelete(item.id)}>🗑</button>
+                  <td style={{ color:"var(--text-secondary)", fontSize:14 }}>{item.keterangan||"—"}</td>
+                  <td style={{ fontSize:14, color:"var(--text-muted)" }}>{item.user?.name??"—"}</td>
+                  <td className="text-right" style={{ fontWeight:800, color: "var(--on-surface)", fontSize: 16 }}>{formatCurrency(item.jumlah)}</td>
+                  <td className="text-center">
+                    <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
+                      <Trash2 size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}

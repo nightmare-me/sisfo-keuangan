@@ -2,6 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  RefreshCw, 
+  Archive, 
+  AlertTriangle, 
+  AlertCircle,
+  Package,
+  ArrowRight,
+  MoreVertical,
+  Edit2,
+  Trash2,
+  Boxes,
+  Zap
+} from "lucide-react";
 
 const KONDISI_BADGE: Record<string,string> = { BAIK:"badge-success", RUSAK_RINGAN:"badge-warning", RUSAK_BERAT:"badge-danger" };
 
@@ -27,6 +43,9 @@ export default function InventarisPage() {
   }
 
   useEffect(()=>{ fetchData(); },[search, kondisiFilter, lowStockOnly]);
+
+  const totalNilai = data.reduce((acc, item) => acc + (item.hargaBeli || 0) * (item.jumlah || 0), 0);
+  const totalItemUnique = data.length;
 
   function openEdit(item: any) {
     setEditItem(item);
@@ -54,41 +73,79 @@ export default function InventarisPage() {
   }
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Inventaris</div>
-          <div className="topbar-subtitle">Kelola aset dan perlengkapan lembaga</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--warning)", marginBottom: 8 }}>
+             <Archive size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Administrative Assets</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Daftar Inventaris</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Monitoring stok perlengkapan dan manajemen aset lembaga operasional</p>
         </div>
-        <div className="topbar-actions">
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           {lowStockCount > 0 && (
-            <span className="badge badge-danger" style={{ padding:"6px 12px" }}>⚠ {lowStockCount} stok menipis</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: '100px', fontSize: 13, fontWeight: 700, border: '1px solid rgba(239,68,68,0.2)' }}>
+              <AlertCircle size={14} /> {lowStockCount} Stok Menipis
+            </div>
           )}
-          <button id="btn-tambah-inventaris" className="btn btn-primary" onClick={()=>{ setEditItem(null); setShowModal(true); }}>+ Tambah Barang</button>
+          <button id="btn-tambah-inventaris" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>{ setEditItem(null); setShowModal(true); }}>
+            <Plus size={18} /> Tambah Barang
+          </button>
         </div>
       </div>
 
-      <div className="page-container">
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+        {/* KPI Grid */}
+        <div className="kpi-grid" style={{ marginBottom: 48 }}>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--primary)" }}><Archive size={24} /></div>
+            <div className="kpi-label">Jumlah Aset</div>
+            <div className="kpi-value">{totalItemUnique} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>Item</span></div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--danger)" }}><AlertCircle size={24} /></div>
+            <div className="kpi-label">Stok Menipis</div>
+            <div className="kpi-value">{lowStockCount}</div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)" }}><Zap size={24} /></div>
+            <div className="kpi-label">Estimasi Nilai</div>
+            <div className="kpi-value">{formatCurrency(totalNilai)}</div>
+          </div>
+        </div>
+
         {lowStockCount > 0 && (
-          <div className="alert alert-warning">
-            ⚠️ Ada {lowStockCount} barang dengan stok di bawah minimum. Segera lakukan pengadaan.
+          <div className="card" style={{ marginBottom: 32, background: 'linear-gradient(to right, rgba(239,68,68,0.05), transparent)', borderLeft: '4px solid var(--danger)', padding: '16px 24px' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--danger)' }}>
+               <AlertTriangle size={20} />
+               <span style={{ fontWeight: 600 }}>Peringatan: {lowStockCount} item inventaris berada di bawah ambang batas stok minimum.</span>
+            </div>
           </div>
         )}
 
-        {/* Filter */}
-        <div className="filter-bar">
-          <input type="text" className="form-control" placeholder="🔍 Cari nama barang..." value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1, maxWidth:280 }} />
-          <select className="form-control" value={kondisiFilter} onChange={e=>setKondisiFilter(e.target.value)}>
-            <option value="">Semua Kondisi</option>
-            <option value="BAIK">Baik</option>
-            <option value="RUSAK_RINGAN">Rusak Ringan</option>
-            <option value="RUSAK_BERAT">Rusak Berat</option>
-          </select>
-          <label style={{ display:"flex",alignItems:"center",gap:8,fontSize:13,color:"var(--text-secondary)",cursor:"pointer",whiteSpace:"nowrap" }}>
-            <input type="checkbox" checked={lowStockOnly} onChange={e=>setLowStockOnly(e.target.checked)} />
-            Stok Menipis Saja
-          </label>
-          <button className="btn btn-secondary btn-sm" onClick={()=>{ setSearch(""); setKondisiFilter(""); setLowStockOnly(false); }}>Reset</button>
+        {/* Filter Section */}
+        <div className="card" style={{ padding: '20px 24px', marginBottom: 32 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 250 }}>
+               <Search size={18} style={{ color: "var(--secondary)" }} />
+               <input type="text" className="form-control" placeholder="Cari nama barang..." value={search} onChange={e=>setSearch(e.target.value)} style={{ border: 'none', borderBottom: '1px solid var(--ghost-border)', background: 'transparent', borderRadius: 0 }} />
+            </div>
+            <select className="form-control" value={kondisiFilter} onChange={e=>setKondisiFilter(e.target.value)} style={{ width: 180, padding: '8px 16px', borderRadius: 100 }}>
+              <option value="">Semua Kondisi</option>
+              <option value="BAIK">Kondisi Baik</option>
+              <option value="RUSAK_RINGAN">Rusak Ringan</option>
+              <option value="RUSAK_BERAT">Rusak Berat</option>
+            </select>
+            <label style={{ display:"flex",alignItems:"center",gap:10,fontSize:14,color:"var(--on-surface)",cursor:"pointer",whiteSpace:"nowrap", fontWeight: 600 }}>
+              <input type="checkbox" checked={lowStockOnly} onChange={e=>setLowStockOnly(e.target.checked)} style={{ width: 18, height: 18 }} />
+              Hanya Stok Menipis
+            </label>
+            <button className="btn btn-secondary btn-sm" onClick={()=>{ setSearch(""); setKondisiFilter(""); setLowStockOnly(false); }} style={{ borderRadius: 'var(--radius-full)' }}>
+              <RefreshCw size={14} /> Reset
+            </button>
+          </div>
         </div>
 
         {/* Table */}

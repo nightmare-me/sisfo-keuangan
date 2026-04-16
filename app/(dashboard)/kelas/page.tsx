@@ -1,8 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { formatDate } from "@/lib/utils";
+import { 
+  BookOpen, 
+  Plus, 
+  Search, 
+  Filter, 
+  RefreshCw, 
+  User, 
+  Calendar, 
+  Users, 
+  ArrowRight,
+  ExternalLink,
+  ChevronRight,
+  Edit2,
+  Trash2,
+  Clock,
+  Layers,
+  MoreVertical,
+  ChevronLeft,
+  X,
+  Link as LinkIcon,
+  CheckCircle,
+  AlertCircle
+} from "lucide-react";
 
 const TIPE = ["REGULAR", "PRIVATE", "SEMI_PRIVATE"];
 const STATUS_KELAS = ["AKTIF", "SELESAI", "DIJADWALKAN"];
@@ -169,31 +192,43 @@ export default function KelasPage() {
   return (
     <div style={{ display: "flex", height: "100%", gap: 0 }}>
       {/* ── Kolom kiri: Daftar Kelas ── */}
-      <div style={{ flex: selectedKelas ? "0 0 420px" : "1", transition: "flex 0.3s", overflow: "auto" }}>
-        <div className="topbar">
+      <div className="page-container" style={{ flex: selectedKelas ? "0 0 450px" : "1", transition: "flex 0.4s cubic-bezier(0.4, 0, 0.2, 1)", display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0, borderRight: selectedKelas ? '1px solid var(--ghost-border)' : 'none' }}>
+        {/* Header Ala Dashboard */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
           <div>
-            <div className="topbar-title">Manajemen Kelas</div>
-            <div className="topbar-subtitle">{data.length} kelas tersedia</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
+               <BookOpen size={18} />
+               <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Academic Management</span>
+            </div>
+            <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Manajemen Kelas</h1>
+            <p className="body-lg" style={{ margin: 0 }}>Kelola alokasi {data.length} kelas dan tutor pengajar</p>
           </div>
-          <div className="topbar-actions">
+          <div style={{ display: 'flex', gap: 12 }}>
             {canManage && (
-              <button id="btn-tambah-kelas" className="btn btn-primary" onClick={openAdd}>+ Tambah Kelas</button>
+              <button id="btn-tambah-kelas" className="btn btn-primary" onClick={openAdd} style={{ borderRadius: 'var(--radius-full)' }}>
+                <Plus size={18} /> Buat Kelas
+              </button>
             )}
           </div>
         </div>
 
-        <div className="page-container">
-          {/* Filter */}
-          <div className="filter-bar">
-            <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-              <option value="">Semua Status</option>
-              {STATUS_KELAS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <select className="form-control" value={filterTipe} onChange={e => setFilterTipe(e.target.value)}>
-              <option value="">Semua Tipe</option>
-              {TIPE.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <button className="btn btn-secondary btn-sm" onClick={() => { setFilterStatus(""); setFilterTipe(""); }}>Reset</button>
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64, paddingRight: 8 }}>
+          {/* Filter Section */}
+          <div className="card" style={{ padding: '16px 20px', marginBottom: 32 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+              <Filter size={16} style={{ color: "var(--primary)" }} />
+              <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ flex: 1, minWidth: 120, padding: '6px 10px' }}>
+                <option value="">Semua Status</option>
+                {STATUS_KELAS.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <select className="form-control" value={filterTipe} onChange={e => setFilterTipe(e.target.value)} style={{ flex: 1, minWidth: 120, padding: '6px 10px' }}>
+                <option value="">Semua Tipe</option>
+                {TIPE.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setFilterStatus(""); setFilterTipe(""); }} style={{ borderRadius: 'var(--radius-full)' }}>
+                <RefreshCw size={14} />
+              </button>
+            </div>
           </div>
 
           {/* Grid Cards */}
@@ -203,9 +238,9 @@ export default function KelasPage() {
             </div>
           ) : data.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-icon">📚</div>
-              <h3>Belum ada kelas</h3>
-              <p>Klik "+ Tambah Kelas" untuk membuat kelas baru</p>
+              <div className="empty-state-icon"><BookOpen size={48} /></div>
+              <h3 className="title-lg">Belum ada kelas</h3>
+              <p>Mulai dengan membuat kelas baru di periode ini</p>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: selectedKelas ? "1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap: 16 }}>
@@ -216,62 +251,49 @@ export default function KelasPage() {
                 return (
                   <div
                     key={kelas.id}
-                    className="card"
-                    style={{ cursor: "pointer", border: isSelected ? "2px solid var(--brand-primary)" : "1px solid var(--border-default)", transition: "all 0.2s", position: "relative" }}
+                    className={`card ${isSelected ? 'active' : ''}`}
+                    style={{ cursor: "pointer", padding: '20px', border: isSelected ? "2px solid var(--primary)" : "1px solid var(--ghost-border)", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative", transform: isSelected ? 'scale(1.02)' : 'none', boxShadow: isSelected ? 'var(--shadow-lg)' : 'none', background: isSelected ? 'white' : 'transparent' }}
                     onClick={() => { if (isSelected) { setSelectedKelas(null); } else { loadDetail(kelas); } }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>{kelas.namaKelas}</div>
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{kelas.program?.nama ?? "—"}</div>
+                        <div style={{ fontWeight: 800, fontSize: 16, color: "var(--on-surface)", marginBottom: 4 }}>{kelas.namaKelas}</div>
+                        <div style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>{kelas.program?.nama ?? "—"}</div>
                       </div>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                        <span className={`badge ${TIPE_BADGE[kelas.program?.tipe] ?? "badge-muted"}`}>{kelas.program?.tipe ?? "—"}</span>
-                        <span className={`badge ${STATUS_BADGE[kelas.status] ?? "badge-muted"}`}>{kelas.status}</span>
+                        <span className={`badge ${TIPE_BADGE[kelas.program?.tipe] ?? "badge-muted"}`} style={{ fontSize: 10, padding: '4px 8px' }}>{kelas.program?.tipe ?? "—"}</span>
+                        <span className={`badge ${STATUS_BADGE[kelas.status] ?? "badge-muted"}`} style={{ fontSize: 10, padding: '4px 8px' }}>{kelas.status}</span>
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, fontSize: 13, color: "var(--text-secondary)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>👨‍🏫 Pengajar</span>
-                        <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{kelas.pengajar?.name ?? "Belum ditentukan"}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 14, color: "var(--text-secondary)" }}>
+                      <div style={{ display: "flex", itemsCenter: "center", gap: 10 }}>
+                        <User size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                        <span style={{ fontWeight: 600, color: "var(--on-surface)", fontSize: 13 }}>{kelas.pengajar?.name ?? "Belum ada pengajar"}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>📅 Jadwal</span>
-                        <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{kelas.hari ? `${kelas.hari}, ${kelas.jam}` : kelas.jadwal || "—"}</span>
+                      <div style={{ display: "flex", itemsCenter: "center", gap: 10 }}>
+                        <Clock size={14} style={{ color: 'var(--secondary)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 13 }}>{kelas.hari ? `${kelas.hari}, ${kelas.jam}` : kelas.jadwal || "Jadwal belum set"}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span>👥 Siswa</span>
-                        <span style={{ fontWeight: 700, color: full ? "var(--danger)" : "var(--success)" }}>
-                          {kelas._count?.pendaftaran ?? 0} / {kelas.kapasitas}
-                          {full && <span style={{ fontSize: 10, marginLeft: 4 }}>PENUH</span>}
-                        </span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          <Users size={14} style={{ color: 'var(--info)' }} />
+                          <span style={{ fontSize: 13, fontWeight: 700, color: full ? "var(--danger)" : "var(--on-surface)" }}>
+                            {kelas._count?.pendaftaran ?? 0} / {kelas.kapasitas}
+                          </span>
+                        </div>
+                        {full && <span className="badge badge-danger" style={{ fontSize: 9 }}>PENUH</span>}
                       </div>
                     </div>
 
                     {/* Progress bar kapasitas */}
-                    <div style={{ marginTop: 10, height: 5, background: "var(--bg-elevated)", borderRadius: 3, overflow: "hidden" }}>
-                      <div style={{ height: "100%", borderRadius: 3, background: full ? "var(--danger)" : "var(--success)", width: `${pct}%`, transition: "width 0.5s" }} />
+                    <div style={{ marginTop: 16, height: 6, background: "var(--surface-container-low)", borderRadius: 100, overflow: "hidden" }}>
+                      <div style={{ height: "100%", borderRadius: 100, background: full ? "var(--danger)" : "var(--primary)", width: `${pct}%`, transition: "width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
                     </div>
 
-                    {/* Action buttons (hanya saat tidak dipilih) */}
-                    {canManage && !isSelected && (
-                      <div style={{ display: "flex", gap: 6, marginTop: 12 }} onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => openEdit(kelas)}
-                          style={{ flex: 1, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", color: "#818cf8", borderRadius: 6, padding: "5px 0", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
-                        >✏️ Edit</button>
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleDeleteKelas(kelas)}
-                            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontSize: 12 }}
-                          >🗑️</button>
-                        )}
-                      </div>
-                    )}
-                    {isSelected && (
-                      <div style={{ marginTop: 8, fontSize: 12, color: "var(--brand-primary)", fontWeight: 600, textAlign: "center" }}>
-                        ← Klik untuk tutup detail
+                    {!isSelected && (
+                      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+                        <ChevronRight size={18} style={{ color: 'var(--ghost-border)' }} />
                       </div>
                     )}
                   </div>
@@ -284,27 +306,57 @@ export default function KelasPage() {
 
       {/* ── Panel Kanan: Detail + Daftar Siswa ── */}
       {selectedKelas && (
-        <div style={{ flex: 1, borderLeft: "1px solid var(--border-default)", overflowY: "auto", background: "var(--bg-secondary)" }}>
-          <div style={{ padding: "24px 24px 0" }}>
+        <div style={{ flex: 1, overflowY: "auto", background: "var(--surface-container-lowest)", transition: "all 0.4s ease" }}>
+          <div style={{ padding: "48px 48px 0" }}>
             {/* Header detail */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
               <div>
-                <div style={{ fontWeight: 800, fontSize: 20, color: "var(--text-primary)" }}>{selectedKelas.namaKelas}</div>
-                <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>{selectedKelas.program?.nama} · {selectedKelas.program?.tipe}</div>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <button onClick={() => setSelectedKelas(null)} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%' }}><ChevronLeft size={18} /></button>
+                  <div>
+                    <h2 style={{ fontWeight: 800, fontSize: 24, color: "var(--on-surface)", margin: 0 }}>{selectedKelas.namaKelas}</h2>
+                    <div style={{ fontSize: 14, color: "var(--text-muted)", marginTop: 4, display: 'flex', gap: 8, alignItems: 'center' }}>
+                       <Layers size={14} /> {selectedKelas.program?.nama} · {selectedKelas.program?.tipe}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 {canManage && (
-                  <select
-                    className="form-control"
-                    style={{ fontSize: 12, padding: "4px 8px" }}
-                    value={selectedKelas.status}
-                    onChange={e => updateStatus(selectedKelas, e.target.value)}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    {STATUS_KELAS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                   <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn-secondary btn-icon" onClick={() => openEdit(selectedKelas)} title="Edit Kelas"><Edit2 size={16} /></button>
+                      <select
+                        className="form-control"
+                        style={{ fontSize: 12, padding: "8px 16px", borderRadius: 100, border: '1px solid var(--ghost-border)' }}
+                        value={selectedKelas.status}
+                        onChange={e => updateStatus(selectedKelas, e.target.value)}
+                      >
+                        {STATUS_KELAS.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                   </div>
                 )}
-                <button onClick={() => setSelectedKelas(null)} style={{ background: "transparent", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted)" }}>✕</button>
+                <button onClick={() => setSelectedKelas(null)} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%' }}><X size={18} /></button>
+              </div>
+            </div>
+
+            {/* Info Grid */}
+            <div className="card" style={{ padding: '32px', marginBottom: 48, background: 'white' }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 32 }}>
+                {[
+                  { label: "Pengajar / Tutor", value: selectedKelas.pengajar?.name ?? "Belum ditentukan", icon: <User size={16} /> },
+                  { label: "Jadwal Belajar", value: selectedKelas.hari ? `${selectedKelas.hari}, ${selectedKelas.jam || "—"}` : selectedKelas.jadwal || "—", icon: <Clock size={16} /> },
+                  { label: "Kapasitas", value: `${pendaftaranList.length} / ${selectedKelas.kapasitas} siswa`, icon: <Users size={16} /> },
+                  { label: "WA Group", value: selectedKelas.linkGrup ? <a href={selectedKelas.linkGrup.startsWith('http') ? selectedKelas.linkGrup : `https://${selectedKelas.linkGrup}`} target="_blank" rel="noreferrer" style={{color: "var(--primary)", textDecoration: "underline", display: 'flex', alignItems: 'center', gap: 6}}>Join 🚀</a> : "—", icon: <LinkIcon size={16} /> },
+                  { label: "Waktu Mulai", value: selectedKelas.tanggalMulai ? formatDate(selectedKelas.tanggalMulai) : "—", icon: <Calendar size={16} /> },
+                  { label: "Durasi Program", value: { "2_MINGGU": "2 Minggu", "1_BULAN": "1 Bulan", "3_BULAN": "3 Bulan", "6_BULAN": "6 Bulan" }[selectedKelas.durasi as string] ?? selectedKelas.durasi ?? "—", icon: <Layers size={16} /> },
+                ].map(item => (
+                  <div key={item.label}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {item.icon} {item.label}
+                    </div>
+                    <div style={{ fontWeight: 800, color: "var(--on-surface)", fontSize: 15 }}>{item.value}</div>
+                  </div>
+                ))}
               </div>
             </div>
 

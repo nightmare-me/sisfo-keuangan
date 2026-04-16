@@ -22,15 +22,16 @@ export default function PengajarDashboard() {
   }, []);
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Halo, {userName}! 👋</div>
-          <div className="topbar-subtitle">Selamat datang di Dashboard Pengajar</div>
+          <h1 className="headline-lg" style={{ marginBottom: 8, fontSize: '2.5rem' }}>Halo, {userName}! 👋</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Selamat datang di Dashboard Pengajar</p>
         </div>
       </div>
 
-      <div className="page-container">
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
         <h2 style={{ fontSize: 18, marginBottom: 16 }}>Daftar Kelas Aktif (Kelas Saya)</h2>
         
         {loading ? (

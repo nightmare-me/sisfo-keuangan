@@ -3,6 +3,21 @@
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { formatDate } from "@/lib/utils";
+import { 
+  Users, 
+  UserPlus, 
+  Download, 
+  Upload, 
+  Search, 
+  Filter, 
+  RefreshCw, 
+  MoreHorizontal, 
+  Edit3, 
+  Trash2,
+  CheckCircle,
+  XCircle,
+  GraduationCap
+} from "lucide-react";
 
 const STATUS_OPTIONS = ["AKTIF","TIDAK_AKTIF","ALUMNI"];
 const STATUS_BADGE: Record<string,string> = { AKTIF:"badge-success", TIDAK_AKTIF:"badge-danger", ALUMNI:"badge-muted" };
@@ -131,116 +146,141 @@ export default function SiswaPage() {
   }
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Manajemen Siswa</div>
-          <div className="topbar-subtitle">Total {total} siswa terdaftar</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
+             <Users size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Student Administration</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Manajemen Siswa</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Kelola data profiling dan status akademik {total} siswa</p>
         </div>
-        <div className="topbar-actions">
-          <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate}>⬇ Template CSV</button>
-          <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer" }}>
-            {csvLoading ? "Importing..." : "📥 Import CSV"}
-            <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
+            <Download size={16} /> Template
+          </button>
+          <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", borderRadius: 'var(--radius-full)', margin: 0 }}>
+             <Upload size={16} /> {csvLoading ? "Importing..." : "Import CSV"}
+             <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
           </label>
-          <button id="btn-tambah-siswa" className="btn btn-primary" onClick={openAdd}>+ Tambah Siswa</button>
+          <button id="btn-tambah-siswa" className="btn btn-primary" onClick={openAdd} style={{ borderRadius: 'var(--radius-full)' }}>
+            <UserPlus size={18} /> Tambah Siswa
+          </button>
         </div>
       </div>
 
-      <div className="page-container">
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
         {/* Info banner untuk CS */}
         {isCS && (
-          <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 13, color: "#818cf8", display: "flex", alignItems: "center", gap: 8 }}>
-            <span>🎯</span>
-            <span>Menampilkan siswa yang pernah kamu tangani. Siswa baru tanpa transaksi belum muncul di sini.</span>
+          <div style={{ background: "var(--primary-container)", borderRadius: 'var(--radius-xl)', padding: "20px 32px", marginBottom: 32, fontSize: 14, color: "var(--on-primary-container)", display: "flex", alignItems: "center", gap: 16, boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ background: 'white', padding: 8, borderRadius: '50%' }}><Users size={20} /></div>
+            <span><strong>Portal CS:</strong> Menampilkan siswa yang sedang/pernah anda tangani. Data alumni atau siswa baru tanpa transaksi mungkin dibatasi.</span>
           </div>
         )}
-        {/* Stats */}
-        <div className="summary-grid">
-          {STATUS_OPTIONS.map(s=>(
-            <div key={s} className="summary-card" style={{ cursor:"pointer", border: statusFilter===s?"1px solid var(--brand-primary)":"1px solid var(--border-default)" }} onClick={()=>setStatusFilter(statusFilter===s?"":s)}>
-              <label>{s}</label>
-              <div className="value">{data.filter(d=>d.status===s).length}</div>
+
+        {/* KPI Grid for Status */}
+        <div className="kpi-grid" style={{ marginBottom: 48 }}>
+          <div className="kpi-card" onClick={()=>setStatusFilter(statusFilter==="AKTIF"?"":"AKTIF")} style={{ cursor:'pointer', "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)" }}><CheckCircle size={24} /></div>
+            <div className="kpi-label">Siswa Aktif</div>
+            <div className="kpi-value">{data.filter(d=>d.status==="AKTIF").length}</div>
+          </div>
+          <div className="kpi-card" onClick={()=>setStatusFilter(statusFilter==="TIDAK_AKTIF"?"":"TIDAK_AKTIF")} style={{ cursor:'pointer', "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--danger)" }}><XCircle size={24} /></div>
+            <div className="kpi-label">Tidak Aktif</div>
+            <div className="kpi-value">{data.filter(d=>d.status==="TIDAK_AKTIF").length}</div>
+          </div>
+          <div className="kpi-card" onClick={()=>setStatusFilter(statusFilter==="ALUMNI"?"":"ALUMNI")} style={{ cursor:'pointer', "--kpi-color": "var(--secondary)", "--kpi-bg": "var(--surface-container-low)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--secondary)" }}><GraduationCap size={24} /></div>
+            <div className="kpi-label">Total Alumni</div>
+            <div className="kpi-value">{data.filter(d=>d.status==="ALUMNI").length}</div>
+          </div>
+        </div>
+
+        {/* Filter Section */}
+        <div className="card" style={{ padding: '24px 32px', marginBottom: 32 }}>
+          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:24 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:16, flex:1, minWidth:300 }}>
+              <Search size={20} style={{ color:'var(--secondary)' }} />
+              <input type="text" className="form-control" placeholder="Cari nama, no siswa, atau telepon..." value={search} onChange={e=>{setSearch(e.target.value); setPage(1);}} style={{ border:'none', borderBottom:'1px solid var(--ghost-border)', background:'transparent', borderRadius:0 }} />
             </div>
-          ))}
+            
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <Filter size={18} style={{ color:'var(--primary)' }} />
+              <select className="form-control" value={statusFilter} onChange={e=>{setStatusFilter(e.target.value); setPage(1);}} style={{ width:160, padding:'8px 12px' }}>
+                <option value="">Semua Status</option>
+                {STATUS_OPTIONS.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
+            <button className="btn btn-secondary btn-sm" onClick={()=>{ setSearch(""); setStatusFilter(""); }} style={{ borderRadius:'var(--radius-full)' }}>
+              <RefreshCw size={14} /> Reset
+            </button>
+          </div>
         </div>
 
-        {/* Filter */}
-        <div className="filter-bar">
-          <input type="text" className="form-control" placeholder="🔍 Cari nama, no siswa, telepon..." value={search} onChange={e=>{setSearch(e.target.value); setPage(1);}} style={{ flex:1, maxWidth:320 }} />
-          <select className="form-control" value={statusFilter} onChange={e=>{setStatusFilter(e.target.value); setPage(1);}}>
-            <option value="">Semua Status</option>
-            {STATUS_OPTIONS.map(s=><option key={s} value={s}>{s}</option>)}
-          </select>
-          <button className="btn btn-secondary btn-sm" onClick={()=>{ setSearch(""); setStatusFilter(""); }}>Reset</button>
-        </div>
-
-        {/* Table */}
+        {/* Table Section */}
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
                 <th>No Siswa</th>
-                <th>Nama</th>
+                <th>Nama Lengkap</th>
                 <th>Telepon</th>
-                <th>Email</th>
                 <th>Kelas Aktif</th>
-                <th>Tanggal Daftar</th>
+                <th>Tgl Daftar</th>
                 <th>Status</th>
-                <th style={{ width: 110 }}>Aksi</th>
+                <th className="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ textAlign:"center",padding:32,color:"var(--text-muted)" }}>Loading...</td></tr>
+                <tr><td colSpan={7} style={{ textAlign:"center",padding:48,color:"var(--text-muted)" }}>Loading data...</td></tr>
               ) : data.length===0 ? (
-                <tr><td colSpan={8}>
+                <tr><td colSpan={7}>
                   <div className="empty-state">
-                    <div className="empty-state-icon">👨‍🎓</div>
-                    <h3>Belum ada data siswa</h3>
-                    <p>Klik "+ Tambah Siswa" atau import CSV untuk mendaftarkan siswa</p>
+                    <div className="empty-state-icon"><Users size={48} /></div>
+                    <h3 className="title-lg">Belum ada data siswa</h3>
+                    <p>Mulai dengan menambahkan siswa baru atau import dari CSV</p>
                   </div>
                 </td></tr>
               ) : data.map(s=>(
                 <tr key={s.id}>
-                  <td style={{ fontFamily:"monospace",fontSize:12,color:"var(--text-muted)" }}>{s.noSiswa}</td>
-                  <td style={{ fontWeight:600 }}>{s.nama}</td>
-                  <td style={{ fontSize:13 }}>{s.telepon||"—"}</td>
-                  <td style={{ fontSize:12,color:"var(--text-muted)" }}>{s.email||"—"}</td>
+                  <td style={{ fontFamily:"monospace", fontSize:12, color:"var(--text-muted)" }}>{s.noSiswa}</td>
+                  <td style={{ fontWeight:700, color: 'var(--on-surface)' }}>{s.nama}</td>
+                  <td style={{ fontSize:14 }}>{s.telepon||"—"}</td>
                   <td>
                     {s.pendaftaran?.length>0 ? (
-                      <div style={{ display:"flex",flexDirection:"column",gap:2 }}>
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                         {s.pendaftaran.slice(0,2).map((p:any)=>(
-                          <span key={p.id} className="badge badge-primary" style={{ fontSize:10 }}>{p.kelas?.namaKelas}</span>
+                          <span key={p.id} className="badge badge-info" style={{ fontSize:10, padding: '4px 10px' }}>{p.kelas?.namaKelas}</span>
                         ))}
-                        {s.pendaftaran.length>2 && <span style={{ fontSize:11,color:"var(--text-muted)" }}>+{s.pendaftaran.length-2} lagi</span>}
+                        {s.pendaftaran.length>2 && <span style={{ fontSize:11, color:"var(--text-muted)", alignSelf:'center' }}>+{s.pendaftaran.length-2}</span>}
                       </div>
-                    ) : <span style={{ color:"var(--text-muted)",fontSize:12 }}>—</span>}
+                    ) : <span style={{ color:"var(--text-muted)", fontSize:12 }}>—</span>}
                   </td>
-                  <td style={{ fontSize:12,color:"var(--text-muted)" }}>{formatDate(s.tanggalDaftar)}</td>
+                  <td style={{ fontSize:12, color:"var(--text-muted)" }}>{formatDate(s.tanggalDaftar)}</td>
                   <td>
                     <select
                       className={`badge ${STATUS_BADGE[s.status]??""}`}
-                      style={{ border:"none",cursor:"pointer",background:"transparent",fontFamily:"inherit",fontWeight:600,fontSize:11 }}
+                      style={{ border:"none", cursor:"pointer", background:"transparent", fontFamily:"inherit", fontWeight:700, fontSize:11, padding: '4px 12px', borderRadius: 100 }}
                       value={s.status}
-                      onChange={e=>updateStatus(s.id,e.target.value)}
+                      onChange={e=>updateStatus(s.id, e.target.value)}
                     >
                       {STATUS_OPTIONS.map(st=><option key={st} value={st}>{st}</option>)}
                     </select>
                   </td>
-                  <td>
-                    <div style={{ display:"flex", gap:6 }}>
-                      <button
-                        onClick={() => openEdit(s)}
-                        style={{ background:"rgba(99,102,241,0.15)",border:"1px solid rgba(99,102,241,0.3)",color:"#818cf8",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12,fontWeight:600 }}
-                        title="Edit"
-                      >✏️</button>
+                  <td className="text-center">
+                    <div style={{ display:"flex", gap:8, justifyContent:'center' }}>
+                      <button className="btn btn-secondary btn-icon" onClick={() => openEdit(s)} title="Edit Profil">
+                        <Edit3 size={16} />
+                      </button>
                       {role === "ADMIN" && (
-                        <button
-                          onClick={() => handleDelete(s)}
-                          style={{ background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",color:"#f87171",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12,fontWeight:600 }}
-                          title="Hapus"
-                        >🗑️</button>
+                        <button className="btn btn-secondary btn-icon" onClick={() => handleDelete(s)} style={{ color:"var(--danger)" }} title="Hapus Siswa">
+                          <Trash2 size={16} />
+                        </button>
                       )}
                     </div>
                   </td>

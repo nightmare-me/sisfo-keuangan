@@ -2,6 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { 
+  Banknote, 
+  Settings, 
+  Plus, 
+  Calendar, 
+  Filter, 
+  RefreshCw, 
+  CheckCircle, 
+  AlertCircle, 
+  Clock, 
+  Wallet, 
+  CreditCard,
+  History,
+  ArrowRight,
+  TrendingUp,
+  Award
+} from "lucide-react";
 
 const TIPE_BADGE: Record<string,string> = { PRIVATE:"badge-primary", REGULAR:"badge-info", SEMI_PRIVATE:"badge-warning" };
 const STATUS_BAYAR_BADGE: Record<string,string> = { LUNAS:"badge-success", BELUM_BAYAR:"badge-danger", BATAL:"badge-muted" };
@@ -68,32 +85,44 @@ export default function GajiPage() {
   const BULAN = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
   return (
-    <div>
-      <div className="topbar">
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
+      {/* Header Ala Dashboard */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
-          <div className="topbar-title">Gaji Pengajar</div>
-          <div className="topbar-subtitle">Hitung dan kelola gaji pengajar per kelas</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--success)", marginBottom: 8 }}>
+             <Banknote size={18} />
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Payroll Administration</span>
+          </div>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Gaji Pengajar</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Kalkulasi honorarium dan pengelolaan pembayaran tutor pengajar</p>
         </div>
-        <div className="topbar-actions">
-          <button className="btn btn-secondary" onClick={()=>setShowTarifModal(true)}>⚙ Atur Tarif</button>
-          <button id="btn-tambah-gaji" className="btn btn-primary" onClick={()=>setShowModal(true)}>+ Input Gaji</button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowTarifModal(true)}>
+            <Settings size={18} /> Atur Tarif
+          </button>
+          <button id="btn-tambah-gaji" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowModal(true)}>
+            <Plus size={18} /> Input Gaji
+          </button>
         </div>
       </div>
 
-      <div className="page-container">
-        {/* Summary */}
-        <div className="summary-grid">
-          <div className="summary-card">
-            <label>Belum Dibayar</label>
-            <div className="value red">{formatCurrency(totalBelumBayar)}</div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
+        {/* KPI Grid */}
+        <div className="kpi-grid" style={{ marginBottom: 48 }}>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--danger)" }}><AlertCircle size={24} /></div>
+            <div className="kpi-label">Belum Dibayar</div>
+            <div className="kpi-value">{formatCurrency(totalBelumBayar)}</div>
           </div>
-          <div className="summary-card">
-            <label>Sudah Dibayar</label>
-            <div className="value green">{formatCurrency(totalLunas)}</div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)" }}><CheckCircle size={24} /></div>
+            <div className="kpi-label">Sudah Dibayar</div>
+            <div className="kpi-value">{formatCurrency(totalLunas)}</div>
           </div>
-          <div className="summary-card">
-            <label>Total Bulan Ini</label>
-            <div className="value">{formatCurrency(totalBelumBayar+totalLunas)}</div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--primary)" }}><Banknote size={24} /></div>
+            <div className="kpi-label">Total Bulan Ini</div>
+            <div className="kpi-value">{formatCurrency(totalBelumBayar+totalLunas)}</div>
           </div>
         </div>
 
@@ -113,14 +142,25 @@ export default function GajiPage() {
           </div>
         )}
 
-        {/* Filter */}
-        <div className="filter-bar">
-          <select className="form-control" value={filterBulan} onChange={e=>setFilterBulan(e.target.value)}>
-            {BULAN.map((b,i)=><option key={i+1} value={String(i+1)}>{b}</option>)}
-          </select>
-          <select className="form-control" value={filterTahun} onChange={e=>setFilterTahun(e.target.value)}>
-            {[2024,2025,2026].map(y=><option key={y} value={String(y)}>{y}</option>)}
-          </select>
+        {/* Filter Section */}
+        <div className="card" style={{ padding: '24px 32px', marginBottom: 32 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <Calendar size={18} style={{ color: "var(--primary)" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <select className="form-control" value={filterBulan} onChange={e=>setFilterBulan(e.target.value)} style={{ padding: '8px 16px', borderRadius: 100 }}>
+                  {BULAN.map((b,i)=><option key={i+1} value={String(i+1)}>{b}</option>)}
+                </select>
+                <select className="form-control" value={filterTahun} onChange={e=>setFilterTahun(e.target.value)} style={{ padding: '8px 16px', borderRadius: 100 }}>
+                  {[2024,2025,2026].map(y=><option key={y} value={String(y)}>{y}</option>)}
+                </select>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, textAlign: 'right', fontSize: 13, color: 'var(--text-muted)' }}>
+              Menampilkan {data.length} transaksi penggajian
+            </div>
+          </div>
         </div>
 
         {/* Table */}

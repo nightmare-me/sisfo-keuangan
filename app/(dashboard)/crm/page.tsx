@@ -146,28 +146,45 @@ export default function CRMPage() {
   }
 
   return (
-    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
-      {/* Header Ala Dashboard */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', flexShrink: 0, borderBottom: '1px solid var(--ghost-border)', background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}>
         <div>
-          <h1 className="headline-lg" style={{ marginBottom: 8, fontSize: '2.5rem' }}>CRM Board</h1>
-          <p className="body-lg" style={{ margin: 0 }}>Kelola alur pendaftaran calon siswa</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', color: 'var(--on-surface)', margin: 0 }}>CRM Board</h1>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--secondary)' }}>Kelola alur pendaftaran calon siswa</p>
         </div>
         {!isReadOnly && (
           <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowNewLeadModal(true)}>
-             <Plus size={18} /> Lead Baru
+             <Plus size={16} /> Lead Baru
           </button>
         )}
       </div>
 
-      <div style={{ flex: 1, display: 'flex', gap: 32, overflow: 'hidden', paddingBottom: 24 }}>
+      {/* Executive Summary Strip */}
+      {!isReadOnly && (
+        <div style={{ display: 'flex', gap: 12, padding: '8px 24px', flexShrink: 0, borderBottom: '1px solid var(--ghost-border)' }}>
+          {[
+            { label: 'Total Prospek', value: leads.length, unit: 'siswa', color: 'var(--on-surface)' },
+            { label: 'Konversi Lunas', value: `${leads.length > 0 ? Math.round((leads.filter(l => l.status === 'PAID').length / leads.length) * 100) : 0}%`, color: 'var(--success)' },
+            { label: 'Menunggu Bayar', value: leads.filter(l => l.status === 'PENDING').length, color: 'var(--warning)' },
+            { label: 'Follow Up', value: leads.filter(l => l.status === 'FOLLOW_UP').length, color: '#6366f1' },
+          ].map((stat, i) => (
+            <div key={i} style={{ background: 'var(--surface-container-low)', borderRadius: 'var(--radius-lg)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{stat.label}</span>
+              <span style={{ fontSize: '1.1rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: stat.color }}>{stat.value}{stat.unit ? ` ${stat.unit}` : ''}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', padding: '12px 16px 12px' }}>
         {/* MAIN KANBAN BOARD */}
         <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", display: 'flex' }}>
-          <div style={{ display: "flex", gap: 32, flex: 1, minWidth: "max-content", paddingRight: 8 }}>
+          <div style={{ display: "flex", gap: 12, flex: 1, minWidth: "min-content" }}>
             {COLUMNS.map(col => {
               const colLeads = leads.filter(l => l.status === col.id);
               return (
-                <div key={col.id} style={{ flex: 1, minWidth: 300, display: "flex", flexDirection: "column", background: 'var(--surface-container-low)', padding: 24, borderRadius: 'var(--radius-xl)' }}>
+                <div key={col.id} style={{ flex: '1 1 200px', minWidth: 200, display: "flex", flexDirection: "column", background: 'var(--surface-container-low)', padding: '14px 12px', borderRadius: 'var(--radius-xl)' }}>
                   
                   {/* Column Header */}
                   <div style={{ 
@@ -175,8 +192,8 @@ export default function CRMPage() {
                     alignItems: 'center', 
                     justifyContent: 'space-between', 
                     borderBottom: `2px solid ${col.color}`,
-                    paddingBottom: 16,
-                    marginBottom: 24
+                    paddingBottom: 10,
+                    marginBottom: 12
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ color: col.color }}>{col.icon}</div>
@@ -192,7 +209,7 @@ export default function CRMPage() {
                     {loading ? (
                       [1, 2].map(i => <div key={i} className="skeleton" style={{ height: 160, borderRadius: 'var(--radius-xl)' }} />)
                     ) : colLeads.map(lead => (
-                      <div key={lead.id} className="card" style={{ padding: 24, cursor: 'default', margin: 0, boxShadow: 'var(--shadow-sm)', transition: 'box-shadow var(--transition)' }}>
+                      <div key={lead.id} className="card" style={{ padding: '14px 16px', cursor: 'default', margin: 0, boxShadow: 'var(--shadow-sm)', transition: 'box-shadow var(--transition)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.05rem', color: "var(--on-surface)", maxWidth: '85%', lineHeight: 1.2 }}>
                             {lead.nama}
@@ -273,48 +290,6 @@ export default function CRMPage() {
           </div>
         </div>
 
-        {/* RIGHT METRICS PANEL (Ringkasan Kanban) */}
-        {!isReadOnly && (
-          <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 24, overflowY: 'auto', paddingRight: 8 }}>
-            
-            <div className="card" style={{ padding: 32, margin: 0 }}>
-               <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', marginBottom: 24, color: 'var(--on-surface)' }}>Executive Summary</h3>
-               
-               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                 <div>
-                   <div style={{ fontSize: '0.9rem', color: 'var(--secondary)', fontWeight: 700, marginBottom: 8 }}>TOTAL PROSPEK AKTIF</div>
-                   <div style={{ fontSize: '2.5rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--on-surface)', lineHeight: 1 }}>
-                     {leads.length} <span style={{ fontSize: '1rem', color: 'var(--secondary)', fontWeight: 600 }}>Siswa</span>
-                   </div>
-                 </div>
-
-                 <div style={{ borderTop: '1px solid var(--ghost-border)', paddingTop: 24 }}>
-                   <div style={{ fontSize: '0.9rem', color: 'var(--secondary)', fontWeight: 700, marginBottom: 8 }}>TINGKAT KONVERSI (LUNAS)</div>
-                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
-                     <div style={{ fontSize: '2.5rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--success)', lineHeight: 1 }}>
-                       {leads.length > 0 ? Math.round((leads.filter(l => l.status === "PAID").length / leads.length) * 100) : 0}%
-                     </div>
-                     <div style={{ paddingBottom: 6 }}>
-                        <span className="badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#047857' }}>Sangat Baik</span>
-                     </div>
-                   </div>
-                 </div>
-
-                 <div style={{ borderTop: '1px solid var(--ghost-border)', paddingTop: 24 }}>
-                   <div style={{ fontSize: '0.9rem', color: 'var(--secondary)', fontWeight: 700, marginBottom: 12 }}>PIPELINE TERHAMBAT</div>
-                   <div style={{ background: 'var(--surface)', padding: 16, borderRadius: 'var(--radius-xl)' }}>
-                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                       <span style={{ fontSize: '0.95rem', fontWeight: 600 }}>Menunggu Bayar</span>
-                       <span style={{ fontWeight: 800, color: 'var(--warning)' }}>{leads.filter(l => l.status === "PENDING").length}</span>
-                     </div>
-                     <div style={{ fontSize: '0.8rem', color: 'var(--secondary)' }}>Follow up kembali leads yang sudah deal secara aktif.</div>
-                   </div>
-                 </div>
-               </div>
-            </div>
-
-          </div>
-        )}
       </div>
 
       {/* NEW LEAD NATIVE MODAL */}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { recordLog } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await bcrypt.hash(password, 10);
         await prisma.user.create({ data: { name, email, password: hashedPassword, role: role ?? "CS" } });
         results.success++;
+        await recordLog((session.user as any).id, "Tambah User (Bulk)", name, `Role: ${role || 'CS'}`);
       } catch {
         results.failed++; results.errors.push(`${email}: gagal disimpan`);
       }
@@ -89,6 +91,9 @@ export async function POST(request: NextRequest) {
     data: { name, email, password: hashedPassword, role: role ?? "CS" },
     select: { id: true, name: true, email: true, role: true, aktif: true, createdAt: true },
   });
+
+  await recordLog((session.user as any).id, "Tambah User", name, `Role: ${user.role}`);
+
   return NextResponse.json(user, { status: 201 });
 }
 
@@ -112,6 +117,8 @@ export async function PUT(request: NextRequest) {
     select: { id: true, name: true, email: true, role: true, aktif: true },
   });
 
+  await recordLog((session.user as any).id, "Edit User", user.name, `Aksi oleh Admin. Status: ${user.aktif ? 'Aktif' : 'Nonaktif'}. Role: ${user.role}`);
+
   return NextResponse.json(user);
 }
 
@@ -125,6 +132,9 @@ export async function DELETE(request: NextRequest) {
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
   // Soft delete — nonaktifkan saja
-  await prisma.user.update({ where: { id }, data: { aktif: false } });
+  const user = await prisma.user.update({ where: { id }, data: { aktif: false } });
+  
+  await recordLog((session.user as any).id, "Nonaktifkan User", user.name, "User dinonaktifkan via tombol hapus");
+
   return NextResponse.json({ success: true });
 }

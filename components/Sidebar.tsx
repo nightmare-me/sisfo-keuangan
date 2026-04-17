@@ -18,6 +18,8 @@ import {
   UserCog, 
   LogOut,
   History,
+  Download,
+  MessageCircle,
   Briefcase
 } from "lucide-react";
 
@@ -46,6 +48,7 @@ const navItems: NavGroup[] = [
     { href: "/pengeluaran", label: "Pengeluaran", icon: <FileText size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
     { href: "/ads", label: "Spent Ads", icon: <Megaphone size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
     { href: "/laporan", label: "Laporan Keuangan", icon: <PieChart size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
+    { href: "/refund", label: "Manajemen Refund", icon: <History size={16} />, hideFor: ["PENGAJAR", "AKADEMIK"] },
   ]},
   { group: "AKADEMIK", items: [
     { href: "/siswa", label: "Siswa", icon: <Users size={16} /> },
@@ -62,6 +65,9 @@ const navItems: NavGroup[] = [
   ]},
   { group: "SISTEM", items: [
     { href: "/users", label: "Manajemen User", icon: <UserCog size={16} />, adminOnly: true },
+    { href: "/logs", label: "Audit Log", icon: <History size={16} />, adminOnly: true },
+    { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, adminOnly: true },
+    { href: "/settings/wa", label: "Template WhatsApp", icon: <MessageCircle size={16} />, adminOnly: true },
     { href: "/users", label: "Manajemen Pengajar", icon: <UserCog size={16} />, akademikOnly: true },
   ]},
 ];

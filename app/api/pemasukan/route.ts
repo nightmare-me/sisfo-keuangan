@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateInvoiceNumber, generateSiswaNumber } from "@/lib/utils";
+import { recordLog } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -130,5 +131,42 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  await recordLog(
+    (session.user as any).id,
+    "Tambah Pemasukan",
+    pemasukan.siswa?.nama || "Non-Siswa",
+    `Nominal: ${pemasukan.hargaFinal}. Program: ${pemasukan.program?.nama || '—'}. No Invoice: ${pemasukan.invoice?.noInvoice}`
+  );
+
   return NextResponse.json(pemasukan, { status: 201 });
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Hanya Admin yang bisa menghapus transaksi" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+  const item = await prisma.pemasukan.findUnique({
+    where: { id },
+    include: { siswa: true, invoice: true }
+  });
+
+  if (item) {
+    await recordLog(
+      (session.user as any).id,
+      "Hapus Pemasukan",
+      item.siswa?.nama || "Non-Siswa",
+      `Transaksi senilai ${item.hargaFinal} dihapus. No Invoice: ${item.invoice?.noInvoice}`
+    );
+    // Cascade delete invoice handles it if relation is set correctly, but prisma needs explicit usually if not specified
+    if (item.invoice) await prisma.invoice.delete({ where: { id: item.invoice.id } });
+    await prisma.pemasukan.delete({ where: { id } });
+  }
+
+  return NextResponse.json({ success: true });
 }

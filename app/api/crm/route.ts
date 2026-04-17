@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { recordLog } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -51,7 +52,15 @@ export async function PUT(request: NextRequest) {
   const update = await prisma.lead.update({
     where: { id },
     data,
+    include: { program: true }
   });
+
+  await recordLog(
+    (session.user as any).id,
+    "Ubah Status Lead",
+    update.nama,
+    `Status diubah ke ${status || 'tetap'}. Program: ${update.program?.nama || '—'}`
+  );
 
   return NextResponse.json(update);
 }
@@ -69,6 +78,16 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
-  await prisma.lead.delete({ where: { id } });
+  const lead = await prisma.lead.findUnique({ where: { id } });
+  if (lead) {
+    await recordLog(
+      (session.user as any).id,
+      "Hapus Lead",
+      lead.nama,
+      `WhatsApp: ${lead.whatsapp}`
+    );
+    await prisma.lead.delete({ where: { id } });
+  }
+
   return NextResponse.json({ success: true });
 }

@@ -16,7 +16,8 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
-  GraduationCap
+  GraduationCap,
+  Wallet
 } from "lucide-react";
 
 const STATUS_OPTIONS = ["AKTIF","TIDAK_AKTIF","ALUMNI"];
@@ -41,6 +42,11 @@ export default function SiswaPage() {
   const [form, setForm] = useState({ ...emptyForm });
   const [page, setPage] = useState(1);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [selectedForRefund, setSelectedForRefund] = useState<any>(null);
+  const [refundForm, setRefundForm] = useState({ jumlah: "", alasan: "", rekeningTujuan: "" });
+  const [submittingRefund, setSubmittingRefund] = useState(false);
 
   function fetchData() {
     const p = new URLSearchParams({ page: String(page), limit: "20" });
@@ -82,6 +88,29 @@ export default function SiswaPage() {
   async function updateStatus(id: string, status: string) {
     await fetch("/api/siswa", { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id, status }) });
     fetchData();
+  }
+
+  async function handleRequestRefund(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmittingRefund(true);
+    const res = await fetch("/api/refund", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        siswaId: selectedForRefund.id,
+        ...refundForm
+      })
+    });
+
+    if (res.ok) {
+      setShowRefundModal(false);
+      setRefundForm({ jumlah: "", alasan: "", rekeningTujuan: "" });
+      alert("✅ Pengajuan refund berhasil dikirim ke Finance.");
+      fetchData();
+    } else {
+      alert("❌ Gagal mengajukan refund.");
+    }
+    setSubmittingRefund(false);
   }
 
   // ── CSV Import ──────────────────────────────────────────
@@ -277,9 +306,14 @@ export default function SiswaPage() {
                       <button className="btn btn-secondary btn-icon" onClick={() => openEdit(s)} title="Edit Profil">
                         <Edit3 size={16} />
                       </button>
+                      {["ADMIN", "CS"].includes(role) && (
+                        <button className="btn btn-secondary btn-icon" onClick={() => { setSelectedForRefund(s); setShowRefundModal(true); }} style={{ color:"var(--warning)" }} title="Ajukan Refund">
+                           <Wallet size={16} />
+                        </button>
+                      )}
                       {role === "ADMIN" && (
                         <button className="btn btn-secondary btn-icon" onClick={() => handleDelete(s)} style={{ color:"var(--danger)" }} title="Hapus Siswa">
-                          <Trash2 size={16} />
+                           <Trash2 size={16} />
                         </button>
                       )}
                     </div>
@@ -342,6 +376,46 @@ export default function SiswaPage() {
                 <button type="button" className="btn btn-secondary" onClick={()=>{ setShowModal(false); setEditId(null); }}>Batal</button>
                 <button id="btn-simpan-siswa" type="submit" className="btn btn-primary" disabled={saving}>
                   {saving ? "Menyimpan..." : editId ? "💾 Simpan Perubahan" : "👨‍🎓 Tambah Siswa"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL REFUND */}
+      {showRefundModal && selectedForRefund && (
+        <div className="modal-overlay" onClick={() => setShowRefundModal(false)}>
+          <div className="modal" style={{ width: 440 }}>
+            <div className="modal-header">
+              <div className="modal-title">💸 Ajukan Pembatalan / Refund</div>
+              <button className="modal-close" onClick={() => setShowRefundModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handleRequestRefund}>
+              <div className="modal-body">
+                <div style={{ background: "var(--surface)", padding: 12, borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
+                   Siswa: <strong>{selectedForRefund.nama}</strong> ({selectedForRefund.noSiswa})
+                </div>
+
+                <div className="form-group">
+                   <label className="form-label required">Jumlah Refund (Rp)</label>
+                   <input type="number" className="form-control" placeholder="Cth: 500000" value={refundForm.jumlah} onChange={e => setRefundForm({...refundForm, jumlah: e.target.value})} required />
+                </div>
+
+                <div className="form-group">
+                   <label className="form-label required">Rekening Tujuan</label>
+                   <input type="text" className="form-control" placeholder="Cth: BCA 12345678 a.n Nama" value={refundForm.rekeningTujuan} onChange={e => setRefundForm({...refundForm, rekeningTujuan: e.target.value})} required />
+                </div>
+
+                <div className="form-group">
+                   <label className="form-label required">Alasan Pembatalan</label>
+                   <textarea className="form-control" rows={3} placeholder="Sertakan alasan yang valid..." value={refundForm.alasan} onChange={e => setRefundForm({...refundForm, alasan: e.target.value})} required />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowRefundModal(false)}>Batal</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submittingRefund}>
+                   {submittingRefund ? "Mengirim..." : "Ajukan ke Finance"}
                 </button>
               </div>
             </form>

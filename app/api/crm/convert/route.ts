@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateSiswaNumber, generateInvoiceNumber } from "@/lib/utils";
+import { recordLog } from "@/lib/audit";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -67,6 +68,13 @@ export async function POST(request: NextRequest) {
 
       return { siswa, pemasukan };
     });
+
+    await recordLog(
+      (session.user as any).id,
+      "Convert Lead ke Siswa",
+      tx.siswa.nama,
+      `Berhasil konversi. No Siswa: ${tx.siswa.noSiswa}. Nominal Lunas: ${tx.pemasukan.hargaFinal}`
+    );
 
     return NextResponse.json({ success: true, data: tx });
 

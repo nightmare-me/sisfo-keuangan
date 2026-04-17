@@ -19,6 +19,7 @@
   --surface-container-lowest: #FFFFFF; /* Foreground / Prominent cards */
   --surface-container-low: #EAE8E7; /* Recessed areas/sidebars */
   --surface-container-high: #E0DEDD;
+  --surface-container-highest: #D5D3D2;
 
   /* Strict "No-Line" Fallback (Ghost Border) */
   --ghost-border: rgba(27, 28, 28, 0.15); /* 15% opacity outline_variant */
@@ -57,6 +58,7 @@
 
   /* Shapes & Layout */
   --radius-default: 0.5rem;
+  --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-full: 9999px;
   

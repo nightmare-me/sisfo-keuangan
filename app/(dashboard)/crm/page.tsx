@@ -32,6 +32,7 @@ export default function CRMPage() {
 
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [waTemplates, setWaTemplates] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
 
@@ -40,6 +41,9 @@ export default function CRMPage() {
     metodeBayar: "TRANSFER",
     tanggalLunas: new Date().toISOString().slice(0, 10),
   });
+
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [selectedChatLead, setSelectedChatLead] = useState<any>(null);
 
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
   const [submittingLead, setSubmittingLead] = useState(false);
@@ -61,6 +65,17 @@ export default function CRMPage() {
   useEffect(() => { 
     fetchData(); 
     fetch("/api/public/programs").then(r => r.json()).then(d => setPrograms(Array.isArray(d) ? d : []));
+    fetch("/api/settings/wa-templates")
+      .then(async r => {
+        if (!r.ok) return [];
+        const text = await r.text();
+        return text ? JSON.parse(text) : [];
+      })
+      .then(d => setWaTemplates(Array.isArray(d) ? d : []))
+      .catch((err) => {
+        console.error("Fetch WA Templates error:", err);
+        setWaTemplates([]);
+      });
   }, []);
 
   async function ubahStatus(id: string, status: string) {
@@ -188,7 +203,17 @@ export default function CRMPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.95rem' }}>
                              <MessageCircle size={16} color="var(--success)" />
-                             <a href={`https://wa.me/${lead.whatsapp}`} target="_blank" rel="noreferrer" style={{ color: "var(--secondary)", textDecoration: "none", fontWeight: 600 }}>{lead.whatsapp}</a>
+                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                               <a href={`https://wa.me/${lead.whatsapp}`} target="_blank" rel="noreferrer" style={{ color: "var(--secondary)", textDecoration: "none", fontWeight: 600 }}>{lead.whatsapp}</a>
+                               <button 
+                                 className="btn btn-secondary btn-icon" 
+                                 style={{ width: 24, height: 24, padding: 0 }} 
+                                 onClick={() => { setSelectedChatLead(lead); setShowChatModal(true); }}
+                                 title="Quick Chat Templates"
+                               >
+                                 <MessageCircle size={12} />
+                               </button>
+                             </div>
                           </div>
 
                           {lead.program && (
@@ -389,6 +414,51 @@ export default function CRMPage() {
                    <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Sudah Bayar & Jadikan Siswa</button>
                 </div>
              </form>
+          </div>
+        </div>
+      )}
+
+      {/* QUICK CHAT MODAL */}
+      {showChatModal && selectedChatLead && (
+        <div className="modal-overlay" onClick={() => setShowChatModal(false)}>
+          <div className="modal" style={{ width: 440 }}>
+            <div className="modal-header">
+              <div>
+                <div className="modal-title">Quick Chat: {selectedChatLead.nama}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Pilih template pesan WhatsApp</div>
+              </div>
+              <button className="modal-close" onClick={() => setShowChatModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {waTemplates.length === 0 && <div style={{ textAlign: "center", padding: 20 }}>Belum ada template. Atur di menu Pengaturan.</div>}
+                {waTemplates.map(t => {
+                  const message = t.text
+                    .replace("[nama]", selectedChatLead.nama)
+                    .replace("[program]", selectedChatLead.program?.nama || "Program")
+                    .replace("[nominal]", formatCurrency(selectedChatLead.nominalTagihan || 0));
+                  
+                  return (
+                    <div key={t.id} className="card" style={{ padding: 16, margin: 0, cursor: 'default' }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: 'var(--primary)', display: 'flex', justifyContent: 'space-between' }}>
+                        {t.label}
+                        <button className="btn btn-primary btn-sm" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => {
+                          window.open(`https://wa.me/${selectedChatLead.whatsapp}?text=${encodeURIComponent(message)}`, "_blank");
+                          // AUTO MOVE LOGIC
+                          if (selectedChatLead.status === "NEW") {
+                            ubahStatus(selectedChatLead.id, "FOLLOW_UP");
+                          }
+                          setShowChatModal(false);
+                        }}>Kirim 🚀</button>
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, background: 'var(--surface)', padding: 12, borderRadius: 8 }}>
+                        {message}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}

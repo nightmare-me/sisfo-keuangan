@@ -267,11 +267,11 @@ export default function KelasPage() {
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 14, color: "var(--text-secondary)" }}>
-                      <div style={{ display: "flex", itemsCenter: "center", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <User size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                         <span style={{ fontWeight: 600, color: "var(--on-surface)", fontSize: 13 }}>{kelas.pengajar?.name ?? "Belum ada pengajar"}</span>
                       </div>
-                      <div style={{ display: "flex", itemsCenter: "center", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Clock size={14} style={{ color: 'var(--secondary)', flexShrink: 0 }} />
                         <span style={{ fontSize: 13 }}>{kelas.hari ? `${kelas.hari}, ${kelas.jam}` : kelas.jadwal || "Jadwal belum set"}</span>
                       </div>

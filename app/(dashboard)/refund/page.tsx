@@ -43,17 +43,24 @@ export default function RefundPage() {
 
   async function handleProcess(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch(`/api/refund/${selectedRefund.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(processForm),
-    });
+    try {
+      const res = await fetch(`/api/refund/${selectedRefund.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(processForm),
+      });
 
-    if (res.ok) {
-      setShowProcessModal(false);
-      fetchRefunds();
-    } else {
-      alert("Gagal memproses refund.");
+      if (res.ok) {
+        setShowProcessModal(false);
+        setProcessForm({ status: "APPROVED", catatan: "" });
+        fetchRefunds();
+      } else {
+        const err = await res.json();
+        alert("❌ Gagal memproses refund: " + (err.error || "Terjadi kesalahan"));
+      }
+    } catch (err) {
+      console.error("Refund processing error:", err);
+      alert("❌ Terjadi kesalahan koneksi.");
     }
   }
 
@@ -134,7 +141,7 @@ export default function RefundPage() {
 
       {/* PROCESS MODAL */}
       {showProcessModal && selectedRefund && (
-        <div className="modal-overlay" onClick={() => setShowProcessModal(false)}>
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowProcessModal(false); }}>
           <div className="modal" style={{ width: 440 }}>
             <div className="modal-header">
               <div className="modal-title">Proses Pengajuan Refund</div>

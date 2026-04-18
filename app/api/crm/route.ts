@@ -14,11 +14,26 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status");
 
   let where: any = {};
-  if (status) where.status = status;
 
-  // Jika role = CS, opsional: hanya melihat lead miliknya atau yang belum diassign. 
-  // Tapi untuk kebutuhan sekarang kita tampilkan semua agar bisa kolaborasi, atau sesuai rules.
-  // Sementara tampilkan semua.
+  // Jika role = CS, hanya tampilkan lead miliknya ATAU lead baru (belum diassign)
+  if (role === "CS") {
+    where = {
+      OR: [
+        { csId: userId },
+        { status: "NEW", csId: null }
+      ]
+    };
+    if (status) {
+       where = {
+         AND: [
+           { status: status },
+           { OR: [{ csId: userId }, { status: "NEW", csId: null }] }
+         ]
+       };
+    }
+  } else if (status) {
+    where.status = status;
+  }
 
   const leads = await prisma.lead.findMany({
     where,
@@ -48,6 +63,15 @@ export async function PUT(request: NextRequest) {
   if (status) data.status = status;
   if (csId !== undefined) data.csId = csId;
   if (keterangan !== undefined) data.keterangan = keterangan;
+
+  // Auto-assign: Jika status berubah dari NEW dan csId masih kosong,
+  // assign ke user yang mengubahnya (jika user adalah CS)
+  if (status && status !== "NEW" && role === "CS") {
+    const lead = await prisma.lead.findUnique({ where: { id } });
+    if (lead && !lead.csId) {
+      data.csId = (session.user as any).id;
+    }
+  }
 
   const update = await prisma.lead.update({
     where: { id },

@@ -38,7 +38,7 @@ const DURASI_LABEL: Record<string, string> = {
   "3_BULAN": "3 Bulan",   "6_BULAN": "6 Bulan", "LAINNYA": "Lainnya",
 };
 
-const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", durasi: "" };
+const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "" };
 
 export default function ProgramPage() {
   const { data: session } = useSession();
@@ -69,8 +69,14 @@ export default function ProgramPage() {
   }
 
   function openEdit(p: any) {
-    setEditId(p.id);
-    setForm({ nama: p.nama, deskripsi: p.deskripsi ?? "", tipe: p.tipe, harga: String(p.harga), durasi: p.durasi ?? "" });
+    setForm({ 
+      nama: p.nama, 
+      deskripsi: p.deskripsi ?? "", 
+      tipe: p.tipe, 
+      harga: String(p.harga), 
+      kategoriFee: p.kategoriFee || "REG_1B",
+      durasi: p.durasi ?? "" 
+    });
     setShowModal(true);
   }
 
@@ -254,6 +260,23 @@ export default function ProgramPage() {
                       {DURASI_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                     </select>
                   </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label required">Klasifikasi Fee CS</label>
+                  <select className="form-control" value={form.kategoriFee} onChange={e => setForm(f => ({ ...f, kategoriFee: e.target.value }))}>
+                    <option value="49K">Produk 49K (Normal)</option>
+                    <option value="49K_DISKON">Produk 49K (Diskon)</option>
+                    <option value="EFP">Produk EFP</option>
+                    <option value="REG_1B">Reguler 1 Bulan</option>
+                    <option value="REG_ADV">Reguler Advance</option>
+                    <option value="NATIVE">Native Class</option>
+                    <option value="TOEFL">Reguler TOEFL</option>
+                    <option value="PRIVATE_550">Private 550K</option>
+                    <option value="PRIVATE_850">Private 850K</option>
+                    <option value="PRIVATE_1B">Private 1B</option>
+                    <option value="PRIVATE_VIP">Private VIP</option>
+                    <option value="PRIVATE_FAMILY">Private FAMILY</option>
+                  </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Deskripsi</label>

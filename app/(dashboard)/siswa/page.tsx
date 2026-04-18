@@ -16,6 +16,8 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
+  AlertCircle,
+  Briefcase,
   GraduationCap,
   Wallet
 } from "lucide-react";
@@ -45,7 +47,7 @@ export default function SiswaPage() {
 
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [selectedForRefund, setSelectedForRefund] = useState<any>(null);
-  const [refundForm, setRefundForm] = useState({ jumlah: "", alasan: "", rekeningTujuan: "" });
+  const [refundForm, setRefundForm] = useState<any>({ jumlah: "", alasan: "", rekeningTujuan: "", pemasukanId: "", invoiceId: "" });
   const [submittingRefund, setSubmittingRefund] = useState(false);
 
   function fetchData() {
@@ -98,6 +100,8 @@ export default function SiswaPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         siswaId: selectedForRefund.id,
+        pemasukanId: refundForm.pemasukanId,
+        invoiceId: refundForm.invoiceId,
         ...refundForm
       })
     });
@@ -307,7 +311,18 @@ export default function SiswaPage() {
                         <Edit3 size={16} />
                       </button>
                       {["ADMIN", "CS"].includes(role) && (
-                        <button className="btn btn-secondary btn-icon" onClick={() => { setSelectedForRefund(s); setShowRefundModal(true); }} style={{ color:"var(--warning)" }} title="Ajukan Refund">
+                        <button className="btn btn-secondary btn-icon" onClick={() => { 
+                          setSelectedForRefund(s); 
+                          const firstPay = s.pemasukan?.[0];
+                          setRefundForm({ 
+                            jumlah: firstPay?.hargaFinal || "", 
+                            alasan: "", 
+                            rekeningTujuan: "",
+                            pemasukanId: firstPay?.id || "",
+                            invoiceId: firstPay?.invoice?.id || ""
+                          });
+                          setShowRefundModal(true); 
+                        }} style={{ color:"var(--warning)" }} title="Ajukan Refund">
                            <Wallet size={16} />
                         </button>
                       )}
@@ -385,7 +400,7 @@ export default function SiswaPage() {
 
       {/* MODAL REFUND */}
       {showRefundModal && selectedForRefund && (
-        <div className="modal-overlay" onClick={() => setShowRefundModal(false)}>
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowRefundModal(false); }}>
           <div className="modal" style={{ width: 440 }}>
             <div className="modal-header">
               <div className="modal-title">💸 Ajukan Pembatalan / Refund</div>
@@ -395,6 +410,31 @@ export default function SiswaPage() {
               <div className="modal-body">
                 <div style={{ background: "var(--surface)", padding: 12, borderRadius: 10, marginBottom: 16, fontSize: 13 }}>
                    Siswa: <strong>{selectedForRefund.nama}</strong> ({selectedForRefund.noSiswa})
+                </div>
+
+                <div className="form-group">
+                   <label className="form-label required">Pilih Transaksi yang Direfund</label>
+                   <select 
+                      className="form-control" 
+                      value={refundForm.pemasukanId} 
+                      onChange={e => {
+                        const p = selectedForRefund.pemasukan?.find((x:any) => x.id === e.target.value);
+                        setRefundForm({
+                          ...refundForm, 
+                          pemasukanId: e.target.value, 
+                          invoiceId: p?.invoice?.id || "",
+                          jumlah: p?.hargaFinal || refundForm.jumlah
+                        });
+                      }}
+                      required
+                   >
+                     <option value="">-- Pilih Transaksi --</option>
+                     {selectedForRefund.pemasukan?.map((p:any) => (
+                       <option key={p.id} value={p.id}>
+                         {p.program?.nama || 'Tanpa Program'} - Rp {p.hargaFinal?.toLocaleString()} ({new Date(p.createdAt).toLocaleDateString()})
+                       </option>
+                     ))}
+                   </select>
                 </div>
 
                 <div className="form-group">

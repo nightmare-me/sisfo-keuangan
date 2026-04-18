@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   const users = await prisma.user.findMany({
     where,
-    select: { id: true, name: true, email: true, role: true, aktif: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, teamType: true, aktif: true, createdAt: true },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(users);
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   if (Array.isArray(body)) {
     const results = { success: 0, failed: 0, errors: [] as string[] };
     for (const item of body) {
-      const { name, email, password, role } = item;
+      const { name, email, password, role, teamType } = item;
       // AKADEMIK hanya boleh buat PENGAJAR
       if (sessionRole === "AKADEMIK" && role !== "PENGAJAR") {
         results.failed++; results.errors.push(`${email}: AKADEMIK hanya bisa tambah PENGAJAR`); continue;
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       }
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.create({ data: { name, email, password: hashedPassword, role: role ?? "CS" } });
+        await prisma.user.create({ data: { name, email, password: hashedPassword, role: role ?? "CS", teamType: teamType || null } });
         results.success++;
         await recordLog((session.user as any).id, "Tambah User (Bulk)", name, `Role: ${role || 'CS'}`);
       } catch {
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Single create
-  const { name, email, password, role } = body;
+  const { name, email, password, role, teamType } = body;
   // AKADEMIK hanya boleh buat PENGAJAR
   if (sessionRole === "AKADEMIK" && role !== "PENGAJAR") {
     return NextResponse.json({ error: "Anda hanya bisa menambahkan user dengan role PENGAJAR" }, { status: 403 });
@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
 
   const hashedPassword = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { name, email, password: hashedPassword, role: role ?? "CS" },
-    select: { id: true, name: true, email: true, role: true, aktif: true, createdAt: true },
+    data: { name, email, password: hashedPassword, role: role ?? "CS", teamType: teamType || null },
+    select: { id: true, name: true, email: true, role: true, teamType: true, aktif: true, createdAt: true },
   });
 
   await recordLog((session.user as any).id, "Tambah User", name, `Role: ${user.role}`);
@@ -104,9 +104,10 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, name, email, role, aktif, password } = body;
+  const { id, name, email, role, teamType, aktif, password } = body;
 
   const updateData: any = { name, email, role, aktif };
+  if (teamType !== undefined) updateData.teamType = teamType || null;
   if (password) {
     updateData.password = await bcrypt.hash(password, 12);
   }
@@ -114,7 +115,7 @@ export async function PUT(request: NextRequest) {
   const user = await prisma.user.update({
     where: { id },
     data: updateData,
-    select: { id: true, name: true, email: true, role: true, aktif: true },
+    select: { id: true, name: true, email: true, role: true, teamType: true, aktif: true },
   });
 
   await recordLog((session.user as any).id, "Edit User", user.name, `Aksi oleh Admin. Status: ${user.aktif ? 'Aktif' : 'Nonaktif'}. Role: ${user.role}`);

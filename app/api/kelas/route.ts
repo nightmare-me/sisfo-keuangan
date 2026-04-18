@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
       linkGrup: linkGrup || null,
       tanggalMulai: tanggalMulai ? new Date(tanggalMulai) : null,
       tanggalSelesai: tanggalSelesai ? new Date(tanggalSelesai) : null,
+      feePerSesi: body.feePerSesi ? parseFloat(body.feePerSesi) : 0,
+      materiLink: body.materiLink || null,
     },
     include: { program: true, pengajar: true },
   });

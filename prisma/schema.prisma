@@ -12,6 +12,7 @@ model User {
   email        String         @unique
   password     String
   role         Role           @default(CS)
+  teamType     String?        // CS_REGULAR, CS_LIVE, CS_TOEFL, CS_RO, ADV_REGULAR, ADV_PART_TIME, ADV_PROJECT
   aktif        Boolean        @default(true)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
@@ -23,7 +24,8 @@ model User {
   pengeluaran  Pengeluaran[]
   refundsAsCS  Refund[]       @relation("CSRefund")
   refundsAsFin Refund[]       @relation("FinanceRefund")
-  spentAds     SpentAds[]
+  spentAds       SpentAds[]
+  adPerformances AdPerformance[]
 }
 
 model Program {
@@ -31,6 +33,7 @@ model Program {
   nama         String
   deskripsi    String?
   tipe         TipeKelas   @default(REGULAR)
+  kategoriFee  String?     // 49K, EFP, REG_1B, REG_ADV, NATIVE, TOEFL, PRIVATE_550, PRIVATE_850, PRIVATE_1B, PRIVATE_VIP, PRIVATE_FAMILY
   harga        Float
   durasiBuilan Int         @default(3)
   aktif        Boolean     @default(true)
@@ -73,6 +76,8 @@ model Kelas {
   jam            String?
   kapasitas      Int            @default(10)
   status         StatusKelas    @default(AKTIF)
+  feePerSesi     Float          @default(0)
+  materiLink     String?        // Link materi (shareable)
   tanggalMulai   DateTime?
   tanggalSelesai DateTime?
   createdAt      DateTime       @default(now())
@@ -113,6 +118,7 @@ model Pemasukan {
   diskon      Float       @default(0)
   hargaFinal  Float
   metodeBayar MetodeBayar @default(CASH)
+  isRO        Boolean     @default(false)
   keterangan  String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -120,6 +126,7 @@ model Pemasukan {
   cs          User?       @relation("CSPemasukan", fields: [csId], references: [id])
   program     Program?    @relation(fields: [programId], references: [id])
   siswa       Siswa?      @relation(fields: [siswaId], references: [id])
+  refunds     Refund[]
 }
 
 model Pengeluaran {
@@ -308,6 +315,7 @@ model Refund {
   updatedAt      DateTime     @updatedAt
   cs             User         @relation("CSRefund", fields: [csId], references: [id])
   finance        User?        @relation("FinanceRefund", fields: [financeId], references: [id])
+  pemasukan      Pemasukan?   @relation(fields: [pemasukanId], references: [id])
   siswa          Siswa        @relation(fields: [siswaId], references: [id])
 }
 
@@ -318,12 +326,28 @@ model WaTemplate {
   updatedAt DateTime @updatedAt
 }
 
+model AdPerformance {
+  id        String   @id @default(cuid())
+  date      DateTime @default(now())
+  advId     String
+  adv       User     @relation(fields: [advId], references: [id])
+  spent     Float
+  leads     Int
+  cpl       Float
+  cpa       Float?
+  fee       Float
+  updatedAt DateTime @updatedAt
+
+  @@index([advId])
+}
+
 enum Role {
   ADMIN
   FINANCE
   CS
   PENGAJAR
   AKADEMIK
+  ADVERTISER
 }
 
 enum TipeKelas {

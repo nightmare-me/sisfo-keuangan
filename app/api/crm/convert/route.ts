@@ -27,17 +27,26 @@ export async function POST(request: NextRequest) {
         data: { status: "PAID" },
       });
 
-      // 2. Buat Siswa
-      const noSiswa = generateSiswaNumber();
-      const siswa = await prisma.siswa.create({
-        data: {
-          noSiswa,
-          nama: lead.nama,
-          telepon: lead.whatsapp,
-          email: lead.email,
-          status: "AKTIF",
-        },
+      // 2. Cek Siswa (RO Check)
+      let siswa = await prisma.siswa.findFirst({
+        where: { telepon: lead.whatsapp }
       });
+
+      let isRO = false;
+      if (siswa) {
+        isRO = true;
+      } else {
+        const noSiswa = generateSiswaNumber();
+        siswa = await prisma.siswa.create({
+          data: {
+            noSiswa,
+            nama: lead.nama,
+            telepon: lead.whatsapp,
+            email: lead.email,
+            status: "AKTIF",
+          },
+        });
+      }
 
       // 3. Buat Pemasukan
       const noInvoice = generateInvoiceNumber();
@@ -48,10 +57,11 @@ export async function POST(request: NextRequest) {
           programId: lead.programId,
           csId: lead.csId || (session.user as any).id,
           hargaNormal: lead.nominalTagihan || hargaFinal,
-          diskon: (lead.nominalTagihan || hargaFinal) - hargaFinal, // jika hargaFinal lebih murah
+          diskon: (lead.nominalTagihan || hargaFinal) - hargaFinal,
           hargaFinal: hargaFinal,
           metodeBayar: metodeBayar || "TRANSFER",
-          keterangan: "Dikonversi otomatis dari CRM Lead",
+          isRO: isRO,
+          keterangan: isRO ? "Repeat Order (RO) otomatis" : "Dikonversi otomatis dari CRM Lead",
           invoice: {
             create: {
               noInvoice,

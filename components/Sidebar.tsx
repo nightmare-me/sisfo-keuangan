@@ -20,7 +20,8 @@ import {
   History,
   Download,
   MessageCircle,
-  Briefcase
+  Briefcase,
+  TrendingUp
 } from "lucide-react";
 
 interface NavItem {
@@ -47,7 +48,8 @@ const navItems: NavGroup[] = [
     { href: "/pemasukan", label: "Pemasukan", icon: <Wallet size={16} />, hideFor: ["AKADEMIK"] },
     { href: "/pengeluaran", label: "Pengeluaran", icon: <FileText size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
     { href: "/ads", label: "Spent Ads", icon: <Megaphone size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
-    { href: "/laporan", label: "Laporan Keuangan", icon: <PieChart size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
+    { href: "/ads/performance", label: "Performa Iklan", icon: <TrendingUp size={16} />, adminOnly: true },
+    { href: "/laporan-keuangan", label: "Laporan Keuangan", icon: <PieChart size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
     { href: "/refund", label: "Manajemen Refund", icon: <History size={16} />, hideFor: ["PENGAJAR", "AKADEMIK"] },
   ]},
   { group: "AKADEMIK", items: [
@@ -68,6 +70,7 @@ const navItems: NavGroup[] = [
     { href: "/logs", label: "Audit Log", icon: <History size={16} />, adminOnly: true },
     { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, adminOnly: true },
     { href: "/settings/wa", label: "Template WhatsApp", icon: <MessageCircle size={16} />, adminOnly: true },
+    { href: "/ads/performance", label: "Input Iklan Saya", icon: <TrendingUp size={16} />, hideFor: ["ADMIN", "FINANCE", "CS", "PENGAJAR", "AKADEMIK"] }, // Show only for ADVERTISER
     { href: "/users", label: "Manajemen Pengajar", icon: <UserCog size={16} />, akademikOnly: true },
   ]},
 ];

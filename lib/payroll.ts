@@ -1,0 +1,94 @@
+/**
+ * Payroll & Fee Calculation Engine
+ */
+
+export type CSCategory = 'CS_REGULAR' | 'CS_LIVE' | 'CS_TOEFL' | 'CS_RO';
+export type AdvCategory = 'ADV_REGULAR' | 'ADV_PART_TIME' | 'ADV_PROJECT';
+
+/**
+ * Calculate CS Fee based on product and category
+ */
+export function calculateCSFee(
+  csCategory: CSCategory,
+  productType: string,
+  price: number,
+  isRO: boolean = false,
+  cr: number = 0 // For CS Live
+): number {
+  if (csCategory === 'CS_REGULAR') {
+    // Regular Rules
+    if (!isRO) {
+      if (productType === '49K_DISKON') return 2000;
+      if (productType === '49K') return 2500;
+      if (productType === 'EFP') return 4000;
+      if (productType === 'REG_1B') return 10000;
+      if (productType === 'REG_ADV') return 12500;
+      if (productType === 'NATIVE') return 12500;
+      if (productType === 'TOEFL') return 12500;
+      if (productType === 'PRIVATE_550' || productType === 'PRIVATE_850') return 25000;
+      if (productType === 'PRIVATE_1B' || productType === 'PRIVATE_VIP' || productType === 'PRIVATE_FAMILY') return 50000;
+    } else {
+      // RO Rules
+      if (productType === '49K_DISKON') return 2000;
+      if (productType === '49K') return 2500;
+      if (productType === 'EFP') return 4000;
+      if (productType === 'REG_1B') return 10000;
+      if (productType === 'REG_ADV') return 12500;
+      if (productType === 'NATIVE') return 12500;
+      if (productType === 'TOEFL') return 12500;
+      if (productType === 'PRIVATE_550' || productType === 'PRIVATE_850') return 15000;
+      if (productType === 'PRIVATE_1B' || productType === 'PRIVATE_VIP' || productType === 'PRIVATE_FAMILY') return 30000;
+    }
+  }
+
+  if (csCategory === 'CS_LIVE') {
+    if (productType === '49K' || productType === '49K_DISKON') {
+      return cr > 0.5 ? 2500 : 2000;
+    }
+    if (productType.includes('FAST') || productType.includes('PRIVATE')) {
+      return price * 0.05;
+    }
+  }
+
+  if (csCategory === 'CS_TOEFL') {
+    if (productType === 'TOEFL') return price * 0.05;
+    if (productType === 'CERTIFICATE') return price * 0.10;
+  }
+
+  if (csCategory === 'CS_RO') {
+    return price * 0.05;
+  }
+
+  return 0;
+}
+
+/**
+ * Calculate Advertiser Fee based on CPL and category
+ */
+export function calculateAdvFee(
+  advCategory: AdvCategory,
+  cpl: number,
+  leadsCount: number
+): number {
+  let feePerLead = 0;
+
+  if (advCategory === 'ADV_REGULAR') {
+    if (cpl < 9000) feePerLead = 1000;
+    else if (cpl <= 13500) feePerLead = 500;
+    else if (cpl <= 15000) feePerLead = 250;
+    else feePerLead = 0;
+  }
+
+  if (advCategory === 'ADV_PART_TIME') {
+    if (cpl < 15000) feePerLead = 1000;
+    else if (cpl <= 20000) feePerLead = 700;
+    else feePerLead = 300;
+  }
+
+  if (advCategory === 'ADV_PROJECT') {
+    if (cpl < 5000) feePerLead = 500;
+    else feePerLead = 250;
+  }
+
+  return feePerLead * leadsCount;
+}

@@ -24,7 +24,8 @@ import {
   X,
   Link as LinkIcon,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Briefcase
 } from "lucide-react";
 
 const TIPE = ["REGULAR", "PRIVATE", "SEMI_PRIVATE"];
@@ -34,7 +35,7 @@ const TIPE_BADGE: Record<string, string> = { REGULAR: "badge-info", PRIVATE: "ba
 const STATUS_BADGE: Record<string, string> = { AKTIF: "badge-success", SELESAI: "badge-muted", DIJADWALKAN: "badge-warning" };
 const STATUS_SISWA_BADGE: Record<string, string> = { AKTIF: "badge-success", TIDAK_AKTIF: "badge-danger", ALUMNI: "badge-muted" };
 
-const emptyForm = { namaKelas: "", programId: "", pengajarId: "", jadwal: "", hari: "", jam: "", kapasitas: "10", durasi: "", tanggalMulai: "", tanggalSelesai: "", linkGrup: "" };
+const emptyForm = { namaKelas: "", programId: "", pengajarId: "", jadwal: "", hari: "", jam: "", kapasitas: "10", durasi: "", tanggalMulai: "", tanggalSelesai: "", linkGrup: "", feePerSesi: "0", materiLink: "" };
 
 export default function KelasPage() {
   const { data: session } = useSession();
@@ -122,6 +123,8 @@ export default function KelasPage() {
       linkGrup: kelas.linkGrup ?? "",
       tanggalMulai: kelas.tanggalMulai ? kelas.tanggalMulai.slice(0, 10) : "",
       tanggalSelesai: kelas.tanggalSelesai ? kelas.tanggalSelesai.slice(0, 10) : "",
+      feePerSesi: String(kelas.feePerSesi || 0),
+      materiLink: kelas.materiLink || "",
     });
     setShowModal(true);
   }
@@ -349,7 +352,9 @@ export default function KelasPage() {
                   { label: "WA Group", value: selectedKelas.linkGrup ? <a href={selectedKelas.linkGrup.startsWith('http') ? selectedKelas.linkGrup : `https://${selectedKelas.linkGrup}`} target="_blank" rel="noreferrer" style={{color: "var(--primary)", textDecoration: "underline", display: 'flex', alignItems: 'center', gap: 6}}>Join 🚀</a> : "—", icon: <LinkIcon size={16} /> },
                   { label: "Waktu Mulai", value: selectedKelas.tanggalMulai ? formatDate(selectedKelas.tanggalMulai) : "—", icon: <Calendar size={16} /> },
                   { label: "Durasi Program", value: { "2_MINGGU": "2 Minggu", "1_BULAN": "1 Bulan", "3_BULAN": "3 Bulan", "6_BULAN": "6 Bulan" }[selectedKelas.durasi as string] ?? selectedKelas.durasi ?? "—", icon: <Layers size={16} /> },
-                ].map(item => (
+                  { label: "Fee per Sesi", value: selectedKelas.feePerSesi ? `Rp ${selectedKelas.feePerSesi.toLocaleString('id-ID')}` : "—", icon: <Briefcase size={16} />, akademikOnly: true },
+                  { label: "Link Materi", value: selectedKelas.materiLink ? <a href={selectedKelas.materiLink.startsWith('http') ? selectedKelas.materiLink : `https://${selectedKelas.materiLink}`} target="_blank" rel="noreferrer" style={{color: "var(--success)", textDecoration: "underline"}}>Buka Materi 📚</a> : "—", icon: <ExternalLink size={16} /> },
+                ].filter(item => !item.akademikOnly || ["ADMIN", "AKADEMIK"].includes(role)).map(item => (
                   <div key={item.label}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'flex', gap: 6, alignItems: 'center' }}>
                       {item.icon} {item.label}
@@ -581,6 +586,16 @@ export default function KelasPage() {
                   <div className="form-group">
                     <label className="form-label">Jadwal (teks bebas)</label>
                     <input type="text" className="form-control" placeholder="Cth: 2x seminggu" value={form.jadwal} onChange={e => setForm(f => ({ ...f, jadwal: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Fee per Sesi (Rp)</label>
+                    <input type="number" className="form-control" value={form.feePerSesi} onChange={e => setForm(f => ({ ...f, feePerSesi: e.target.value }))} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Link Share Materi</label>
+                    <input type="url" className="form-control" placeholder="Google Drive / Notion Link" value={form.materiLink} onChange={e => setForm(f => ({ ...f, materiLink: e.target.value }))} />
                   </div>
                 </div>
                 <div className="form-grid-2">

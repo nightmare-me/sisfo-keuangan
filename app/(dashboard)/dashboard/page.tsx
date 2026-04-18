@@ -251,7 +251,12 @@ export default function DashboardPage() {
 
       {/* KPI Cards */}
       <div className="kpi-grid">
-        {KPI_FINANCE.map((cfg) => {
+        {KPI_FINANCE.filter(cfg => {
+          if (role === "CS") {
+            return cfg.key === "pemasukanHariIni" || cfg.key === "siswAktif";
+          }
+          return true;
+        }).map((cfg) => {
           const value = data?.kpi[cfg.key as keyof typeof data.kpi] ?? 0;
           const isCurrency = cfg.isCurrency !== false;
           const isPemasukan = cfg.key === "pemasukanHariIni";
@@ -275,12 +280,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Stats Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: role === "CS" ? "1fr" : "2fr 1fr", gap: 24, marginBottom: 24 }}>
         <div className="card">
           <div className="card-header">
             <div>
               <div className="card-title">Grafik Performa Keuangan</div>
-              <div className="card-subtitle">Tren pemasukan dan pengeluaran 30 hari terakhir</div>
+              <div className="card-subtitle">
+                {role === "CS" ? "Tren pemasukan 30 hari terakhir" : "Tren pemasukan dan pengeluaran 30 hari terakhir"}
+              </div>
             </div>
             <Calendar size={20} className="text-muted" />
           </div>
@@ -293,41 +300,47 @@ export default function DashboardPage() {
                 <Tooltip content={<PremiumTooltip />} />
                 <Legend iconType="circle" />
                 <Line type="monotone" dataKey="pemasukan" stroke="#10b981" strokeWidth={4} dot={false} name="Pemasukan" animationDuration={1000} />
-                <Line type="monotone" dataKey="pengeluaran" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Operasional" />
-                <Line type="monotone" dataKey="ads" stroke="#f59e0b" strokeWidth={2} dot={false} name="Ads" />
+                {role !== "CS" && (
+                  <>
+                    <Line type="monotone" dataKey="pengeluaran" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="5 5" name="Operasional" />
+                    <Line type="monotone" dataKey="ads" stroke="#f59e0b" strokeWidth={2} dot={false} name="Ads" />
+                  </>
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="card glass shadow-glow">
-           <div className="card-header">
-             <div className="card-title">Top CS Performance</div>
-             <TrendingUp size={18} style={{ color: "var(--brand-primary-light)" }} />
-           </div>
-           {data?.pemasukanPerCS && data.pemasukanPerCS.length > 0 ? (
-             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-               {data.pemasukanPerCS.slice(0, 5).map((cs, i) => (
-                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                   <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--bg-elevated)", border: "1px solid var(--border-default)", display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--brand-primary-light)' }}>
-                     {cs.csName.charAt(0)}
-                   </div>
-                   <div style={{ flex: 1 }}>
-                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                       <span style={{ fontWeight: 700, fontSize: 13 }}>{cs.csName}</span>
-                       <span style={{ fontWeight: 800, color: "var(--success)" }}>{formatCurrency(cs.total)}</span>
-                     </div>
-                     <div style={{ height: 4, background: "var(--bg-base)", borderRadius: 10 }}>
-                        <div style={{ height: "100%", width: `${(cs.total / (data.pemasukanPerCS[0]?.total || 1)) * 100}%`, background: "var(--brand-primary)", borderRadius: 10 }} />
-                     </div>
-                   </div>
-                 </div>
-               ))}
+        {role !== "CS" && (
+          <div className="card glass shadow-glow">
+             <div className="card-header">
+               <div className="card-title">Top CS Performance</div>
+               <TrendingUp size={18} style={{ color: "var(--brand-primary-light)" }} />
              </div>
-           ) : (
-             <div className="empty-state">Belum ada aktivitas</div>
-           )}
-        </div>
+             {data?.pemasukanPerCS && data.pemasukanPerCS.length > 0 ? (
+               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                 {data.pemasukanPerCS.slice(0, 5).map((cs, i) => (
+                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                     <div style={{ width: 40, height: 40, borderRadius: 12, background: "var(--bg-elevated)", border: "1px solid var(--border-default)", display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: 'var(--brand-primary-light)' }}>
+                       {cs.csName.charAt(0)}
+                     </div>
+                     <div style={{ flex: 1 }}>
+                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                         <span style={{ fontWeight: 700, fontSize: 13 }}>{cs.csName}</span>
+                         <span style={{ fontWeight: 800, color: "var(--success)" }}>{formatCurrency(cs.total)}</span>
+                       </div>
+                       <div style={{ height: 4, background: "var(--bg-base)", borderRadius: 10 }}>
+                          <div style={{ height: "100%", width: `${(cs.total / (data.pemasukanPerCS[0]?.total || 1)) * 100}%`, background: "var(--brand-primary)", borderRadius: 10 }} />
+                       </div>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             ) : (
+               <div className="empty-state">Belum ada aktivitas</div>
+             )}
+          </div>
+        )}
       </div>
 
       {/* Bottom List Row */}

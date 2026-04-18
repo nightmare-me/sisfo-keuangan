@@ -4,60 +4,90 @@ import { auth } from "@/lib/auth";
 import { generateInvoiceNumber, generateSiswaNumber } from "@/lib/utils";
 import { recordLog } from "@/lib/audit";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { searchParams } = new URL(request.url);
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-  const csId = searchParams.get("csId");
-  const programId = searchParams.get("programId");
-  const metodeBayar = searchParams.get("metodeBayar");
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = parseInt(searchParams.get("limit") ?? "20");
+    const { searchParams } = new URL(request.url);
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const csId = searchParams.get("csId");
+    const programId = searchParams.get("programId");
+    const metodeBayar = searchParams.get("metodeBayar");
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "20");
 
-  const where: any = {};
-  if (from && to) {
-    where.tanggal = { gte: new Date(from), lte: new Date(to) };
-  }
-  if (csId) where.csId = csId;
-  if (programId) where.programId = programId;
-  if (metodeBayar) where.metodeBayar = metodeBayar;
+    const where: any = {};
+    if (from && to) {
+      where.tanggal = { gte: new Date(from), lte: new Date(to) };
+    }
+    if (csId) where.csId = csId;
+    if (programId) where.programId = programId;
+    if (metodeBayar) where.metodeBayar = metodeBayar;
 
-  const [data, total] = await Promise.all([
-    prisma.pemasukan.findMany({
+    // 1. Ambil SEMUA ID Pemasukan yang direfund (Approved)
+    const approvedRefunds = await prisma.refund.findMany({
+      where: { status: "APPROVED" },
+      select: { pemasukanId: true, siswaId: true, jumlah: true }
+    });
+    const refundedPemasukanIds = new Set(approvedRefunds.map(r => r.pemasukanId).filter(Boolean));
+
+    // 2. Query Pemasukan (Include SiswaId for fallback filtering)
+    const allMatchingPemasukan = await prisma.pemasukan.findMany({
       where,
-      skip: (page - 1) * limit,
-      take: limit,
       orderBy: { tanggal: "desc" },
       include: {
-        siswa: { select: { nama: true, noSiswa: true } },
+        siswa: { select: { nama: true, noSiswa: true, id: true } },
         program: { select: { nama: true, tipe: true } },
         cs: { select: { name: true } },
         invoice: { select: { noInvoice: true } },
       },
-    }),
-    prisma.pemasukan.count({ where }),
-  ]);
+    });
 
-  const summary = await prisma.pemasukan.aggregate({
-    where,
-    _sum: { hargaFinal: true, diskon: true },
-    _count: true,
-  });
+    // 3. Filter dengan "Radar Refund" (Fallback logic)
+    const filteredData = allMatchingPemasukan.filter(p => {
+      // Cek berdasarkan ID
+      if (refundedPemasukanIds.has(p.id)) return false;
+      
+      // Backup: Cek jika ada refund APPROVED untuk siswa ini dengan jumlah yang sama
+      const hasMatchingRefund = approvedRefunds.find(r => 
+        !r.pemasukanId && 
+        r.siswaId === p.siswaId && 
+        Math.abs(Number(r.jumlah) - p.hargaFinal) < 100
+      );
+      
+      if (hasMatchingRefund) {
+        (hasMatchingRefund as any).pemasukanId = p.id;
+        return false;
+      }
+      
+      return true;
+    });
 
-  return NextResponse.json({
-    data,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
-    summary: {
-      totalPemasukan: summary._sum.hargaFinal ?? 0,
-      totalDiskon: summary._sum.diskon ?? 0,
-      jumlahTransaksi: summary._count,
-    },
-  });
+    // 4. Pagination & Summary
+    const finalData = filteredData.slice((page - 1) * limit, page * limit);
+    const totalCount = filteredData.length;
+    const totalPemasukan = filteredData.reduce((sum, p) => sum + p.hargaFinal, 0);
+    const totalDiskon = filteredData.reduce((sum, p) => sum + p.diskon, 0);
+
+    return NextResponse.json({
+      data: finalData,
+      total: totalCount,
+      page,
+      totalPages: Math.ceil(totalCount / limit),
+      summary: {
+        totalPemasukan,
+        totalDiskon,
+        jumlahTransaksi: totalCount,
+      },
+    });
+  } catch (error: any) {
+    console.error("PEMASUKAN_GET_ERROR:", error);
+    return NextResponse.json({ error: "Gagal mengambil data pemasukan" }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -69,7 +99,6 @@ export async function POST(request: NextRequest) {
 
   let finalSiswaId = siswaId || null;
 
-  // Auto-create / search Siswa jika siswaId kosong tapi namaSiswa ada
   if (!finalSiswaId && namaSiswa) {
     const existing = await prisma.siswa.findFirst({
       where: { nama: { equals: namaSiswa, mode: "insensitive" } }
@@ -163,7 +192,6 @@ export async function DELETE(request: NextRequest) {
       item.siswa?.nama || "Non-Siswa",
       `Transaksi senilai ${item.hargaFinal} dihapus. No Invoice: ${item.invoice?.noInvoice}`
     );
-    // Cascade delete invoice handles it if relation is set correctly, but prisma needs explicit usually if not specified
     if (item.invoice) await prisma.invoice.delete({ where: { id: item.invoice.id } });
     await prisma.pemasukan.delete({ where: { id } });
   }

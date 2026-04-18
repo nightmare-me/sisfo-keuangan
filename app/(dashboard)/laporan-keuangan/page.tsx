@@ -42,6 +42,9 @@ export default function LaporanPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   function fetchData() {
     const p = new URLSearchParams({ type: period });
@@ -253,7 +256,7 @@ export default function LaporanPage() {
               {/* Pemasukan per Program */}
               <div className="card">
                 <div className="card-header"><div className="card-title">💰 Pemasukan per Program</div></div>
-                {data.pemasukanPerProgram?.length > 0 ? (
+                {mounted && data.pemasukanPerProgram?.length > 0 ? (
                   <div style={{ height:240 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={data.pemasukanPerProgram}>
@@ -271,7 +274,7 @@ export default function LaporanPage() {
               {/* Pengeluaran Pie */}
               <div className="card">
                 <div className="card-header"><div className="card-title">💸 Breakdown Pengeluaran</div></div>
-                {pieData.length > 0 ? (
+                {mounted && pieData.length > 0 ? (
                   <div style={{ height:240, display:"flex", alignItems:"center" }}>
                     <ResponsiveContainer width="50%" height="100%">
                       <PieChart>

@@ -23,13 +23,13 @@ import {
 } from "lucide-react";
 
 
-const ROLES = ["ADMIN", "FINANCE", "CS", "PENGAJAR", "AKADEMIK"];
+const ROLES = ["ADMIN", "FINANCE", "CS", "PENGAJAR", "AKADEMIK", "ADVERTISER"];
 const ROLES_AKADEMIK = ["PENGAJAR"]; // AKADEMIK hanya bisa tambah PENGAJAR
 const ROLE_BADGE: Record<string, string> = {
-  ADMIN: "badge-danger", FINANCE: "badge-warning", CS: "badge-info", PENGAJAR: "badge-success", AKADEMIK: "badge-primary",
+  ADMIN: "badge-danger", FINANCE: "badge-warning", CS: "badge-info", PENGAJAR: "badge-success", AKADEMIK: "badge-primary", ADVERTISER: "badge-warning",
 };
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "#f87171", FINANCE: "#fbbf24", CS: "#60a5fa", PENGAJAR: "#34d399", AKADEMIK: "#a78bfa",
+  ADMIN: "#f87171", FINANCE: "#fbbf24", CS: "#60a5fa", PENGAJAR: "#34d399", AKADEMIK: "#a78bfa", ADVERTISER: "#f59e0b",
 };
 
 const emptyRow = { name: "", email: "", password: "", role: "CS" };
@@ -56,7 +56,7 @@ export default function UsersPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Single form
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "CS", aktif: true });
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "CS", teamType: "", aktif: true });
 
   // Bulk rows
   const [bulkRows, setBulkRows] = useState([{ ...emptyRow }, { ...emptyRow }, { ...emptyRow }]);
@@ -81,17 +81,16 @@ export default function UsersPage() {
   // ── Summary ──────────────────────────────────────────────
   const summary = (isAkademik ? ["PENGAJAR"] : ROLES).map(r => ({ role: r, count: data.filter(u => u.role === r && u.aktif).length }));
 
-  // ── Single edit ──────────────────────────────────────────
   function openEdit(user: any) {
     setEditUser(user);
-    setForm({ name: user.name, email: user.email, password: "", role: user.role, aktif: user.aktif });
+    setForm({ name: user.name, email: user.email, password: "", role: user.role, teamType: user.teamType || "", aktif: user.aktif });
     setMode("single");
     setShowModal(true);
   }
 
   function openAdd() {
     setEditUser(null);
-    setForm({ name: "", email: "", password: "", role: isAkademik ? "PENGAJAR" : "CS", aktif: true });
+    setForm({ name: "", email: "", password: "", role: isAkademik ? "PENGAJAR" : "CS", teamType: "", aktif: true });
     setMode("single");
     setShowModal(true);
   }
@@ -248,87 +247,69 @@ export default function UsersPage() {
           </div>
         </div>
 
-        {/* Access Guide Section */}
-        {!isAkademik && (
-          <div className="card" style={{ padding: '32px', marginBottom: 48, background: 'var(--surface-container-lowest)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-               <Info size={20} style={{ color: 'var(--primary)' }} />
-               <h3 style={{ margin: 0, fontWeight: 800, fontSize: 18 }}>Panduan Otoritas Role</h3>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 16 }}>
-              {[
-                { role: "ADMIN", desc: "Full authority system, audit log, dan pengaturan platform" },
-                { role: "FINANCE", desc: "Pencatatan kas, invoice keluar, dan rekapitulasi laporan" },
-                { role: "CS", desc: "Manajemen leads, pendaftaran siswa, dan operasional harian" },
-                { role: "AKADEMIK", desc: "Manajemen kurikulum, kelas, dan penjadwalan tutor" },
-              ].map(r => (
-                <div key={r.role} style={{ padding: "16px 20px", background: "white", borderRadius: 12, border: '1px solid var(--ghost-border)' }}>
-                  <span className={`badge ${ROLE_BADGE[r.role] ?? ""}`} style={{ fontSize: 10 }}>{r.role}</span>
-                  <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 10, lineHeight: 1.5 }}>{r.desc}</p>
-                </div>
-              ))}
-            </div>
+        {/* Filter & Search */}
+        <div className="card" style={{ padding: '16px 20px', marginBottom: 32, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
+            <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input type="text" className="form-control" placeholder="Cari nama atau email..." style={{ paddingLeft: 44 }} value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-        )}
-
-        {/* Filter Section */}
-        <div className="card" style={{ padding: '24px 32px', marginBottom: 32 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 280 }}>
-               <Search size={18} style={{ color: "var(--secondary)" }} />
-               <input type="text" className="form-control" placeholder="Cari nama atau email..." value={search} onChange={e => setSearch(e.target.value)} style={{ border: 'none', borderBottom: '1px solid var(--ghost-border)', background: 'transparent', borderRadius: 0, width: '100%' }} />
-            </div>
-            
-            <div style={{ display: 'flex', gap: 12 }}>
-              <select className="form-control" value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ width: 160, padding: '8px 16px', borderRadius: 100 }}>
-                <option value="">Semua Role</option>
-                {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-              <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ width: 140, padding: '8px 16px', borderRadius: 100 }}>
-                <option value="">Semua Status</option>
-                <option value="aktif">Aktif</option>
-                <option value="nonaktif">Nonaktif</option>
-              </select>
-            </div>
-
-            <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(""); setFilterRole(""); setFilterStatus(""); }} style={{ borderRadius: 'var(--radius-full)' }}>
-              <RefreshCw size={14} /> Reset
-            </button>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <Filter size={16} style={{ color: "var(--primary)" }} />
+            <select className="form-control" value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ width: 140 }}>
+              <option value="">Semua Role</option>
+              {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ width: 140 }}>
+              <option value="">Semua Status</option>
+              <option value="aktif">Hanya Aktif</option>
+              <option value="nonaktif">Hanya Nonaktif</option>
+            </select>
+            <button className="btn btn-secondary btn-icon" onClick={() => { setSearch(""); setFilterRole(""); setFilterStatus(""); fetchData(); }}><RefreshCw size={16} /></button>
           </div>
         </div>
 
-        {/* Table */}
+        {/* Main Table */}
         <div className="table-wrapper">
-          <table>
+          <table id="tbl-users">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Nama</th>
-                <th>Email</th>
-                <th>Role</th>
+                <th>Nama Personil</th>
+                <th>Role & Kategori</th>
+                <th>Email Login</th>
                 <th>Status</th>
-                <th>Dibuat</th>
-                <th style={{ width: 130 }}>Aksi</th>
+                <th>Terdaftar</th>
+                <th style={{ width: 100 }}>Aksi</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>Loading...</td></tr>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>Memuat data personil...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7}>
+                <tr><td colSpan={6} style={{ textAlign: "center", padding: 64 }}>
                   <div className="empty-state">
                     <div className="empty-state-icon">👤</div>
                     <h3>Tidak ada user ditemukan</h3>
-                    <p>Ubah filter atau tambah user baru</p>
+                    <p>Sesuaikan filter atau tambah user baru</p>
                   </div>
                 </td></tr>
-              ) : filtered.map((user, idx) => (
-                <tr key={user.id} style={{ opacity: user.aktif ? 1 : 0.5 }}>
-                  <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{idx + 1}</td>
-                  <td style={{ fontWeight: 600 }}>{user.name}</td>
-                  <td style={{ color: "var(--text-muted)", fontSize: 13 }}>{user.email}</td>
-                  <td><span className={`badge ${ROLE_BADGE[user.role] ?? ""}`}>{user.role}</span></td>
-                  <td><span className={`badge ${user.aktif ? "badge-success" : "badge-danger"}`}>{user.aktif ? "Aktif" : "Nonaktif"}</span></td>
+              ) : filtered.map(user => (
+                <tr key={user.id} style={{ opacity: user.aktif ? 1 : 0.6 }}>
+                  <td>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: "var(--on-surface)" }}>{user.name}</div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)" }}>ID: {user.id.slice(0, 8)}</div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span className={`badge ${ROLE_BADGE[user.role] ?? "badge-muted"}`} style={{ width: 'fit-content' }}>{user.role}</span>
+                      {user.teamType && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--secondary)" }}>{user.teamType.replace(/_/g, ' ')}</div>}
+                    </div>
+                  </td>
+                  <td style={{ fontWeight: 500 }}>{user.email}</td>
+                  <td>
+                    <span className={`badge ${user.aktif ? "badge-success" : "badge-danger"}`}>
+                      {user.aktif ? "Aktif" : "Nonaktif"}
+                    </span>
+                  </td>
                   <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{new Date(user.createdAt).toLocaleDateString("id-ID")}</td>
                   <td>
                     <div style={{ display: "flex", gap: 6 }}>
@@ -391,6 +372,29 @@ export default function UsersPage() {
                         {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
                       </select>
                     </div>
+                    {["CS", "ADVERTISER"].includes(form.role) && (
+                      <div className="form-group">
+                        <label className="form-label">Kategori Tim</label>
+                        <select className="form-control" value={form.teamType} onChange={e => setForm(f => ({ ...f, teamType: e.target.value }))}>
+                          <option value="">Pilih Kategori...</option>
+                          {form.role === "CS" && (
+                            <>
+                              <option value="CS_REGULAR">CS Regular</option>
+                              <option value="CS_LIVE">CS Live</option>
+                              <option value="CS_TOEFL">CS Test TOEFL</option>
+                              <option value="CS_RO">CS Repeat Order (RO)</option>
+                            </>
+                          )}
+                          {form.role === "ADVERTISER" && (
+                            <>
+                              <option value="ADV_REGULAR">Adv Regular</option>
+                              <option value="ADV_PART_TIME">Adv Part Time</option>
+                              <option value="ADV_PROJECT">Adv Project</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    )}
                     {editUser && (
                       <div className="form-group">
                         <label className="form-label">Status</label>
@@ -469,7 +473,7 @@ export default function UsersPage() {
                   </div>
                 </div>
                 <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
+                  <button type="button" className="btn btn-secondary" onClick={() => { setShowModal(false); setEditUser(null); }}>Batal</button>
                   <button type="submit" className="btn btn-primary" disabled={saving}>
                     {saving ? "Menyimpan..." : `👥 Simpan ${bulkRows.filter(r => r.name && r.email && r.password).length} User`}
                   </button>

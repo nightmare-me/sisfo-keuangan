@@ -39,7 +39,7 @@ interface Pemasukan {
 const METODE_BAYAR = ["CASH", "TRANSFER", "QRIS"];
 
 export default function PemasukanPage() {
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const [data, setData] = useState<Pemasukan[]>([]);
   const [summary, setSummary] = useState({ totalPemasukan: 0, totalDiskon: 0, jumlahTransaksi: 0 });
   const [loading, setLoading] = useState(true);
@@ -64,14 +64,19 @@ export default function PemasukanPage() {
   const isCS = role === "CS";
 
   function fetchData() {
+    if (sessionStatus === "loading") return; // Tunggu session siap
+    
     const params = new URLSearchParams();
     if (filter.from) params.set("from", filter.from);
     if (filter.to) params.set("to", filter.to + "T23:59:59");
+    
+    // Prioritas: Jika CS, kunci csId. Jika Admin, biarkan filter csId bekerja.
     if (isCS && userId) {
       params.set("csId", userId);
     } else if (filter.csId) {
       params.set("csId", filter.csId);
     }
+    
     if (filter.programId) params.set("programId", filter.programId);
     if (filter.metodeBayar) params.set("metodeBayar", filter.metodeBayar);
     params.set("limit", "100");
@@ -82,7 +87,11 @@ export default function PemasukanPage() {
       .then((d) => { setData(d.data ?? []); setSummary(d.summary ?? {}); setLoading(false); });
   }
 
-  useEffect(() => { fetchData(); }, [filter]);
+  useEffect(() => { 
+    if (sessionStatus !== "loading") {
+      fetchData(); 
+    }
+  }, [filter, sessionStatus, userId]);
 
   useEffect(() => {
     fetch("/api/program").then(r => r.json()).then(d => setPrograms(d)).catch(() => {});

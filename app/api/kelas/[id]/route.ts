@@ -45,6 +45,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       ...(linkGrup !== undefined && { linkGrup: linkGrup || null }),
       ...(tanggalMulai !== undefined && { tanggalMulai: tanggalMulai ? new Date(tanggalMulai) : null }),
       ...(tanggalSelesai !== undefined && { tanggalSelesai: tanggalSelesai ? new Date(tanggalSelesai) : null }),
+      ...(body.feePerSesi !== undefined && { feePerSesi: parseFloat(body.feePerSesi) || 0 }),
+      ...(body.materiLink !== undefined && { materiLink: body.materiLink || null }),
       ...(status && { status }),
     },
     include: { program: true, pengajar: { select: { id: true, name: true } }, _count: { select: { pendaftaran: true } } },

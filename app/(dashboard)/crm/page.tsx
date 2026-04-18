@@ -31,6 +31,7 @@ export default function CRMPage() {
   const isReadOnly = !["ADMIN", "CS"].includes(role);
 
   const [leads, setLeads] = useState<any[]>([]);
+  const [csStats, setCsStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [waTemplates, setWaTemplates] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState(false);
@@ -60,6 +61,10 @@ export default function CRMPage() {
       .then(r => r.json())
       .then(d => { setLeads(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
+
+    fetch(`/api/crm/stats?t=${Date.now()}`)
+      .then(r => r.json())
+      .then(d => setCsStats(Array.isArray(d) ? d : []));
   }
 
   useEffect(() => { 
@@ -98,7 +103,11 @@ export default function CRMPage() {
     const res = await fetch("/api/public/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...newLeadForm, whatsapp: wa }),
+      body: JSON.stringify({ 
+        ...newLeadForm, 
+        whatsapp: wa, 
+        csId: role === "CS" ? (session?.user as any)?.id : undefined 
+      }),
     });
 
     if (res.ok) {
@@ -150,8 +159,8 @@ export default function CRMPage() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', flexShrink: 0, borderBottom: '1px solid var(--ghost-border)', background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', color: 'var(--on-surface)', margin: 0 }}>CRM Board</h1>
-          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--secondary)' }}>Kelola alur pendaftaran calon siswa</p>
+          <h1 className="display-title" style={{ margin: 0 }}>CRM Board</h1>
+          <p className="text-secondary" style={{ margin: '4px 0 0 0' }}>Kelola alur pendaftaran calon siswa</p>
         </div>
         {!isReadOnly && (
           <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowNewLeadModal(true)}>
@@ -162,16 +171,60 @@ export default function CRMPage() {
 
       {/* Executive Summary Strip */}
       {!isReadOnly && (
-        <div style={{ display: 'flex', gap: 12, padding: '8px 24px', flexShrink: 0, borderBottom: '1px solid var(--ghost-border)' }}>
+        <div style={{ display: 'flex', gap: 12, padding: '12px 24px', flexShrink: 0, borderBottom: '1px solid var(--ghost-border)', overflowX: 'auto' }}>
+          {/* User Performance Card (Always First) */}
+          {(() => {
+            const myId = (session?.user as any)?.id;
+            const myName = session?.user?.name;
+            const myStat = csStats.find(s => s.csId === myId || s.name === myName) || { cr: '0%', fee: 0, omset: 0 };
+            return (
+              <div style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)', borderRadius: 'var(--radius-lg)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 16, border: '1px solid var(--primary)' }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>Performa Anda</div>
+                <div style={{ display: 'flex', gap: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 10, opacity: 0.8 }}>Closing Rate</div>
+                    <div style={{ fontSize: 14, fontWeight: 800 }}>{myStat.cr}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, opacity: 0.8 }}>Fee Estimasi</div>
+                    <div style={{ fontSize: 14, fontWeight: 800 }}>{formatCurrency(myStat.fee)}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Admin Performance Overview (Shows All CS CR) */}
+          {role === "ADMIN" && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ background: 'var(--surface-container-high)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--secondary)' }}>CR TIM CS</span>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {csStats.map(s => (
+                    <div key={s.csId} style={{ background: 'var(--surface)', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                      {s.name.split(' ')[0]}: <span style={{ color: 'var(--primary)' }}>{s.cr}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {[
             { label: 'Total Prospek', value: leads.length, unit: 'siswa', color: 'var(--on-surface)' },
-            { label: 'Konversi Lunas', value: `${leads.length > 0 ? Math.round((leads.filter(l => l.status === 'PAID').length / leads.length) * 100) : 0}%`, color: 'var(--success)' },
             { label: 'Menunggu Bayar', value: leads.filter(l => l.status === 'PENDING').length, color: 'var(--warning)' },
-            { label: 'Follow Up', value: leads.filter(l => l.status === 'FOLLOW_UP').length, color: '#6366f1' },
+            { 
+              label: role === "ADMIN" ? 'Total Omset' : 'Omset Saya', 
+              value: formatCurrency(role === "ADMIN" 
+                ? csStats.reduce((a, b) => a + b.omset, 0) 
+                : (csStats.find(s => s.csId === (session?.user as any)?.id)?.omset || 0)
+              ), 
+              color: 'var(--success)' 
+            },
           ].map((stat, i) => (
             <div key={i} style={{ background: 'var(--surface-container-low)', borderRadius: 'var(--radius-lg)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: '0.72rem', color: 'var(--secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{stat.label}</span>
-              <span style={{ fontSize: '1.1rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: stat.color }}>{stat.value}{stat.unit ? ` ${stat.unit}` : ''}</span>
+              <span style={{ fontSize: '1rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: stat.color }}>{stat.value}{stat.unit ? ` ${stat.unit}` : ''}</span>
             </div>
           ))}
         </div>

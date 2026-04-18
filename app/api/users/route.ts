@@ -6,67 +6,97 @@ import { recordLog } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const sessionRoleSlug = (session?.user as any)?.role;
 
   const { searchParams } = new URL(request.url);
-  const filterRole = searchParams.get("role");
+  const filterRoleSlug = searchParams.get("role");
 
-  // Non-admin: hanya boleh query role tertentu (untuk dropdown CS di pemasukan dll)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(["ADMIN", "AKADEMIK"].includes(role))) {
-    // CS/FINANCE/PENGAJAR boleh GET dengan filter role
-    if (filterRole && session) {
+
+  // Pengecekan akses: Hanya admin atau role dengan permission user:manage yang boleh lihat semua
+  const hasUserManage = (session.user as any).permissions?.includes('user:manage');
+
+  if (!hasUserManage && sessionRoleSlug !== 'admin') {
+    // Non-privileged: hanya boleh cari user tertentu (biasanya untuk filter CS)
+    if (filterRoleSlug) {
       const users = await prisma.user.findMany({
-        where: { role: filterRole as any, aktif: true },
-        select: { id: true, name: true, email: true, role: true },
+        where: { role: { slug: filterRoleSlug }, aktif: true },
+        include: { role: true },
         orderBy: { name: "asc" },
       });
-      return NextResponse.json(users);
+      
+      const formatted = users.map(u => ({
+        ...u,
+        role: u.role?.slug?.toUpperCase() || "USER",
+        roleName: u.role?.name || "No Role"
+      }));
+
+      return NextResponse.json(formatted);
     }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // ADMIN: semua user; AKADEMIK: hanya PENGAJAR
-  const where: any = role === "AKADEMIK" ? { role: "PENGAJAR" } : (filterRole ? { role: filterRole as any } : {});
+  // Admin/Privileged: semua user (atau filter role)
+  const where: any = filterRoleSlug ? { role: { slug: filterRoleSlug } } : {};
 
   const users = await prisma.user.findMany({
     where,
-    select: { id: true, name: true, email: true, role: true, teamType: true, aktif: true, createdAt: true },
+    include: { role: true },
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json(users);
+  
+  // Map output agar match format lama tapi dengan data role baru
+  const formattedUsers = users.map(u => ({
+    ...u,
+    role: u.role?.slug?.toUpperCase() || "USER",
+    roleName: u.role?.name || "No Role"
+  }));
+
+  return NextResponse.json(formattedUsers);
 }
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  const sessionRole = (session?.user as any)?.role;
-  if (!session || !([ "ADMIN", "AKADEMIK"].includes(sessionRole))) {
+  const sessionRoleSlug = (session?.user as any)?.role;
+  const isPrivileged = sessionRoleSlug === 'admin' || (session?.user as any).permissions?.includes('user:manage');
+
+  if (!session || !isPrivileged) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json();
 
-  // Bulk create: body adalah array
+  // Bulk create
   if (Array.isArray(body)) {
     const results = { success: 0, failed: 0, errors: [] as string[] };
     for (const item of body) {
-      const { name, email, password, role, teamType } = item;
-      // AKADEMIK hanya boleh buat PENGAJAR
-      if (sessionRole === "AKADEMIK" && role !== "PENGAJAR") {
-        results.failed++; results.errors.push(`${email}: AKADEMIK hanya bisa tambah PENGAJAR`); continue;
-      }
+      const { name, email, password, roleSlug, teamType } = item;
+      
       if (!name || !email || !password) {
         results.failed++; results.errors.push(`${email || name}: data tidak lengkap`); continue;
       }
+
+      const roleObj = await prisma.role.findUnique({ where: { slug: (roleSlug || "cs").toLowerCase() } });
+      if (!roleObj) {
+        results.failed++; results.errors.push(`${email}: role invalid`); continue;
+      }
+
       const exists = await prisma.user.findUnique({ where: { email } });
       if (exists) {
         results.failed++; results.errors.push(`${email}: email sudah terdaftar`); continue;
       }
+
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.create({ data: { name, email, password: hashedPassword, role: role ?? "CS", teamType: teamType || null } });
+        await prisma.user.create({ 
+          data: { 
+            name, email, password: hashedPassword, 
+            roleId: roleObj.id, 
+            teamType: teamType || null 
+          } 
+        });
         results.success++;
-        await recordLog((session.user as any).id, "Tambah User (Bulk)", name, `Role: ${role || 'CS'}`);
+        await recordLog((session.user as any).id, "Tambah User (Bulk)", name, `Role: ${roleObj.name}`);
       } catch {
         results.failed++; results.errors.push(`${email}: gagal disimpan`);
       }
@@ -75,12 +105,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Single create
-  const { name, email, password, role, teamType } = body;
-  // AKADEMIK hanya boleh buat PENGAJAR
-  if (sessionRole === "AKADEMIK" && role !== "PENGAJAR") {
-    return NextResponse.json({ error: "Anda hanya bisa menambahkan user dengan role PENGAJAR" }, { status: 403 });
-  }
-  if (!name || !email || !password) {
+  const { name, email, password, roleId, teamType } = body;
+  if (!name || !email || !password || !roleId) {
     return NextResponse.json({ error: "Semua field diperlukan" }, { status: 400 });
   }
   const exists = await prisma.user.findUnique({ where: { email } });
@@ -88,25 +114,28 @@ export async function POST(request: NextRequest) {
 
   const hashedPassword = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { name, email, password: hashedPassword, role: role ?? "CS", teamType: teamType || null },
-    select: { id: true, name: true, email: true, role: true, teamType: true, aktif: true, createdAt: true },
+    data: { name, email, password: hashedPassword, roleId, teamType: teamType || null },
+    include: { role: true }
   });
 
-  await recordLog((session.user as any).id, "Tambah User", name, `Role: ${user.role}`);
+  await recordLog((session.user as any).id, "Tambah User", name, `Role: ${user.role?.name}`);
 
   return NextResponse.json(user, { status: 201 });
 }
 
 export async function PUT(request: NextRequest) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") {
+  const isPrivileged = (session?.user as any)?.role === 'admin' || (session?.user as any).permissions?.includes('user:manage');
+
+  if (!session || !isPrivileged) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await request.json();
-  const { id, name, email, role, teamType, aktif, password } = body;
+  const { id, name, email, roleId, teamType, aktif, password } = body;
 
-  const updateData: any = { name, email, role, aktif };
+  const updateData: any = { name, email, aktif };
+  if (roleId) updateData.roleId = roleId;
   if (teamType !== undefined) updateData.teamType = teamType || null;
   if (password) {
     updateData.password = await bcrypt.hash(password, 12);
@@ -115,24 +144,23 @@ export async function PUT(request: NextRequest) {
   const user = await prisma.user.update({
     where: { id },
     data: updateData,
-    select: { id: true, name: true, email: true, role: true, teamType: true, aktif: true },
+    include: { role: true }
   });
 
-  await recordLog((session.user as any).id, "Edit User", user.name, `Aksi oleh Admin. Status: ${user.aktif ? 'Aktif' : 'Nonaktif'}. Role: ${user.role}`);
+  await recordLog((session.user as any).id, "Edit User", user.name, `Role: ${user.role?.name}`);
 
   return NextResponse.json(user);
 }
 
 export async function DELETE(request: NextRequest) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") {
+  if (!session || (session.user as any).role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
-  // Soft delete — nonaktifkan saja
   const user = await prisma.user.update({ where: { id }, data: { aktif: false } });
   
   await recordLog((session.user as any).id, "Nonaktifkan User", user.name, "User dinonaktifkan via tombol hapus");

@@ -16,6 +16,11 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
+          include: { 
+            role: { 
+              include: { permissions: true } 
+            } 
+          }
         });
 
         if (!user || !user.aktif) return null;
@@ -27,24 +32,39 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role,
+          role: user.role?.slug.toUpperCase() || "USER",
+          permissions: user.role?.permissions.map(p => p.slug) || [],
         } as any;
       },
     }),
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
-        token.role = (user as any).role;
-        token.id = user.id;
+        const dbUser = user as any;
+        token.id = dbUser.id;
+        token.email = dbUser.email;
+        if (dbUser.role) {
+          // Tetap gunakan Uppercase untuk kompatibilitas dengan ribuan pengecekan role lama
+          token.role = dbUser.role.toUpperCase();
+        }
+        if (dbUser.permissions) {
+          token.permissions = dbUser.permissions;
+        }
       }
+      
+      if (trigger === "update" && session?.permissions) {
+        token.permissions = session.permissions;
+      }
+      
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).role = token.role;
+      if (token && session.user) {
         (session.user as any).id = token.id;
+        (session.user as any).role = token.role; // Akan bernilai "ADMIN", "CS", dll
+        (session.user as any).permissions = token.permissions || [];
       }
       return session;
     },

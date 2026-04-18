@@ -27,31 +27,22 @@ import {
 } from "lucide-react";
 
 
-const ROLES = ["ADMIN", "FINANCE", "CS", "PENGAJAR", "AKADEMIK", "ADVERTISER"];
-const ROLES_AKADEMIK = ["PENGAJAR"]; // AKADEMIK hanya bisa tambah PENGAJAR
 const ROLE_BADGE: Record<string, string> = {
   ADMIN: "badge-danger", FINANCE: "badge-warning", CS: "badge-info", PENGAJAR: "badge-success", AKADEMIK: "badge-primary", ADVERTISER: "badge-warning",
 };
-const ROLE_COLORS: Record<string, string> = {
-  ADMIN: "#f87171", FINANCE: "#fbbf24", CS: "#60a5fa", PENGAJAR: "#34d399", AKADEMIK: "#a78bfa", ADVERTISER: "#f59e0b",
-};
-
-const emptyRow = { name: "", email: "", password: "", role: "CS" };
 
 export default function UsersPage() {
   const { data: session } = useSession();
   const selfRole = (session?.user as any)?.role;
-  const isAkademik = selfRole === "AKADEMIK";
-  // AKADEMIK hanya tampilkan & bisa kelola PENGAJAR
-  const allowedRoles = isAkademik ? ROLES_AKADEMIK : ROLES;
+  const hasUserManage = (session?.user as any)?.permissions?.includes('user:manage');
 
   const [data, setData] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
 
-  // Mode: "single" | "bulk" | "csv"
   const [mode, setMode] = useState<"single" | "bulk" | "csv">("single");
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
@@ -59,10 +50,9 @@ export default function UsersPage() {
   const [csvLoading, setCsvLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Single form
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "CS", teamType: "", aktif: true });
+  const [form, setForm] = useState({ name: "", email: "", password: "", roleId: "", teamType: "", aktif: true });
 
-  // Bulk rows
+  const emptyRow = { name: "", email: "", password: "", roleSlug: "cs" };
   const [bulkRows, setBulkRows] = useState([{ ...emptyRow }, { ...emptyRow }, { ...emptyRow }]);
 
   // ── Payroll Profile States ──
@@ -76,14 +66,19 @@ export default function UsersPage() {
 
   function fetchData() {
     setLoading(true);
-    fetch("/api/users").then(r => r.json()).then(d => { setData(Array.isArray(d) ? d : []); setLoading(false); });
+    Promise.all([
+      fetch("/api/users").then(r => r.json()),
+      fetch("/api/roles").then(r => r.json())
+    ]).then(([users, rolesData]) => {
+      setData(Array.isArray(users) ? users : []);
+      setRoles(Array.isArray(rolesData) ? rolesData : []);
+      setLoading(false);
+    });
   }
 
   useEffect(() => { fetchData(); }, []);
 
-  // ── Filtered view ────────────────────────────────────────
   const filtered = data.filter(u => {
-    if (isAkademik && u.role !== "PENGAJAR") return false; // AKADEMIK hanya lihat PENGAJAR
     if (filterRole && u.role !== filterRole) return false;
     if (filterStatus === "aktif" && !u.aktif) return false;
     if (filterStatus === "nonaktif" && u.aktif) return false;
@@ -91,19 +86,22 @@ export default function UsersPage() {
     return true;
   });
 
-  // ── Summary ──────────────────────────────────────────────
-  const summary = (isAkademik ? ["PENGAJAR"] : ROLES).map(r => ({ role: r, count: data.filter(u => u.role === r && u.aktif).length }));
+  const summary = roles.map(r => ({ 
+    role: r.slug.toUpperCase(), 
+    name: r.name,
+    count: data.filter(u => u.roleId === r.id && u.aktif).length 
+  }));
 
   function openEdit(user: any) {
     setEditUser(user);
-    setForm({ name: user.name, email: user.email, password: "", role: user.role, teamType: user.teamType || "", aktif: user.aktif });
+    setForm({ name: user.name, email: user.email, password: "", roleId: user.roleId, teamType: user.teamType || "", aktif: user.aktif });
     setMode("single");
     setShowModal(true);
   }
 
   function openAdd() {
     setEditUser(null);
-    setForm({ name: "", email: "", password: "", role: isAkademik ? "PENGAJAR" : "CS", teamType: "", aktif: true });
+    setForm({ name: "", email: "", password: "", roleId: roles.find(r => r.slug === 'cs')?.id || "", teamType: "", aktif: true });
     setMode("single");
     setShowModal(true);
   }
@@ -125,7 +123,6 @@ export default function UsersPage() {
     setShowModal(false); setEditUser(null);
     fetchData();
   }
-
 
   async function handleDeactivate(user: any) {
     if (!confirm(`${user.aktif ? "Nonaktifkan" : "Aktifkan kembali"} user "${user.name}"?`)) return;
@@ -190,8 +187,10 @@ export default function UsersPage() {
     const users = lines.map(line => {
       const delimiter = line.includes(";") ? ";" : ",";
       const [name, email, password, roleRaw] = line.split(delimiter).map(c => c.trim().replace(/^"|"$/g, ""));
-      const role = ROLES.includes((roleRaw || "").toUpperCase()) ? roleRaw.toUpperCase() : "CS";
-      return { name, email, password, role };
+      // Cari role slug yang cocok, default ke 'cs'
+      const matchedRole = roles.find(r => r.slug === (roleRaw || "").toLowerCase());
+      const roleSlug = matchedRole ? matchedRole.slug : "cs";
+      return { name, email, password, roleSlug };
     }).filter(u => u.name && u.email && u.password);
 
     if (users.length === 0) { setCsvLoading(false); alert("Tidak ada data valid di CSV."); if (fileRef.current) fileRef.current.value = ""; return; }
@@ -277,7 +276,7 @@ export default function UsersPage() {
           <p className="body-lg" style={{ margin: 0 }}>Otorisasi akun dan pengaturan hak akses tim Speaking Partner</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          {!isAkademik && (
+          {selfRole === "admin" && (
             <>
               <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
                 <Download size={16} /> Template
@@ -306,8 +305,8 @@ export default function UsersPage() {
         <div className="kpi-grid" style={{ marginBottom: 48 }}>
           {summary.map(s => (
             <div key={s.role} className="kpi-card" onClick={() => setFilterRole(filterRole === s.role ? "" : s.role)} style={{ cursor: 'pointer', opacity: filterRole && filterRole !== s.role ? 0.5 : 1 }}>
-              <div className="kpi-icon" style={{ color: ROLE_COLORS[s.role] }}><Shield size={24} /></div>
-              <div className="kpi-label">{s.role}</div>
+              <div className="kpi-icon" style={{ color: "var(--primary)" }}><Shield size={24} /></div>
+              <div className="kpi-label">{s.name}</div>
               <div className="kpi-value">{s.count} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>Staff</span></div>
             </div>
           ))}
@@ -328,7 +327,7 @@ export default function UsersPage() {
             <Filter size={16} style={{ color: "var(--primary)" }} />
             <select className="form-control" value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ width: 140 }}>
               <option value="">Semua Role</option>
-              {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
+              {roles.map(r => <option key={r.slug} value={r.slug.toUpperCase()}>{r.name}</option>)}
             </select>
             <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ width: 140 }}>
               <option value="">Semua Status</option>
@@ -371,7 +370,9 @@ export default function UsersPage() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span className={`badge ${ROLE_BADGE[user.role] ?? "badge-muted"}`} style={{ width: 'fit-content' }}>{user.role}</span>
+                      <span className={`badge ${ROLE_BADGE[user.role] ?? "badge-muted"}`} title={user.role} style={{ width: 'fit-content' }}>
+                        {user.roleName}
+                      </span>
                       {user.teamType && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--secondary)" }}>{user.teamType.replace(/_/g, ' ')}</div>}
                     </div>
                   </td>
@@ -389,7 +390,7 @@ export default function UsersPage() {
                         style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "#818cf8", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
                         title="Edit User"
                       >✏️</button>
-                      {(selfRole === "ADMIN" || selfRole === "FINANCE") && (
+                      {(selfRole === "admin" || selfRole === "finance") && (
                         <button
                           onClick={() => openPayroll(user)}
                           style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "#10b981", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
@@ -447,33 +448,41 @@ export default function UsersPage() {
                   <div className="form-grid-2">
                     <div className="form-group">
                       <label className="form-label required">Role</label>
-                      <select id="sel-role-user" className="form-control" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
-                        {allowedRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                      <select id="sel-role-user" className="form-control" value={form.roleId} onChange={e => setForm(f => ({ ...f, roleId: e.target.value }))}>
+                        <option value="">Pilih Role...</option>
+                        {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                       </select>
                     </div>
-                    {["CS", "ADVERTISER"].includes(form.role) && (
-                      <div className="form-group">
-                        <label className="form-label">Kategori Tim</label>
-                        <select className="form-control" value={form.teamType} onChange={e => setForm(f => ({ ...f, teamType: e.target.value }))}>
-                          <option value="">Pilih Kategori...</option>
-                          {form.role === "CS" && (
-                            <>
-                              <option value="CS_REGULAR">CS Regular</option>
-                              <option value="CS_LIVE">CS Live</option>
-                              <option value="CS_TOEFL">CS Test TOEFL</option>
-                              <option value="CS_RO">CS Repeat Order (RO)</option>
-                            </>
+                    {(() => {
+                      const selectedRole = roles.find(r => r.id === form.roleId);
+                      return (
+                        <>
+                          {selectedRole?.slug === 'cs' && (
+                            <div className="form-group">
+                              <label className="form-label">Kategori Tim</label>
+                              <select className="form-control" value={form.teamType} onChange={e => setForm(f => ({ ...f, teamType: e.target.value }))}>
+                                <option value="">Pilih Kategori...</option>
+                                <option value="CS_REGULAR">CS Regular</option>
+                                <option value="CS_LIVE">CS Live</option>
+                                <option value="CS_TOEFL">CS Test TOEFL</option>
+                                <option value="CS_RO">CS Repeat Order (RO)</option>
+                              </select>
+                            </div>
                           )}
-                          {form.role === "ADVERTISER" && (
-                            <>
-                              <option value="ADV_REGULAR">Adv Regular</option>
-                              <option value="ADV_PART_TIME">Adv Part Time</option>
-                              <option value="ADV_PROJECT">Adv Project</option>
-                            </>
+                          {selectedRole?.slug === 'advertiser' && (
+                            <div className="form-group">
+                              <label className="form-label">Kategori Tim</label>
+                              <select className="form-control" value={form.teamType} onChange={e => setForm(f => ({ ...f, teamType: e.target.value }))}>
+                                <option value="">Pilih Kategori...</option>
+                                <option value="ADV_REGULAR">Adv Regular</option>
+                                <option value="ADV_PART_TIME">Adv Part Time</option>
+                                <option value="ADV_PROJECT">Adv Project</option>
+                              </select>
+                            </div>
                           )}
-                        </select>
-                      </div>
-                    )}
+                        </>
+                      );
+                    })()}
                     {editUser && (
                       <div className="form-group">
                         <label className="form-label">Status</label>
@@ -519,8 +528,8 @@ export default function UsersPage() {
                           type="text" className="form-control" placeholder="password"
                           value={row.password} onChange={e => updateBulkRow(i, "password", e.target.value)}
                         />
-                        <select className="form-control" value={row.role} onChange={e => updateBulkRow(i, "role", e.target.value)}>
-                          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                        <select className="form-control" value={row.roleSlug} onChange={e => updateBulkRow(i, "roleSlug", e.target.value)}>
+                          {roles.map(r => <option key={r.slug} value={r.slug}>{r.name}</option>)}
                         </select>
                         <button
                           type="button"

@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
     const employees = await prisma.user.findMany({
       where: { karyawanProfile: { isNot: null }, aktif: true },
       include: { 
+        role: true,
         karyawanProfile: true,
         adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } },
         liveSessions: { where: { tanggal: { gte: dayStart, lte: dayEnd } } },
@@ -67,6 +68,7 @@ export async function GET(request: NextRequest) {
     const results = employees.map(emp => {
       const profile = emp.karyawanProfile!;
       const posisi = profile.posisi || "";
+      const roleSlug = emp.role?.slug?.toLowerCase();
       let totalFee = 0;
       let totalBonus = 0;
       let extraGaji = 0;
@@ -76,7 +78,7 @@ export async function GET(request: NextRequest) {
       extraGaji += calculateGajiLive(totalJam);
 
       // B. Hitung Fee CS (Jika Role CS)
-      if (emp.role === "CS") {
+      if (roleSlug === "cs") {
         emp.pemasukan.forEach(p => {
           totalFee += calculateCSFee(
             (emp.teamType || "CS_REGULAR") as any,
@@ -89,7 +91,7 @@ export async function GET(request: NextRequest) {
       }
 
       // C. Hitung Fee Advertiser
-      if (emp.role === "ADVERTISER" || posisi.includes("ADV")) {
+      if (roleSlug === "advertiser" || posisi.toUpperCase().includes("ADV")) {
         emp.adPerformances.forEach(perf => {
           totalFee += perf.fee; // Already calculated in API Performance
         });

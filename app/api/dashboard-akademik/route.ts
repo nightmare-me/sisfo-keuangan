@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   const siswaAktif = await prisma.siswa.count({ where: { status: "AKTIF" } });
 
   // 4. Total pengajar aktif
-  const pengajarAktif = await prisma.user.count({ where: { role: "PENGAJAR", aktif: true } });
+  const pengajarAktif = await prisma.user.count({ where: { role: { slug: "pengajar" }, aktif: true } });
 
   // 5. Tren 30 hari penambahan murid
   const trendData = [];

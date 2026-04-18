@@ -11,7 +11,8 @@ model User {
   name         String
   email        String         @unique
   password     String
-  role         Role           @default(CS)
+  roleId       String?        // Link ke Role granular
+  role         Role?          @relation(fields: [roleId], references: [id])
   teamType     String?        // CS_REGULAR, CS_LIVE, CS_TOEFL, CS_RO, ADV_REGULAR, ADV_PART_TIME, ADV_PROJECT
   aktif        Boolean        @default(true)
   createdAt    DateTime       @default(now())
@@ -397,14 +398,7 @@ model AdPerformance {
   @@index([advId])
 }
 
-enum Role {
-  ADMIN
-  FINANCE
-  CS
-  PENGAJAR
-  AKADEMIK
-  ADVERTISER
-}
+
 
 enum TipeKelas {
   PRIVATE
@@ -489,4 +483,25 @@ enum KondisiInventaris {
   BAIK
   RUSAK_RINGAN
   RUSAK_BERAT
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  slug        String       @unique // e.g., 'admin', 'cs-senior'
+  description String?
+  permissions Permission[]
+  users       User[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique // e.g., 'crm:view', 'finance:delete'
+  description String?
+  roles       Role[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

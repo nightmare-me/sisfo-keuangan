@@ -71,3 +71,15 @@ export function percentageChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
   return ((current - previous) / previous) * 100;
 }
+
+export function hasPermission(session: any, permissionSlug: string): boolean {
+  if (!session?.user) return false;
+  
+  const userRole = (session.user as any).role;
+  const userPermissions = (session.user as any).permissions || [];
+  
+  // Administrator bypass: has all permissions
+  if (userRole === 'ADMIN' || userRole === 'admin') return true;
+  
+  return userPermissions.includes(permissionSlug);
+}

@@ -33,6 +33,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ### 🚀 Fitur Baru & Peningkatan (Update 2)
 - **Ads-Spent Sync Automation**: Implementasi sinkronisasi otomatis antara input **Performa Iklan** (Advertiser) dengan **Spent Ads** (Dashboard Finansial). Total spent harian harian per platform kini terupdate otomatis saat advertiser menyimpan data.
+
+## Update Terbaru: Granular Role-Based Access Control (RBAC) - 18 April 2026
+
+Sistem telah bermigrasi dari *Static Role-Based Access* ke sistem **Granular Role & Permission** yang dinamis untuk skalabilitas pengelolaan staf yang lebih baik.
+
+### Fitur Utama RBAC:
+- **Dynamic Roles**: Role tidak lagi statis (enum), melainkan dikelola melalui database.
+- **Granular Permissions**: Setiap Role dapat diberikan hak akses spesifik (contoh: `user:manage`, `payroll:view`, dll).
+- **Role Management UI**: Dashboard baru di `/settings/roles` untuk mengatur hak akses secara visual dengan checkbox.
+- **Improved Security**: Administrator memiliki *bypass* penuh, sementara role lain dibatasi secara ketat berdasarkan permission.
+- **Backward Compatibility**: Sesi tetap mendukung pengecekan role huruf besar (ADMIN, CS, FINANCE) untuk memastikan portal lama tetap berjalan normal.
+
+### Perubahan Teknis:
+- **Database**: Tabel `Role` dan `Permission` ditambahkan, kolom `role` pada `User` diganti menjadi relasi `roleId`.
+- **Auth**: `NextAuth` kini menyertakan daftar `permissions` ke dalam JWT dan Session.
+- **Utility**: Implementasi fungsi `hasPermission(session, slug)` sebagai standar pengecekan akses di seluruh aplikasi.
+- **Layout**: Sidebar kini render secara dinamis hanya menampilkan menu yang diizinkan untuk user tersebut.
+
+---
+
 - **Enhanced Ad Platform Tracking**: Penambahan field **Platform** (Meta, Google, TikTok, dll) pada modul performa iklan untuk akurasi sinkronisasi data biaya.
 - **Advanced API Validation**: Penguatan API ads performance dengan validasi data numerik (pencegahan NaN) dan penanganan error yang lebih detail.
 

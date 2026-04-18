@@ -13,14 +13,22 @@ export async function GET(req: Request) {
     const logs = await prisma.auditLog.findMany({
       include: {
         user: {
-          select: { name: true, role: true }
+          include: { role: true }
         }
       },
       orderBy: { createdAt: "desc" },
       take: 100
     });
 
-    return NextResponse.json(logs);
+    const formatted = logs.map((l: any) => ({
+      ...l,
+      user: {
+        ...l.user,
+        role: l.user.role?.slug?.toUpperCase() || "USER"
+      }
+    }));
+
+    return NextResponse.json(formatted);
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
   }

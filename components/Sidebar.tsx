@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { getInitials } from "@/lib/utils";
+import { getInitials, hasPermission } from "@/lib/utils";
 import { 
   LayoutDashboard, 
   Users, 
@@ -16,23 +16,20 @@ import {
   GraduationCap, 
   Package, 
   UserCog, 
-  LogOut,
-  History,
-  Download,
-  MessageCircle,
-  Briefcase,
-  TrendingUp,
-  Clock
+  LogOut, 
+  History, 
+  Download, 
+  MessageCircle, 
+  Briefcase, 
+  TrendingUp, 
+  Clock 
 } from "lucide-react";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
-  hideFor?: string[];
-  adminOnly?: boolean;
-  akademikOnly?: boolean;
-  pengajarOnly?: boolean;
+  permission?: string; // Hak akses yang dibutuhkan
 }
 
 interface NavGroup {
@@ -43,38 +40,37 @@ interface NavGroup {
 const navItems: NavGroup[] = [
   { group: "UTAMA", items: [
     { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
-    { href: "/crm", label: "CRM / Leads", icon: <History size={16} />, hideFor: ["PENGAJAR", "AKADEMIK"] },
+    { href: "/crm", label: "CRM / Leads", icon: <History size={16} />, permission: "crm:view" },
   ]},
   { group: "KEUANGAN", items: [
-    { href: "/pemasukan", label: "Pemasukan", icon: <Wallet size={16} />, hideFor: ["AKADEMIK"] },
-    { href: "/pengeluaran", label: "Pengeluaran", icon: <FileText size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
-    { href: "/ads", label: "Spent Ads", icon: <Megaphone size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
-    { href: "/ads/performance", label: "Performa Iklan", icon: <TrendingUp size={16} />, adminOnly: true },
-    { href: "/laporan-keuangan", label: "Laporan Keuangan", icon: <PieChart size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
-    { href: "/refund", label: "Manajemen Refund", icon: <History size={16} />, hideFor: ["PENGAJAR", "AKADEMIK"] },
-    { href: "/payroll/staff", label: "Payroll Staf", icon: <Briefcase size={16} />, adminOnly: true },
+    { href: "/pemasukan", label: "Pemasukan", icon: <Wallet size={16} />, permission: "finance:view" },
+    { href: "/pengeluaran", label: "Pengeluaran", icon: <FileText size={16} />, permission: "finance:edit" },
+    { href: "/ads", label: "Spent Ads", icon: <Megaphone size={16} />, permission: "finance:view" },
+    { href: "/ads/performance", label: "Performa Iklan", icon: <TrendingUp size={16} />, permission: "report:view" },
+    { href: "/laporan-keuangan", label: "Laporan Keuangan", icon: <PieChart size={16} />, permission: "report:view" },
+    { href: "/refund", label: "Manajemen Refund", icon: <History size={16} />, permission: "crm:view" },
+    { href: "/payroll/staff", label: "Payroll Staf", icon: <Briefcase size={16} />, permission: "payroll:manage" },
   ]},
   { group: "AKADEMIK", items: [
-    { href: "/siswa", label: "Siswa", icon: <Users size={16} /> },
-    { href: "/kelas", label: "Manajemen Kelas", icon: <BookOpen size={16} /> },
-    { href: "/program", label: "Produk / Program", icon: <Target size={16} /> },
-    { href: "/gaji", label: "Payroll Pengajar", icon: <Wallet size={16} />, hideFor: ["CS", "PENGAJAR"] },
+    { href: "/siswa", label: "Siswa", icon: <Users size={16} />, permission: "siswa:manage" },
+    { href: "/kelas", label: "Manajemen Kelas", icon: <BookOpen size={16} />, permission: "kelas:manage" },
+    { href: "/program", label: "Produk / Program", icon: <Target size={16} />, permission: "kelas:manage" },
+    { href: "/gaji", label: "Payroll Pengajar", icon: <Wallet size={16} />, permission: "payroll:manage" },
   ]},
   { group: "PENGAJAR", items: [
-    { href: "/pengajar/dashboard", label: "Kelas Saya", icon: <GraduationCap size={16} />, pengajarOnly: true },
+    { href: "/pengajar/dashboard", label: "Kelas Saya", icon: <GraduationCap size={16} /> },
   ]},
   { group: "OPERASIONAL", items: [
-    { href: "/invoice", label: "Invoice", icon: <FileText size={16} />, hideFor: ["AKADEMIK"] },
-    { href: "/inventaris", label: "Inventaris", icon: <Package size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
-    { href: "/staff/live", label: "Input Jam Live", icon: <Clock size={16} />, adminOnly: true },
+    { href: "/invoice", label: "Invoice", icon: <FileText size={16} />, permission: "finance:view" },
+    { href: "/inventaris", label: "Inventaris", icon: <Package size={16} />, permission: "finance:view" },
+    { href: "/staff/live", label: "Input Jam Live", icon: <Clock size={16} />, permission: "payroll:manage" },
   ]},
   { group: "SISTEM", items: [
-    { href: "/users", label: "Manajemen User", icon: <UserCog size={16} />, adminOnly: true },
-    { href: "/logs", label: "Audit Log", icon: <History size={16} />, adminOnly: true },
-    { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, adminOnly: true },
-    { href: "/settings/wa", label: "Template WhatsApp", icon: <MessageCircle size={16} />, adminOnly: true },
-    { href: "/ads/performance", label: "Input Iklan Saya", icon: <TrendingUp size={16} />, hideFor: ["ADMIN", "FINANCE", "CS", "PENGAJAR", "AKADEMIK"] }, // Show only for ADVERTISER
-    { href: "/users", label: "Manajemen Pengajar", icon: <UserCog size={16} />, akademikOnly: true },
+    { href: "/users", label: "Manajemen User", icon: <UserCog size={16} />, permission: "user:manage" },
+    { href: "/settings/roles", label: "Pengaturan Role", icon: <Package size={16} />, permission: "user:manage" },
+    { href: "/logs", label: "Audit Log", icon: <History size={16} />, permission: "user:manage" },
+    { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, permission: "user:manage" },
+    { href: "/settings/wa", label: "Template WhatsApp", icon: <MessageCircle size={16} />, permission: "user:manage" },
   ]},
 ];
 
@@ -86,10 +82,9 @@ export default function Sidebar() {
 
   const getRoleBadgeClass = (r: string) => {
     switch(r) {
-      case 'ADMIN': return 'badge-danger';
-      case 'AKADEMIK': return 'badge-info';
-      case 'PENGAJAR': return 'badge-primary';
-      case 'FINANCE': return 'badge-success';
+      case 'admin': return 'badge-danger';
+      case 'finance': return 'badge-success';
+      case 'cs': return 'badge-info';
       default: return 'badge-muted';
     }
   };
@@ -111,10 +106,12 @@ export default function Sidebar() {
       <nav className="sidebar-nav">
         {navItems.map((group) => {
           const filteredItems = group.items.filter((item) => {
-            if (item.adminOnly && role !== "ADMIN") return false;
-            if (item.akademikOnly && role !== "AKADEMIK") return false;
-            if (item.pengajarOnly && role !== "PENGAJAR") return false;
-            if (item.hideFor?.includes(role)) return false;
+            // Dashboard always visible
+            if (item.href === "/dashboard") return true;
+            // Pengecekan via permission
+            if (item.permission) {
+              return hasPermission(session, item.permission);
+            }
             return true;
           });
 
@@ -150,7 +147,7 @@ export default function Sidebar() {
             <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", fontSize: 13 }}>
               {name}
             </strong>
-            <span className={`badge ${getRoleBadgeClass(role)}`} style={{ marginTop: 4 }}>
+            <span className={`badge ${getRoleBadgeClass(role)}`} style={{ marginTop: 4, textTransform: 'uppercase' }}>
               {role}
             </span>
           </div>

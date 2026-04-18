@@ -20,11 +20,21 @@ export async function GET(request: NextRequest) {
         tanggal: { gte: dayStart, lte: dayEnd }
       },
       include: {
-        user: { select: { id: true, name: true, role: true } }
+        user: { 
+          include: { role: true }
+        }
       }
     });
 
-    return NextResponse.json(sessions || []);
+    const formatted = sessions.map((s: any) => ({
+      ...s,
+      user: {
+        ...s.user,
+        role: s.user.role?.slug?.toUpperCase() || "USER"
+      }
+    }));
+
+    return NextResponse.json(formatted || []);
   } catch (err: any) {
     console.error("LIVE_SESSIONS_GET_ERROR:", err);
     return NextResponse.json({ error: err.message, details: "Gagal mengambil data live session" }, { status: 500 });

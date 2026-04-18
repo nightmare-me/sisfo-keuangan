@@ -353,6 +353,7 @@ model AdPerformance {
   advId     String
   adv       User     @relation(fields: [advId], references: [id])
   spent     Float
+  platform  PlatformAds @default(META)
   leads     Int
   cpl       Float
   cpa       Float?

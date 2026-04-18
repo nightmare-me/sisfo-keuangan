@@ -18,6 +18,7 @@ export default function AdsPerformancePage() {
   const [form, setForm] = useState({
     spent: "",
     leads: "",
+    platform: "META",
     date: new Date().toISOString().slice(0, 10),
   });
 
@@ -39,13 +40,14 @@ export default function AdsPerformancePage() {
       body: JSON.stringify({
         spent: parseFloat(form.spent),
         leads: parseInt(form.leads),
+        platform: form.platform,
         date: form.date,
       }),
     });
     setSaving(false);
     if (res.ok) {
       setShowModal(false);
-      setForm({ spent: "", leads: "", date: new Date().toISOString().slice(0, 10) });
+      setForm({ spent: "", leads: "", platform: "META", date: new Date().toISOString().slice(0, 10) });
       fetchData();
     }
   }
@@ -105,6 +107,7 @@ export default function AdsPerformancePage() {
             <thead>
               <tr>
                 <th>Tanggal</th>
+                <th>Platform</th>
                 {isAdmin && <th>Advertiser</th>}
                 <th>Spent</th>
                 <th>Leads</th>
@@ -126,6 +129,7 @@ export default function AdsPerformancePage() {
               ) : performances.map(p => (
                 <tr key={p.id}>
                   <td style={{ fontWeight: 600 }}>{formatDate(p.date)}</td>
+                  <td><span className="badge badge-secondary" style={{ fontSize: 10 }}>{p.platform || "META"}</span></td>
                   {isAdmin && (
                     <td>
                       <div style={{ fontWeight: 600 }}>{p.adv?.name}</div>
@@ -158,6 +162,17 @@ export default function AdsPerformancePage() {
                 <div className="form-group">
                   <label className="form-label required">Tanggal Iklan</label>
                   <input type="date" className="form-control" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label required">Platform Iklan</label>
+                  <select className="form-control" value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} required>
+                    <option value="META">Meta (FB/IG)</option>
+                    <option value="GOOGLE">Google Ads</option>
+                    <option value="TIKTOK">TikTok Ads</option>
+                    <option value="INSTAGRAM">Instagram Direct</option>
+                    <option value="YOUTUBE">YouTube</option>
+                    <option value="LAINNYA">Lainnya</option>
+                  </select>
                 </div>
                 <div className="form-grid-2">
                   <div className="form-group">

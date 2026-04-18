@@ -31,20 +31,13 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Update Log - 18 April 2026
 
-### 🚀 Fitur Baru & Peningkatan
-- **Ads Performance Monitoring**: Penambahan halaman performa iklan (`/ads/performance`) untuk memantau efektivitas kampanye.
-- **CRM Stats & Optimization**: Implementasi API statistik CRM dan pemindahan Executive Summary ke strip horizontal untuk memaksimalkan ruang kerja Kanban.
-- **Payroll Logic Update**: Pembaruan sistem kalkulasi gaji pengajar (`lib/payroll.ts`) untuk akurasi honorarium.
-- **Restrukturisasi Menu**: Reorganisasi halaman Laporan menjadi **Laporan Keuangan** untuk kejelasan modul.
+### 🚀 Fitur Baru & Peningkatan (Update 2)
+- **Ads-Spent Sync Automation**: Implementasi sinkronisasi otomatis antara input **Performa Iklan** (Advertiser) dengan **Spent Ads** (Dashboard Finansial). Total spent harian harian per platform kini terupdate otomatis saat advertiser menyimpan data.
+- **Enhanced Ad Platform Tracking**: Penambahan field **Platform** (Meta, Google, TikTok, dll) pada modul performa iklan untuk akurasi sinkronisasi data biaya.
+- **Advanced API Validation**: Penguatan API ads performance dengan validasi data numerik (pencegahan NaN) dan penanganan error yang lebih detail.
 
-### 💻 Optimasi UI/UX (Responsivitas)
-- **Laptop Screen Optimization**: Penyesuaian menyeluruh untuk layar 1366px - 1280px.
-- **Global Design System**: Sidebar lebih ramping (260px), padding kontainer lebih efisien, dan ukuran font/tombol yang lebih proporsional.
-- **Fix Kanban Cropping**: Perbaikan kolom Kanban yang terpotong di layar laptop kecil.
-
-### 🛠️ Teknis & Database
-- **Employee & Payroll Database**: Implementasi model `KaryawanProfile` untuk menyimpan NIK, data bank, dan parameter penggajian.
-- **Auto-Generate NIK**: Sistem penomoran otomatis karyawan dengan format `SP-*****`.
-- **Management UI**: Penambahan modal pengaturan payroll pada halaman Manajemen Personil untuk akses Admin/Finance.
-- **Schema Synchronization**: Pembaruan relasi Refund, Pemasukan, dan penambahan field durasi pada Program.
-- **Audit System**: Implementasi sistem audit log untuk pelacakan aktivitas.
+### 🛠️ Teknis & Stabilitas Sistem
+- **React v18 Downgrade**: Melakukan downgrade `react` & `react-dom` dari v19 ke v18.2.0 untuk memastikan kompatibilitas penuh dengan Next.js 14, memperbaiki error `TypeError: ... (reading 'call')` pada NextAuth, serta mengatasi masalah *white screen* pada dashboard.
+- **Prisma Client Alignment**: Sinkronisasi skema database terbaru dengan Prisma Client untuk mendukung field platform baru.
+- **Optimasi Optional Chaining**: Perbaikan sintaks pada dashboard untuk mencegah crash saat data API belum termuat.
+- **Audit System**: Implementasi sistem audit log untuk pelacakan aktivitas yang lebih komprehensif.

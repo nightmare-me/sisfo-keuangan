@@ -236,7 +236,7 @@ export default function DashboardPage() {
   }
 
   // ── Finance/Admin/CS View ─────────────────────────
-  const pemasukanChange = data ? percentageChange(data.kpi.pemasukanHariIni, data.kpi.pemasukanKemarin) : 0;
+  const pemasukanChange = data?.kpi ? percentageChange(data.kpi.pemasukanHariIni, data.kpi.pemasukanKemarin) : 0;
 
   return (
     <div className="page-container">
@@ -257,7 +257,7 @@ export default function DashboardPage() {
           }
           return true;
         }).map((cfg) => {
-          const value = data?.kpi[cfg.key as keyof typeof data.kpi] ?? 0;
+          const value = data?.kpi?.[cfg.key as keyof typeof data.kpi] ?? 0;
           const isCurrency = cfg.isCurrency !== false;
           const isPemasukan = cfg.key === "pemasukanHariIni";
 

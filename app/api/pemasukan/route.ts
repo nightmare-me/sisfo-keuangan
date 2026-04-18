@@ -176,11 +176,24 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session || (session.user as any).role !== "ADMIN") {
-    return NextResponse.json({ error: "Hanya Admin yang bisa menghapus transaksi" }, { status: 403 });
+    return NextResponse.json({ error: "Hanya Admin yang bisa menghapus data" }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    const count = await prisma.pemasukan.count();
+    await recordLog((session.user as any).id, "Hapus Semua Pemasukan", "BATCH DELETE", `Menghapus seluruh ${count} data transaksi pemasukan dan invoice terkait.`);
+    
+    // Harus hapus invoice dulu karena ada relasi
+    await prisma.invoice.deleteMany({});
+    await prisma.pemasukan.deleteMany({});
+    
+    return NextResponse.json({ success: true, count });
+  }
+
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
   const item = await prisma.pemasukan.findUnique({

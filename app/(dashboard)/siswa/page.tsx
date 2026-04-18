@@ -2,23 +2,28 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { formatDate } from "@/lib/utils";
+import { hasPermission, formatDate } from "@/lib/utils";
 import { 
   Users, 
-  UserPlus, 
-  Download, 
-  Upload, 
+  Plus, 
   Search, 
   Filter, 
   RefreshCw, 
+  Edit2, 
+  Trash2, 
   MoreHorizontal, 
-  Edit3, 
-  Trash2,
+  ArrowRight, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Calendar, 
+  Download,
+  Upload,
+  UserPlus,
   CheckCircle,
   XCircle,
-  AlertCircle,
-  Briefcase,
   GraduationCap,
+  Edit3,
   Wallet
 } from "lucide-react";
 
@@ -28,9 +33,15 @@ const emptyForm = { nama:"", telepon:"", email:"", alamat:"", tanggalLahir:"", c
 
 export default function SiswaPage() {
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role;
+  
+  // Granular Matrix Permissions
+  const canView = hasPermission(session, "siswa:view");
+  const canEdit = hasPermission(session, "siswa:edit");
+  const canDelete = hasPermission(session, "siswa:delete");
+  const canRefund = hasPermission(session, "refund:view") || hasPermission(session, "refund:approve");
+
   const userId = (session?.user as any)?.id;
-  const isCS = role === "CS";
+  const isCS = (session?.user as any)?.role === "CS";
 
   const [data, setData] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -85,6 +96,17 @@ export default function SiswaPage() {
     if (!confirm(`Hapus siswa "${s.nama}"?\n\nData tidak bisa dikembalikan.`)) return;
     await fetch(`/api/siswa?id=${s.id}`, { method: "DELETE" });
     fetchData();
+  }
+
+  async function handleDeleteAll() {
+    if ((session?.user as any)?.role !== "ADMIN") return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data SISWA, PENDAFTARAN, dan PEMBAYARAN TERKAIT akan dihapus permanen.\n\nTindakan ini tidak bisa dibatalkan.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/siswa?all=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else alert("Gagal menghapus.");
+    }
   }
 
   async function updateStatus(id: string, status: string) {
@@ -191,6 +213,11 @@ export default function SiswaPage() {
           <p className="body-lg" style={{ margin: 0 }}>Kelola data profiling dan status akademik {total} siswa</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
+          {(session?.user as any)?.role === "ADMIN" && (
+            <button className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Semua
+            </button>
+          )}
           <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
             <Download size={16} /> Template
           </button>
@@ -307,10 +334,12 @@ export default function SiswaPage() {
                   </td>
                   <td className="text-center">
                     <div style={{ display:"flex", gap:8, justifyContent:'center' }}>
-                      <button className="btn btn-secondary btn-icon" onClick={() => openEdit(s)} title="Edit Profil">
-                        <Edit3 size={16} />
-                      </button>
-                      {["ADMIN", "CS"].includes(role) && (
+                      {canEdit && (
+                        <button className="btn btn-secondary btn-icon" onClick={() => openEdit(s)} title="Edit Profil">
+                          <Edit3 size={16} />
+                        </button>
+                      )}
+                      {canRefund && (
                         <button className="btn btn-secondary btn-icon" onClick={() => { 
                           setSelectedForRefund(s); 
                           const firstPay = s.pemasukan?.[0];
@@ -326,7 +355,7 @@ export default function SiswaPage() {
                            <Wallet size={16} />
                         </button>
                       )}
-                      {role === "ADMIN" && (
+                      {canDelete && (
                         <button className="btn btn-secondary btn-icon" onClick={() => handleDelete(s)} style={{ color:"var(--danger)" }} title="Hapus Siswa">
                            <Trash2 size={16} />
                         </button>

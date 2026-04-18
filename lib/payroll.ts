@@ -13,8 +13,16 @@ export function calculateCSFee(
   productType: string,
   price: number,
   isRO: boolean = false,
-  cr: number = 0 // For CS Live
+  cr: number = 0, // For CS Live
+  program?: { feeClosing?: number, feeClosingRO?: number }
 ): number {
+  // 1. PRIORITAS: Pakai nominal fee dari Database jika > 0
+  if (program) {
+    const dbFee = isRO ? (program.feeClosingRO || 0) : (program.feeClosing || 0);
+    if (dbFee > 0) return dbFee;
+  }
+
+  // 2. CADANGAN: Pakai rumus hardcoded (untuk back-compatibility)
   if (csCategory === 'CS_REGULAR') {
     // Regular Rules
     if (!isRO) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { formatDate } from "@/lib/utils";
+import { formatDate, hasPermission } from "@/lib/utils";
 import { 
   BookOpen, 
   Plus, 
@@ -39,36 +39,39 @@ const emptyForm = { namaKelas: "", programId: "", pengajarId: "", jadwal: "", ha
 
 export default function KelasPage() {
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role;
-  const isAdmin = role === "ADMIN";
-  const canManage = ["ADMIN", "FINANCE", "AKADEMIK"].includes(role);
+  
+  // Granular Matrix Permissions
+  const canView = hasPermission(session, "kelas:view");
+  const canEdit = hasPermission(session, "kelas:edit");
+  const canDelete = hasPermission(session, "kelas:delete");
+  const canViewFee = hasPermission(session, "payroll_tutor:view") || hasPermission(session, "payroll_tutor:edit");
 
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [programs, setPrograms] = useState<any[]>([]);
   const [pengajarList, setPengajarList] = useState<any[]>([]);
-  const [siswaEligible, setSiswaEligible] = useState<any[]>([]); // Khusus plotting murid cerdas
+  const [siswaEligible, setSiswaEligible] = useState<any[]>([]); 
   const [filterStatus, setFilterStatus] = useState("");
   const [filterTipe, setFilterTipe] = useState("");
 
-  // Tambah/Edit kelas
   const [showModal, setShowModal] = useState(false);
   const [editKelas, setEditKelas] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ ...emptyForm });
 
-  // Detail kelas (side panel)
   const [selectedKelas, setSelectedKelas] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [pendaftaranList, setPendaftaranList] = useState<any[]>([]);
 
-  // Tambah siswa ke kelas
   const [showTambahSiswa, setShowTambahSiswa] = useState(false);
   const [selectedSiswaId, setSelectedSiswaId] = useState("");
   const [addingSiswa, setAddingSiswa] = useState(false);
   const [searchSiswa, setSearchSiswa] = useState("");
 
+  const isFull = selectedKelas && (pendaftaranList.length >= selectedKelas.kapasitas);
+
   function fetchData() {
+    if (!canView) return;
     const p = new URLSearchParams();
     if (filterStatus) p.set("status", filterStatus);
     if (filterTipe) p.set("tipe", filterTipe);
@@ -153,9 +156,22 @@ export default function KelasPage() {
   // ── Hapus kelas ──
   async function handleDeleteKelas(kelas: any) {
     if (!confirm(`Hapus kelas "${kelas.namaKelas}"?\n\nSemua data pendaftaran akan hilang.`)) return;
-    await fetch(`/api/kelas/${kelas.id}`, { method: "DELETE" });
+    await fetch(`/api/kelas?id=${kelas.id}`, { method: "DELETE" });
     if (selectedKelas?.id === kelas.id) setSelectedKelas(null);
     fetchData();
+  }
+
+  async function handleDeleteAll() {
+    if ((session?.user as any)?.role !== "ADMIN") return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data KELAS, PENDAFTARAN, dan ABSENSI akan dihapus permanen.\n\nTindakan ini tidak bisa dibatalkan.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/kelas?all=true", { method: "DELETE" });
+      if (res.ok) {
+        fetchData();
+        setSelectedKelas(null);
+      } else alert("Gagal menghapus.");
+    }
   }
 
   // ── Daftarkan siswa ──
@@ -190,7 +206,7 @@ export default function KelasPage() {
     (searchSiswa === "" || s.nama.toLowerCase().includes(searchSiswa.toLowerCase()) || s.noSiswa.toLowerCase().includes(searchSiswa.toLowerCase()))
   );
 
-  const isFull = selectedKelas && (pendaftaranList.length >= selectedKelas.kapasitas);
+  if (!canView) return <div className="p-12 text-center text-muted">Bapak/Ibu tidak memiliki izin untuk melihat modul ini.</div>;
 
   return (
     <div style={{ display: "flex", height: "100%", gap: 0 }}>
@@ -207,7 +223,12 @@ export default function KelasPage() {
             <p className="body-lg" style={{ margin: 0 }}>Kelola alokasi {data.length} kelas dan tutor pengajar</p>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
-            {canManage && (
+            {(session?.user as any)?.role === "ADMIN" && (
+              <button className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+                <Trash2 size={16} /> Hapus Semua
+              </button>
+            )}
+            {canEdit && (
               <button id="btn-tambah-kelas" className="btn btn-primary" onClick={openAdd} style={{ borderRadius: 'var(--radius-full)' }}>
                 <Plus size={18} /> Buat Kelas
               </button>
@@ -325,7 +346,7 @@ export default function KelasPage() {
                 </div>
               </div>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                {canManage && (
+                {canEdit && (
                    <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn btn-secondary btn-icon" onClick={() => openEdit(selectedKelas)} title="Edit Kelas"><Edit2 size={16} /></button>
                       <select
@@ -352,9 +373,9 @@ export default function KelasPage() {
                   { label: "WA Group", value: selectedKelas.linkGrup ? <a href={selectedKelas.linkGrup.startsWith('http') ? selectedKelas.linkGrup : `https://${selectedKelas.linkGrup}`} target="_blank" rel="noreferrer" style={{color: "var(--primary)", textDecoration: "underline", display: 'flex', alignItems: 'center', gap: 6}}>Join 🚀</a> : "—", icon: <LinkIcon size={16} /> },
                   { label: "Waktu Mulai", value: selectedKelas.tanggalMulai ? formatDate(selectedKelas.tanggalMulai) : "—", icon: <Calendar size={16} /> },
                   { label: "Durasi Program", value: { "2_MINGGU": "2 Minggu", "1_BULAN": "1 Bulan", "3_BULAN": "3 Bulan", "6_BULAN": "6 Bulan" }[selectedKelas.durasi as string] ?? selectedKelas.durasi ?? "—", icon: <Layers size={16} /> },
-                  { label: "Fee per Sesi", value: selectedKelas.feePerSesi ? `Rp ${selectedKelas.feePerSesi.toLocaleString('id-ID')}` : "—", icon: <Briefcase size={16} />, akademikOnly: true },
+                  { label: "Fee per Sesi", value: selectedKelas.feePerSesi ? `Rp ${selectedKelas.feePerSesi.toLocaleString('id-ID')}` : "—", icon: <Briefcase size={16} />, feeOnly: true },
                   { label: "Link Materi", value: selectedKelas.materiLink ? <a href={selectedKelas.materiLink.startsWith('http') ? selectedKelas.materiLink : `https://${selectedKelas.materiLink}`} target="_blank" rel="noreferrer" style={{color: "var(--success)", textDecoration: "underline"}}>Buka Materi 📚</a> : "—", icon: <ExternalLink size={16} /> },
-                ].filter(item => !item.akademikOnly || ["ADMIN", "AKADEMIK"].includes(role)).map(item => (
+                ].filter(item => !item.feeOnly || canViewFee).map(item => (
                   <div key={item.label}>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, display: 'flex', gap: 6, alignItems: 'center' }}>
                       {item.icon} {item.label}
@@ -384,7 +405,7 @@ export default function KelasPage() {
             </div>
 
             {/* Edit kapasitas cepat */}
-            {canManage && (
+            {canEdit && (
               <div style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 13, color: "var(--text-muted)" }}>⚡ Edit kapasitas cepat:</span>
                 <input
@@ -411,7 +432,7 @@ export default function KelasPage() {
               <div style={{ fontWeight: 700, fontSize: 16 }}>
                 👥 Daftar Siswa ({pendaftaranList.length}/{selectedKelas.kapasitas})
               </div>
-              {canManage && !showTambahSiswa && (
+              {canEdit && !showTambahSiswa && (
                 <button
                   onClick={() => setShowTambahSiswa(true)}
                   disabled={isFull}
@@ -487,7 +508,7 @@ export default function KelasPage() {
                       <th>Telepon</th>
                       <th>Status</th>
                       <th>Tgl Daftar</th>
-                      {canManage && <th style={{ width: 70 }}>Aksi</th>}
+                      {canEdit && <th style={{ width: 70 }}>Aksi</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -499,7 +520,7 @@ export default function KelasPage() {
                         <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{p.siswa.telepon || "—"}</td>
                         <td><span className={`badge ${STATUS_SISWA_BADGE[p.siswa.status] ?? "badge-muted"}`} style={{ fontSize: 10 }}>{p.siswa.status}</span></td>
                         <td style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(p.tanggalDaftar)}</td>
-                        {canManage && (
+                        {canEdit && (
                           <td>
                             <button
                               onClick={() => handleKeluarkanSiswa(p)}

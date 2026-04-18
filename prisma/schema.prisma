@@ -7,60 +7,60 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  name         String
-  email        String         @unique
-  password     String
-  roleId       String?        // Link ke Role granular
-  role         Role?          @relation(fields: [roleId], references: [id])
-  teamType     String?        // CS_REGULAR, CS_LIVE, CS_TOEFL, CS_RO, ADV_REGULAR, ADV_PART_TIME, ADV_PROJECT
-  aktif        Boolean        @default(true)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  auditLogs    AuditLog[]
-  gajiPengajar GajiPengajar[]
-  kelasAjar    Kelas[]        @relation("PengajarKelas")
-  leads        Lead[]         @relation("CSLeads")
-  pemasukan    Pemasukan[]    @relation("CSPemasukan")
-  pengeluaran  Pengeluaran[]
-  refundsAsCS  Refund[]       @relation("CSRefund")
-  refundsAsFin Refund[]       @relation("FinanceRefund")
-  spentAds       SpentAds[]
-  adPerformances AdPerformance[]
-  liveSessions   LiveSession[]
-  gajiStaf       GajiStaf[]
-  pemasukanTalent Pemasukan[]    @relation("TalentPemasukan")
+  id              String           @id @default(cuid())
+  name            String
+  email           String           @unique
+  password        String
+  aktif           Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  teamType        String?
+  roleId          String?
+  adPerformances  AdPerformance[]
+  auditLogs       AuditLog[]
+  gajiPengajar    GajiPengajar[]
+  gajiStaf        GajiStaf[]
   karyawanProfile KaryawanProfile?
+  kelasAjar       Kelas[]          @relation("PengajarKelas")
+  leads           Lead[]           @relation("CSLeads")
+  liveSessions    LiveSession[]
+  pemasukan       Pemasukan[]      @relation("CSPemasukan")
+  pemasukanTalent Pemasukan[]      @relation("TalentPemasukan")
+  pengeluaran     Pengeluaran[]
+  refundsAsCS     Refund[]         @relation("CSRefund")
+  refundsAsFin    Refund[]         @relation("FinanceRefund")
+  spentAds        SpentAds[]
+  role            Role?            @relation(fields: [roleId], references: [id])
 }
 
 model KaryawanProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nik             String?  @unique // Nomor Induk Karyawan SP-*****
-  posisi          String?
-  bankName        String?
-  rekeningNomor   String?
-  rekeningNama    String?
-  gajiPokok       Float    @default(0)
-  tunjangan       Float    @default(0)
-  feeClosing      Float    @default(0)
-  feeLead         Float    @default(0)
-  bonusTarget     Int      @default(0)
-  bonusNominal    Float    @default(0)
-  keterangan      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  nik           String?  @unique
+  posisi        String?
+  bankName      String?
+  rekeningNomor String?
+  rekeningNama  String?
+  gajiPokok     Float    @default(0)
+  tunjangan     Float    @default(0)
+  feeClosing    Float    @default(0)
+  feeLead       Float    @default(0)
+  bonusTarget   Int      @default(0)
+  bonusNominal  Float    @default(0)
+  keterangan    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model LiveSession {
-  id        String   @id @default(cuid())
-  userId    String
-  tanggal   DateTime @default(now())
-  durasi    Float    // Dalam jam
+  id         String   @id @default(cuid())
+  userId     String
+  tanggal    DateTime @default(now())
+  durasi     Float
   keterangan String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
 }
 
 model GajiStaf {
@@ -87,13 +87,15 @@ model Program {
   nama         String
   deskripsi    String?
   tipe         TipeKelas   @default(REGULAR)
-  kategoriFee  String?     // 49K, EFP, REG_1B, REG_ADV, NATIVE, TOEFL, PRIVATE_550, PRIVATE_850, PRIVATE_1B, PRIVATE_VIP, PRIVATE_FAMILY
   harga        Float
   durasiBuilan Int         @default(3)
   aktif        Boolean     @default(true)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   durasi       String?
+  kategoriFee  String?
+  feeClosing   Float       @default(0)
+  feeClosingRO Float       @default(0)
   kelas        Kelas[]
   leads        Lead[]
   pemasukan    Pemasukan[]
@@ -130,14 +132,14 @@ model Kelas {
   jam            String?
   kapasitas      Int            @default(10)
   status         StatusKelas    @default(AKTIF)
-  feePerSesi     Float          @default(0)
-  materiLink     String?        // Link materi (shareable)
   tanggalMulai   DateTime?
   tanggalSelesai DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   durasi         String?
   linkGrup       String?
+  feePerSesi     Float          @default(0)
+  materiLink     String?
   gajiPengajar   GajiPengajar[]
   pengajar       User?          @relation("PengajarKelas", fields: [pengajarId], references: [id])
   program        Program        @relation(fields: [programId], references: [id])
@@ -172,16 +174,16 @@ model Pemasukan {
   diskon      Float       @default(0)
   hargaFinal  Float
   metodeBayar MetodeBayar @default(CASH)
-  isRO        Boolean     @default(false)
-  talentId    String?
   keterangan  String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  isRO        Boolean     @default(false)
+  talentId    String?
   invoice     Invoice?
   cs          User?       @relation("CSPemasukan", fields: [csId], references: [id])
-  talent      User?       @relation("TalentPemasukan", fields: [talentId], references: [id])
   program     Program?    @relation(fields: [programId], references: [id])
   siswa       Siswa?      @relation(fields: [siswaId], references: [id])
+  talent      User?       @relation("TalentPemasukan", fields: [talentId], references: [id])
   refunds     Refund[]
 }
 
@@ -383,27 +385,48 @@ model WaTemplate {
 }
 
 model AdPerformance {
-  id        String   @id @default(cuid())
-  date      DateTime @default(now())
+  id        String      @id @default(cuid())
+  date      DateTime    @default(now())
   advId     String
-  adv       User     @relation(fields: [advId], references: [id])
   spent     Float
-  platform  PlatformAds @default(META)
   leads     Int
   cpl       Float
   cpa       Float?
   fee       Float
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime    @updatedAt
+  platform  PlatformAds @default(META)
+  adv       User        @relation(fields: [advId], references: [id])
 
   @@index([advId])
 }
 
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  slug        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       User[]
+  permissions Permission[] @relation("PermissionToRole")
+}
 
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  roles       Role[]   @relation("PermissionToRole")
+}
 
 enum TipeKelas {
   PRIVATE
   REGULAR
   SEMI_PRIVATE
+  ONLINE
+  LAINNYA
 }
 
 enum StatusSiswa {
@@ -483,25 +506,4 @@ enum KondisiInventaris {
   BAIK
   RUSAK_RINGAN
   RUSAK_BERAT
-}
-
-model Role {
-  id          String       @id @default(cuid())
-  name        String       @unique
-  slug        String       @unique // e.g., 'admin', 'cs-senior'
-  description String?
-  permissions Permission[]
-  users       User[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-}
-
-model Permission {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique // e.g., 'crm:view', 'finance:delete'
-  description String?
-  roles       Role[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }

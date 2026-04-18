@@ -123,16 +123,33 @@ export async function DELETE(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const role = (session.user as any)?.role;
-  if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus siswa" }, { status: 403 });
+  if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus data" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    try {
+      // Nuke dependencies first
+      await prisma.absensi.deleteMany({});
+      await prisma.pendaftaran.deleteMany({});
+      // Pemasukan & Invoice usually linked to students
+      await prisma.invoice.deleteMany({});
+      await prisma.pemasukan.deleteMany({});
+      await prisma.siswa.deleteMany({});
+      return NextResponse.json({ success: true });
+    } catch (err: any) {
+      return NextResponse.json({ error: "Gagal menyapu bersih data: " + err.message }, { status: 500 });
+    }
+  }
+
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
   try {
     await prisma.siswa.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Gagal hapus — mungkin ada data terkait" }, { status: 400 });
+    return NextResponse.json({ error: "Gagal hapus — mungkin ada data terkait yang harus dihapus dulu" }, { status: 400 });
   }
 }

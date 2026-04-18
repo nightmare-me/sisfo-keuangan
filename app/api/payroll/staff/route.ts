@@ -84,8 +84,9 @@ export async function GET(request: NextRequest) {
             (emp.teamType || "CS_REGULAR") as any,
             p.program?.kategoriFee || "",
             p.hargaFinal,
-            p.isRO
-            // CR logic could be added here if session stats available
+            p.isRO,
+            0,
+            p.program || undefined
           );
         });
       }
@@ -184,4 +185,23 @@ export async function POST(request: NextRequest) {
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
+}
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    await prisma.gajiStaf.deleteMany({});
+    return NextResponse.json({ success: true });
+  }
+
+  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+  await prisma.gajiStaf.delete({ where: { id } });
+  return NextResponse.json({ success: true });
 }

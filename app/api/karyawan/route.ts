@@ -12,15 +12,29 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
 
-  if (!userId) {
-    return NextResponse.json({ error: "UserId required" }, { status: 400 });
+  if (userId) {
+    const profile = await prisma.karyawanProfile.findUnique({
+      where: { userId }
+    });
+    return NextResponse.json(profile || null);
   }
 
-  const profile = await prisma.karyawanProfile.findUnique({
-    where: { userId }
+  // If no userId, return ALL users who are active so we can manage their employee data
+  const allProfiles = await prisma.user.findMany({
+    where: { 
+      aktif: true
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: { select: { name: true } },
+      karyawanProfile: true
+    },
+    orderBy: { name: 'asc' }
   });
 
-  return NextResponse.json(profile || null);
+  return NextResponse.json(allProfiles);
 }
 
 export async function POST(request: NextRequest) {

@@ -15,40 +15,78 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = await request.json();
-  const { nama, deskripsi, tipe, harga, kategoriFee, durasi } = body;
-  if (!nama || !harga) return NextResponse.json({ error: "Nama dan harga diperlukan" }, { status: 400 });
-  const program = await prisma.program.create({ 
-    data: { 
-      nama, 
-      deskripsi, 
-      tipe: tipe ?? "REGULAR", 
-      harga, 
-      kategoriFee: kategoriFee ?? "REG_1B",
-      durasi: durasi ?? null 
-    } 
-  });
-  return NextResponse.json(program, { status: 201 });
+  try {
+    const session = await auth();
+    if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await request.json();
+    const { nama, deskripsi, tipe, harga, kategoriFee, durasi, feeClosing, feeClosingRO } = body;
+    
+    if (!nama || !harga) return NextResponse.json({ error: "Nama dan harga diperlukan" }, { status: 400 });
+    
+    const program = await prisma.program.create({ 
+      data: { 
+        nama, 
+        deskripsi, 
+        tipe: tipe ?? "REGULAR", 
+        harga: Number(harga) || 0, 
+        kategoriFee,
+        feeClosing: Number(feeClosing) || 0,
+        feeClosingRO: Number(feeClosingRO) || 0,
+        durasi: durasi ?? null 
+      } 
+    });
+    return NextResponse.json(program, { status: 201 });
+  } catch (err: any) {
+    console.error("POST_PROGRAM_ERR:", err);
+    return NextResponse.json({ error: err.message || "Gagal menambah program" }, { status: 500 });
+  }
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = await request.json();
-  const { id, ...data } = body;
-  const program = await prisma.program.update({ where: { id }, data });
-  return NextResponse.json(program);
+  try {
+    const session = await auth();
+    if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await request.json();
+    const { id, ...data } = body;
+    
+    if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+    // Format numeric values
+    if (data.feeClosing !== undefined) data.feeClosing = Number(data.feeClosing) || 0;
+    if (data.feeClosingRO !== undefined) data.feeClosingRO = Number(data.feeClosingRO) || 0;
+    if (data.harga !== undefined) data.harga = Number(data.harga) || 0;
+
+    const program = await prisma.program.update({ where: { id }, data });
+    return NextResponse.json(program);
+  } catch (err: any) {
+    console.error("PUT_PROGRAM_ERR:", err);
+    return NextResponse.json({ error: err.message || "Gagal update program" }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: NextRequest) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const deleteAll = searchParams.get("deleteAll");
+
+  if (deleteAll === "true") {
+    // Hard delete all programs — WARNING: will fail if used in classes
+    try {
+      await prisma.program.deleteMany({});
+      return NextResponse.json({ success: true });
+    } catch (err: any) {
+      return NextResponse.json({ error: "Gagal hapus: program mungkin masih digunakan di data kelas/invoice" }, { status: 400 });
+    }
+  }
+
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
-  // Soft delete — nonaktifkan agar data historis tetap aman
+
+  // Soft delete for single item to keep history safe
   await prisma.program.update({ where: { id }, data: { aktif: false } });
   return NextResponse.json({ success: true });
 }

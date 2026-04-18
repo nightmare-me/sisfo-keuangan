@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+import { formatCurrency, formatDateTime, hasPermission } from "@/lib/utils";
 import { 
   TrendingDown, 
   Activity, 
@@ -25,6 +26,9 @@ const KATEGORI_LABEL: Record<string,string> = {
 };
 
 export default function PengeluaranPage() {
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = role === "ADMIN";
   const [data, setData] = useState<any[]>([]);
   const [summary, setSummary] = useState({ totalPengeluaran:0, jumlahTransaksi:0 });
   const [byKategori, setByKategori] = useState<any[]>([]);
@@ -65,6 +69,17 @@ export default function PengeluaranPage() {
     fetchData();
   }
 
+  async function handleDeleteAll() {
+    if (!isAdmin) return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data PENGELUARAN akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/pengeluaran?all=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else alert("Gagal menghapus.");
+    }
+  }
+
   const maxKategori = Math.max(...byKategori.map(k=>k._sum.jumlah??0), 1);
 
   return (
@@ -80,6 +95,11 @@ export default function PengeluaranPage() {
           <p className="body-lg" style={{ margin: 0 }}>Kelola dan lacak pengeluaran operasional lembaga</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
+          {isAdmin && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Semua
+            </button>
+          )}
           <button id="btn-tambah-pengeluaran" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowModal(true)}>
             <Plus size={18} /> Tambah Pengeluaran
           </button>

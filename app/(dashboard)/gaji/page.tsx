@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, hasPermission } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 import { 
   Banknote, 
   Settings, 
@@ -17,13 +18,20 @@ import {
   History,
   ArrowRight,
   TrendingUp,
-  Award
+  Award,
+  Trash2
 } from "lucide-react";
 
 const TIPE_BADGE: Record<string,string> = { PRIVATE:"badge-primary", REGULAR:"badge-info", SEMI_PRIVATE:"badge-warning" };
 const STATUS_BAYAR_BADGE: Record<string,string> = { LUNAS:"badge-success", BELUM_BAYAR:"badge-danger", BATAL:"badge-muted" };
 
 export default function GajiPage() {
+  const { data: session } = useSession();
+  const roleSlug = (session?.user as any)?.roleSlug;
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isPengajar = roleSlug === "pengajar";
+  const canEdit = hasPermission(session, "payroll_tutor:edit");
+
   const [data, setData] = useState<any[]>([]);
   const [tarif, setTarif] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,17 +52,18 @@ export default function GajiPage() {
     fetch("/api/gaji/tarif").then(r=>r.json()).then(d=>setTarif(d??[])).catch(()=>{});
   }
 
-  useEffect(()=>{ fetchData(); },[filterBulan, filterTahun]);
+  useEffect(()=>{ if (session) fetchData(); },[filterBulan, filterTahun, session]);
   useEffect(()=>{
-    fetch("/api/users?role=PENGAJAR").then(r=>r.json()).then(d=>setPengajarList(d??[])).catch(()=>{});
-    fetch("/api/kelas").then(r=>r.json()).then(d=>setKelasList(d??[])).catch(()=>{});
-  },[]);
+    if (canEdit) {
+      fetch("/api/users?role=PENGAJAR").then(r=>r.json()).then(d=>setPengajarList(d??[])).catch(()=>{});
+      fetch("/api/kelas").then(r=>r.json()).then(d=>setKelasList(d??[])).catch(()=>{});
+    }
+  },[canEdit]);
 
-  // Auto-hitung total gaji
   useEffect(()=>{
     const sesi = parseInt(form.jumlahSesi)||0;
-    const tarif = parseFloat(form.tarifPerSesi)||0;
-    setForm(f=>({...f, totalGaji: String(sesi*tarif)}));
+    const t = parseFloat(form.tarifPerSesi)||0;
+    setForm(f=>({...f, totalGaji: String(sesi*t)}));
   },[form.jumlahSesi, form.tarifPerSesi]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -69,6 +78,17 @@ export default function GajiPage() {
     if (!confirm("Tandai gaji ini sebagai LUNAS?")) return;
     await fetch("/api/gaji",{ method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id, statusBayar:"LUNAS", tanggalBayar: new Date().toISOString() }) });
     fetchData();
+  }
+
+  async function handleDeleteAll() {
+    if (role !== "ADMIN") return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh riwayat data PAYROLL PENGAJAR akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/gaji?all=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else alert("Gagal menghapus.");
+    }
   }
 
   async function handleTarifSubmit(e: React.FormEvent) {
@@ -91,32 +111,40 @@ export default function GajiPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--success)", marginBottom: 8 }}>
              <Banknote size={18} />
-             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Payroll Administration</span>
+             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}> {isPengajar ? "My Payroll" : "Payroll Administration"}</span>
           </div>
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Gaji Pengajar</h1>
-          <p className="body-lg" style={{ margin: 0 }}>Kalkulasi honorarium dan pengelolaan pembayaran tutor pengajar</p>
+          <p className="body-lg" style={{ margin: 0 }}>{isPengajar ? "Riwayat honorarium dan status pembayaran Anda" : "Kalkulasi honorarium dan pengelolaan pembayaran tutor pengajar"}</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowTarifModal(true)}>
-            <Settings size={18} /> Atur Tarif
-          </button>
-          <button id="btn-tambah-gaji" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowModal(true)}>
-            <Plus size={18} /> Input Gaji
-          </button>
+          {role === "ADMIN" && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Histori
+            </button>
+          )}
+          {canEdit && (
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowTarifModal(true)}>
+                <Settings size={18} /> Atur Tarif
+              </button>
+              <button id="btn-tambah-gaji" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowModal(true)}>
+                <Plus size={18} /> Input Gaji
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
-        {/* KPI Grid */}
         <div className="kpi-grid" style={{ marginBottom: 48 }}>
           <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)" } as any}>
             <div className="kpi-icon" style={{ color: "var(--danger)" }}><AlertCircle size={24} /></div>
-            <div className="kpi-label">Belum Dibayar</div>
+            <div className="kpi-label">{isPengajar ? "Menunggu Pembayaran" : "Belum Dibayar"}</div>
             <div className="kpi-value">{formatCurrency(totalBelumBayar)}</div>
           </div>
           <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
             <div className="kpi-icon" style={{ color: "var(--success)" }}><CheckCircle size={24} /></div>
-            <div className="kpi-label">Sudah Dibayar</div>
+            <div className="kpi-label">{isPengajar ? "Telah Diterima" : "Sudah Dibayar"}</div>
             <div className="kpi-value">{formatCurrency(totalLunas)}</div>
           </div>
           <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)" } as any}>
@@ -126,8 +154,7 @@ export default function GajiPage() {
           </div>
         </div>
 
-        {/* Tarif Info */}
-        {tarif.length > 0 && (
+        {!isPengajar && tarif.length > 0 && (
           <div className="card" style={{ marginBottom:16 }}>
             <div className="card-header"><div className="card-title">Tarif Per Sesi Aktif</div></div>
             <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
@@ -142,7 +169,6 @@ export default function GajiPage() {
           </div>
         )}
 
-        {/* Filter Section */}
         <div className="card" style={{ padding: '24px 32px', marginBottom: 32 }}>
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -158,17 +184,16 @@ export default function GajiPage() {
             </div>
             
             <div style={{ flex: 1, textAlign: 'right', fontSize: 13, color: 'var(--text-muted)' }}>
-              Menampilkan {data.length} transaksi penggajian
+              {isPengajar ? "Menampilkan riwayat gaji pribadi" : `Menampilkan ${data.length} transaksi penggajian`}
             </div>
           </div>
         </div>
 
-        {/* Table */}
         <div className="table-wrapper">
           <table>
             <thead>
               <tr>
-                <th>Pengajar</th>
+                {!isPengajar && <th>Pengajar</th>}
                 <th>Kelas</th>
                 <th>Tipe</th>
                 <th>Sesi</th>
@@ -176,7 +201,7 @@ export default function GajiPage() {
                 <th className="text-right">Total Gaji</th>
                 <th>Metode</th>
                 <th>Status</th>
-                <th>Aksi</th>
+                {canEdit && <th>Aksi</th>}
               </tr>
             </thead>
             <tbody>
@@ -186,28 +211,37 @@ export default function GajiPage() {
                 <tr><td colSpan={9}>
                   <div className="empty-state">
                     <div className="empty-state-icon">👨‍🏫</div>
-                    <h3>Belum ada data gaji bulan ini</h3>
-                    <p>Klik "+ Input Gaji" untuk menghitung gaji pengajar</p>
+                    <h3>Belum ada data gaji</h3>
+                    <p>{isPengajar ? "Data honorarium Anda untuk periode ini belum tersedia." : "Klik '+ Input Gaji' untuk menghitung gaji pengajar"}</p>
                   </div>
                 </td></tr>
               ) : data.map((g:any)=>(
                 <tr key={g.id}>
-                  <td style={{ fontWeight:600 }}>{g.pengajar?.name??"—"}</td>
-                  <td style={{ fontSize:13 }}>{g.kelas?.namaKelas??"—"}</td>
+                  {!isPengajar && <td style={{ fontWeight:600 }}>{g.pengajar?.name??"—"}</td>}
+                  <td style={{ fontSize:13 }}>
+                    <div>{g.kelas?.namaKelas??"—"}</div>
+                    <div style={{ fontSize:10, opacity:0.6 }}>{g.kelas?.program?.nama}</div>
+                  </td>
                   <td><span className={`badge ${TIPE_BADGE[g.kelas?.program?.tipe]??""}`}>{g.kelas?.program?.tipe??"—"}</span></td>
                   <td style={{ fontWeight:600 }}>{g.jumlahSesi} sesi</td>
                   <td>{formatCurrency(g.tarifPerSesi)}</td>
                   <td className="text-right" style={{ fontWeight:700 }}>{formatCurrency(g.totalGaji)}</td>
                   <td><span className="badge badge-info">{g.metodeBayar}</span></td>
-                  <td><span className={`badge ${STATUS_BAYAR_BADGE[g.statusBayar]??""}`}>{g.statusBayar==="LUNAS"?"✓ Lunas":"Belum Bayar"}</span></td>
                   <td>
-                    {g.statusBayar!=="LUNAS" && (
-                      <button className="btn btn-success btn-sm" onClick={()=>handleBayar(g.id)}>✓ Bayar</button>
-                    )}
-                    {g.statusBayar==="LUNAS" && g.tanggalBayar && (
-                      <span style={{ fontSize:11, color:"var(--text-muted)" }}>{formatDate(g.tanggalBayar)}</span>
-                    )}
+                    <span className={`badge ${STATUS_BAYAR_BADGE[g.statusBayar]??""}`}>
+                       {g.statusBayar==="LUNAS" ? "✓ Lunas" : (isPengajar ? "⌛ Menunggu" : "Belum Bayar")}
+                    </span>
                   </td>
+                  {canEdit && (
+                    <td>
+                      {g.statusBayar!=="LUNAS" && (
+                        <button className="btn btn-success btn-sm" onClick={()=>handleBayar(g.id)}>✓ Bayar</button>
+                      )}
+                      {g.statusBayar==="LUNAS" && g.tanggalBayar && (
+                        <span style={{ fontSize:11, color:"var(--text-muted)" }}>{formatDate(g.tanggalBayar)}</span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -215,7 +249,6 @@ export default function GajiPage() {
         </div>
       </div>
 
-      {/* Modal Input Gaji */}
       {showModal && (
         <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) setShowModal(false); }}>
           <div className="modal modal-lg">
@@ -266,7 +299,7 @@ export default function GajiPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Total Gaji (Auto)</label>
-                    <input type="number" className="form-control" value={form.totalGaji} onChange={e=>setForm(f=>({...f,totalGaji:e.target.value}))} style={{ color:"var(--success)", fontWeight:700 }} />
+                    <input type="number" className="form-control" value={form.totalGaji} readOnly style={{ color:"var(--success)", fontWeight:700, background: 'var(--bg-elevated)' }} />
                   </div>
                 </div>
                 <div className="form-grid-2">
@@ -298,7 +331,6 @@ export default function GajiPage() {
         </div>
       )}
 
-      {/* Modal Atur Tarif */}
       {showTarifModal && (
         <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) setShowTarifModal(false); }}>
           <div className="modal">

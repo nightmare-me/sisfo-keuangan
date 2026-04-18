@@ -94,13 +94,26 @@ export async function DELETE(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   
   const role = (session.user as any).role;
-  if (!["ADMIN", "CS"].includes(role)) {
-    return NextResponse.json({ error: "Hanya Admin dan CS yang bisa menghapus data" }, { status: 403 });
-  }
+  const isSuperAdmin = role === "ADMIN";
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    if (!isSuperAdmin) return NextResponse.json({ error: "Hanya Super Admin yang bisa menghapus semua data" }, { status: 403 });
+    
+    const count = await prisma.lead.count();
+    await recordLog((session.user as any).id, "Hapus Semua Lead", "BATCH DELETE", `Menghapus ${count} data lead secara permanen.`);
+    await prisma.lead.deleteMany({});
+    return NextResponse.json({ success: true, count });
+  }
+
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+  if (!["ADMIN", "CS"].includes(role)) {
+    return NextResponse.json({ error: "Hanya Admin dan CS yang bisa menghapus data" }, { status: 403 });
+  }
 
   const lead = await prisma.lead.findUnique({ where: { id } });
   if (lead) {

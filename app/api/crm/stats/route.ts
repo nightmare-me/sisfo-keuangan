@@ -1,50 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { calculateCSFee } from "@/lib/payroll";
 
 export const dynamic = 'force-dynamic';
-
-function localCalculateFee(
-  csCategory: string,
-  productType: string,
-  price: number,
-  isRO: boolean = false,
-  cr: number = 0
-): number {
-  if (csCategory === 'CS_REGULAR' || !csCategory) {
-    if (!isRO) {
-      if (productType === '49K_DISKON') return 2000;
-      if (productType === '49K') return 2500;
-      if (productType === 'EFP') return 4000;
-      if (productType === 'REG_1B') return 10000;
-      if (productType === 'REG_ADV') return 12500;
-      if (productType === 'NATIVE') return 12500;
-      if (productType === 'TOEFL') return 12500;
-      if (productType === 'PRIVATE_550' || productType === 'PRIVATE_850') return 25000;
-      if (productType === 'PRIVATE_1B' || productType === 'PRIVATE_VIP' || productType === 'PRIVATE_FAMILY') return 50000;
-    } else {
-      if (productType === '49K_DISKON') return 2000;
-      if (productType === '49K') return 2500;
-      if (productType === 'EFP') return 4000;
-      if (productType === 'REG_1B') return 10000;
-      if (productType === 'REG_ADV') return 12500;
-      if (productType === 'NATIVE') return 12500;
-      if (productType === 'TOEFL') return 12500;
-      if (productType === 'PRIVATE_550' || productType === 'PRIVATE_850') return 15000;
-      if (productType === 'PRIVATE_1B' || productType === 'PRIVATE_VIP' || productType === 'PRIVATE_FAMILY') return 30000;
-    }
-  }
-  if (csCategory === 'CS_LIVE') {
-    if (productType === '49K' || productType === '49K_DISKON') return cr > 0.5 ? 2500 : 2000;
-    if (productType.includes('FAST') || productType.includes('PRIVATE')) return price * 0.05;
-  }
-  if (csCategory === 'CS_TOEFL') {
-    if (productType === 'TOEFL') return price * 0.05;
-    if (productType === 'CERTIFICATE') return price * 0.10;
-  }
-  if (csCategory === 'CS_RO') return price * 0.05;
-  return 0;
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -103,12 +62,13 @@ export async function GET(request: NextRequest) {
     const teamType = user?.teamType || 'CS_REGULAR';
     
     myPemasukan.forEach(p => {
-      totalFee += localCalculateFee(
+      totalFee += calculateCSFee(
         teamType as any,
         p.program?.kategoriFee || 'REG_1B',
         p.hargaFinal,
         p.isRO,
-        cr
+        cr,
+        p.program || undefined
       );
     });
 

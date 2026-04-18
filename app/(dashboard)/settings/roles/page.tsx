@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Check, Shield, Save, Plus, Trash2, Info } from "lucide-react";
+import { Check, Shield, Save, Plus, Info } from "lucide-react";
 
 interface Permission {
   id: string;
@@ -25,9 +25,38 @@ export default function RolesPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  // Form State for editing
   const [rolePermissions, setRolePermissions] = useState<string[]>([]);
+
+  const modules = [
+    { name: 'Dashboard', slug: 'dashboard' },
+    { name: 'CRM / Lead', slug: 'crm' },
+    { name: 'Pemasukan', slug: 'finance_in' },
+    { name: 'Pengeluaran', slug: 'finance_out' },
+    { name: 'Spent Ads', slug: 'ads_spent' },
+    { name: 'Performa Iklan', slug: 'ads_performance' },
+    { name: 'Laporan Keuangan', slug: 'report' },
+    { name: 'Manajemen Refund', slug: 'refund' },
+    { name: 'Payroll Staff', slug: 'payroll_staff' },
+    { name: 'Siswa', slug: 'siswa' },
+    { name: 'Manajemen kelas', slug: 'kelas' },
+    { name: 'Produk / Program', slug: 'program' },
+    { name: 'Payroll Pengajar', slug: 'payroll_tutor' },
+    { name: 'Kelas Saya', slug: 'pengajar' },
+    { name: 'Invoice', slug: 'invoice' },
+    { name: 'Inventaris', slug: 'inventaris' },
+    { name: 'Input Jam Live', slug: 'live_tracking' },
+    { name: 'Manajemen User', slug: 'user' },
+    { name: 'Pengaturan Role', slug: 'settings' },
+    { name: 'Audit Log', slug: 'audit' },
+    { name: 'Backup & Arsip', slug: 'archive' },
+    { name: 'Template Whatsapp', slug: 'wa_template' },
+  ];
+
+  const actions = [
+    { label: 'View', slug: 'view' },
+    { label: 'Edit', slug: 'edit' },
+    { label: 'Delete', slug: 'delete' },
+  ];
 
   useEffect(() => {
     fetchData();
@@ -35,20 +64,24 @@ export default function RolesPage() {
 
   async function fetchData() {
     setLoading(true);
-    const [rolesRes, permsRes] = await Promise.all([
-      fetch("/api/roles"),
-      fetch("/api/roles?type=permissions")
-    ]);
-    const rolesData = await rolesRes.json();
-    const permsData = await permsRes.json();
-    
-    setRoles(Array.isArray(rolesData) ? rolesData : []);
-    setPermissions(Array.isArray(permsData) ? permsData : []);
-    
-    if (rolesData.length > 0 && !selectedRole) {
-      handleSelectRole(rolesData[0]);
+    try {
+      const [rolesRes, permsRes] = await Promise.all([
+        fetch("/api/roles"),
+        fetch("/api/roles?type=permissions")
+      ]);
+      const rolesData = await rolesRes.json();
+      const permsData = await permsRes.json();
+      
+      const rolesArr = Array.isArray(rolesData) ? rolesData : [];
+      setRoles(rolesArr);
+      setPermissions(Array.isArray(permsData) ? permsData : []);
+      
+      if (rolesArr.length > 0 && !selectedRole) {
+        handleSelectRole(rolesArr[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching roles:", error);
     }
-    setLoading(true); // Wait, should be false
     setLoading(false);
   }
 
@@ -63,27 +96,61 @@ export default function RolesPage() {
     );
   }
 
+  function getPermIdByModuleAction(modSlug: string, actSlug: string): string | null {
+    const combinedSlug = `${modSlug}:${actSlug}`;
+    const p = permissions.find(p => p.slug === combinedSlug);
+    return p ? p.id : null;
+  }
+
   async function handleSave() {
     if (!selectedRole) return;
     setSaving(true);
-    const res = await fetch("/api/roles", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: selectedRole.id,
-        name: selectedRole.name,
-        slug: selectedRole.slug,
-        permissionIds: rolePermissions
-      })
-    });
-    if (res.ok) {
-      alert("Role berhasil diperbarui!");
-      fetchData();
+    try {
+      const res = await fetch("/api/roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedRole.id,
+          name: selectedRole.name,
+          slug: selectedRole.slug,
+          permissionIds: rolePermissions
+        })
+      });
+      if (res.ok) {
+        alert("Matriks akses berhasil diperbarui!");
+        fetchData();
+      }
+    } catch (error) {
+      alert("Gagal menyimpan perubahan.");
     }
     setSaving(false);
   }
 
-  if (loading) return <div className="p-8">Memuat data akses...</div>;
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
+
+  async function handleAddRole(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newRoleName) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newRoleName, permissionIds: [] })
+      });
+      if (res.ok) {
+        setNewRoleName("");
+        setShowAddModal(false);
+        fetchData();
+      }
+    } catch (error) {
+      alert("Gagal menambah role");
+    }
+    setSaving(false);
+  }
+
+  if (loading) return <div className="p-12 text-center">Memuat Matriks Keamanan...</div>;
 
   return (
     <div className="page-container">
@@ -91,18 +158,28 @@ export default function RolesPage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
             <Shield size={18} />
-            <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Sistem Keamanan</span>
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Master Controls</span>
           </div>
-          <h1 className="headline-lg">Pengaturan Role & Hak Akses</h1>
+          <h1 className="headline-lg">Role & Permission Matrix</h1>
         </div>
+        
+        {selectedRole && (
+          <button 
+            className="btn btn-primary" 
+            onClick={handleSave} 
+            disabled={saving}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 28px', borderRadius: 12, boxShadow: '0 4px 14px rgba(59, 130, 246, 0.4)' }}
+          >
+            {saving ? "Menyimpan..." : <><Save size={18} /> Simpan Matriks Akses</>}
+          </button>
+        )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24 }}>
-        {/* Sidebar Role List */}
-        <div className="card glass" style={{ padding: 0, overflow: 'hidden' }}>
+      <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 24, alignItems: 'start' }}>
+        <div className="card glass" style={{ padding: 0, position: 'sticky', top: 24 }}>
           <div style={{ padding: '20px', borderBottom: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <strong style={{ fontSize: 14 }}>Daftar Role</strong>
-            <button className="btn btn-secondary btn-icon btn-sm"><Plus size={14} /></button>
+            <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.6 }}>DAFTAR ROLE</span>
+            <button className="btn btn-secondary btn-icon btn-sm" onClick={() => setShowAddModal(true)}><Plus size={14} /></button>
           </div>
           <div style={{ padding: '8px' }}>
             {roles.map(role => (
@@ -110,86 +187,127 @@ export default function RolesPage() {
                 key={role.id}
                 onClick={() => handleSelectRole(role)}
                 className={`nav-item ${selectedRole?.id === role.id ? 'active' : ''}`}
-                style={{ cursor: 'pointer', marginBottom: 4, borderRadius: 8 }}
+                style={{ cursor: 'pointer', marginBottom: 4, borderRadius: 10, height: 52, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px' }}
               >
-                <Shield size={16} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{role.name}</div>
-                  <div style={{ fontSize: 11, opacity: 0.7 }}>{role.slug}</div>
-                </div>
+                <Shield size={18} />
+                <span style={{ fontWeight: 600 }}>{role.name}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Permission Grid */}
-        <div className="card glass">
-          {selectedRole ? (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <div>
-                  <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Akses untuk: {selectedRole.name}</h2>
-                  <p className="text-muted" style={{ fontSize: 13 }}>Centang modul yang diizinkan untuk role ini.</p>
+        {/* Modal Tambah Role */}
+        {showAddModal && (
+          <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
+            <div className="modal" style={{ maxWidth: 400 }}>
+              <div className="modal-header">
+                <div className="modal-title">Tambah Role Baru</div>
+                <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
+              </div>
+              <form onSubmit={handleAddRole}>
+                <div className="modal-body">
+                  <div className="form-group">
+                    <label className="form-label required">Nama Role</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Contoh: CEO, Marketing Staff..." 
+                      value={newRoleName} 
+                      onChange={e => setNewRoleName(e.target.value)} 
+                      required 
+                      autoFocus
+                    />
+                  </div>
                 </div>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={handleSave} 
-                  disabled={saving}
-                  style={{ padding: '10px 24px', borderRadius: 12 }}
-                >
-                  <Save size={18} /> {saving ? "Menyimpan..." : "Simpan Perubahan"}
-                </button>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Batal</button>
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? "..." : "Tambah Role"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {selectedRole ? (
+            <div className="card glass" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '24px', borderBottom: '1px solid var(--border-default)' }}>
+                <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Konfigurasi Akses: {selectedRole.name}</h2>
+                <p className="text-muted" style={{ fontSize: 13 }}>Centang kotak di bawah modul untuk memberikan izin spesifik.</p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                {permissions.map(perm => (
-                  <div 
-                    key={perm.id}
-                    onClick={() => togglePermission(perm.id)}
-                    style={{ 
-                      padding: '16px', 
-                      borderRadius: 12, 
-                      background: rolePermissions.includes(perm.id) ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${rolePermissions.includes(perm.id) ? 'var(--primary)' : 'transparent'}`,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <div style={{ 
-                      width: 20, 
-                      height: 20, 
-                      borderRadius: 6, 
-                      border: '2px solid var(--border-active)', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      background: rolePermissions.includes(perm.id) ? 'var(--primary)' : 'transparent',
-                      borderColor: rolePermissions.includes(perm.id) ? 'var(--primary)' : 'var(--border-active)'
-                    }}>
-                      {rolePermissions.includes(perm.id) && <Check size={14} color="white" strokeWidth={4} />}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{perm.name}</div>
-                      <code style={{ fontSize: 10, opacity: 0.6 }}>{perm.slug}</code>
-                    </div>
-                  </div>
-                ))}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                      <th style={{ textAlign: 'left', padding: '16px 32px', fontSize: 12, fontWeight: 800, color: 'var(--primary)' }}>NAMA MODUL</th>
+                      {actions.map(act => (
+                        <th key={act.slug} style={{ textAlign: 'center', padding: '16px', fontSize: 12, fontWeight: 800, width: 120 }}>
+                          {act.label.toUpperCase()}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modules.map((mod) => (
+                      <tr key={mod.slug} style={{ borderTop: '1px solid var(--border-default)' }}>
+                        <td style={{ padding: '16px 32px' }}>
+                          <span style={{ fontWeight: 600, fontSize: 14 }}>{mod.name}</span>
+                        </td>
+                        {actions.map(act => {
+                          const permId = getPermIdByModuleAction(mod.slug, act.slug);
+                          const isChecked = permId ? rolePermissions.includes(permId) : false;
+                          
+                          return (
+                            <td key={act.slug} style={{ textAlign: 'center', padding: '12px' }}>
+                              {permId ? (
+                                <div 
+                                  onClick={() => togglePermission(permId)}
+                                  style={{ 
+                                    width: 24, 
+                                    height: 24, 
+                                    margin: '0 auto',
+                                    borderRadius: 7, 
+                                    border: '2px solid var(--border-active)', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    background: isChecked ? 'var(--primary)' : 'transparent',
+                                    borderColor: isChecked ? 'var(--primary)' : 'var(--border-active)',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                                  }}
+                                >
+                                  {isChecked && <Check size={14} color="white" strokeWidth={4} />}
+                                </div>
+                              ) : (
+                                <span style={{ opacity: 0.2 }}>—</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              
-              <div style={{ marginTop: 32, padding: 16, background: 'rgba(245,158,11,0.1)', borderRadius: 12, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                 <Info size={18} color="#f59e0b" style={{ flexShrink: 0, marginTop: 2 }} />
-                 <div style={{ fontSize: 13, color: '#d97706' }}>
-                    <strong>Penting:</strong> Perubahan hak akses akan berlaku saat user login kembali atau setelah sesi mereka diperbarui. Khusus untuk Role <strong>Administrator</strong>, hak akses tetap terbuka penuh terlepas dari pengaturan ini.
-                 </div>
+
+              <div style={{ padding: '24px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid var(--border-default)' }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: 16, background: 'rgba(245,158,11,0.05)', borderRadius: 12, border: '1px solid rgba(245,158,11,0.2)' }}>
+                   <Info size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
+                   <div style={{ fontSize: 13, color: '#b45309', lineHeight: 1.6 }}>
+                       User dengan role <strong>Admin</strong> akan memiliki akses penuh bypass. Untuk role lain, perubahan tombol <strong>Delete</strong> dapat menghapus data permanen.
+                   </div>
+                </div>
               </div>
-            </>
+            </div>
           ) : (
-            <div style={{ padding: 64, textAlign: 'center' }}>
-              <Shield size={48} className="text-muted" style={{ marginBottom: 16 }} />
-              <p>Pilih role di sebelah kiri untuk mengatur hak akses.</p>
+            <div className="card glass" style={{ padding: 80, textAlign: 'center' }}>
+              <Shield size={64} className="text-muted" style={{ marginBottom: 24, opacity: 0.2 }} />
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Belum Ada Role Terpilih</h3>
+              <p className="text-muted">Klik salah satu nama role di panel kiri untuk mulai mengatur konfigurasi hak akses matriks.</p>
             </div>
           )}
         </div>

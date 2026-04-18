@@ -20,3 +20,26 @@ export async function GET(request: NextRequest) {
   });
   return NextResponse.json({ data });
 }
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const role = (session.user as any)?.role?.toUpperCase();
+  if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus data" }, { status: 403 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    // Hard delete all invoices
+    await prisma.invoice.deleteMany({});
+    return NextResponse.json({ success: true });
+  }
+
+  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+  await prisma.invoice.delete({ where: { id } });
+  return NextResponse.json({ success: true });
+}

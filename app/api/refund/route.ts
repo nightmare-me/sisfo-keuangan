@@ -59,3 +59,37 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(refund, { status: 201 });
 }
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const role = (session.user as any)?.role?.toUpperCase();
+  if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus data" }, { status: 403 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    const count = await prisma.refund.count();
+    await recordLog((session.user as any).id, "Hapus Semua Refund", "BATCH DELETE", `Menghapus seluruh ${count} data permintaan refund.`);
+    await prisma.refund.deleteMany({});
+    return NextResponse.json({ success: true });
+  }
+
+  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+  const item = await prisma.refund.findUnique({ where: { id }, include: { siswa: true } });
+  if (item) {
+    await recordLog(
+      (session.user as any).id,
+      "Hapus Refund",
+      item.siswa.nama,
+      `Refund senilai ${item.jumlah} dihapus.`
+    );
+    await prisma.refund.delete({ where: { id } });
+  }
+
+  return NextResponse.json({ success: true });
+}

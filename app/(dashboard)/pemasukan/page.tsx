@@ -20,7 +20,7 @@ import {
   QrCode,
   RefreshCw
 } from "lucide-react";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatDate, formatDateTime, SUPER_ROLES } from "@/lib/utils";
 
 interface Pemasukan {
   id: string;
@@ -68,7 +68,8 @@ export default function PemasukanPage() {
     isRO: false, tanggal: new Date().toISOString().slice(0, 10)
   };
 
-  const role = (session?.user as any)?.role;
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = SUPER_ROLES.includes(role);
   const userId = (session?.user as any)?.id;
   const isCS = role === "CS";
   const teamType = (session?.user as any)?.teamType || "";
@@ -229,9 +230,14 @@ export default function PemasukanPage() {
 
   async function handleDeleteAll() {
     if (role !== "ADMIN") return;
-    if (!confirm("Hapus SEMUA data?")) return;
-    const res = await fetch("/api/pemasukan/delete-all", { method: "DELETE" });
-    if (res.ok) fetchData();
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data PEMASUKAN dan INVOICE akan dihapus permanen.\n\nTindakan ini tidak bisa dibatalkan.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/pemasukan?all=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else alert("Gagal menghapus.");
+      setLoading(false);
+    }
   }
 
   const getMethodIcon = (method: string) => {
@@ -255,14 +261,19 @@ export default function PemasukanPage() {
           <p className="text-muted">Kelola seluruh arus kas masuk, invoice, dan bonus tim.</p>
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            {role !== "PENGAJAR" && (
-              <>
-                <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}><Download size={14} /> Template</button>
-                <button className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()} style={{ borderRadius: 'var(--radius-full)' }}><Upload size={14} /> {csvLoading ? "Importing..." : "Import CSV"}</button>
-                <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
-                <button className="btn btn-primary" onClick={openAddModal} style={{ borderRadius: 'var(--radius-full)' }}><Plus size={18} /> Tambah Transaksi</button>
-              </>
-            )}
+             {role === "ADMIN" && (
+                <button className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+                  <Trash2 size={14} /> Hapus Semua
+                </button>
+             )}
+             {role !== "PENGAJAR" && (
+                <>
+                  <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}><Download size={14} /> Template</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => fileRef.current?.click()} style={{ borderRadius: 'var(--radius-full)' }}><Upload size={14} /> {csvLoading ? "Importing..." : "Import CSV"}</button>
+                  <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
+                  <button className="btn btn-primary" onClick={openAddModal} style={{ borderRadius: 'var(--radius-full)' }}><Plus size={18} /> Tambah Transaksi</button>
+                </>
+             )}
         </div>
       </div>
 

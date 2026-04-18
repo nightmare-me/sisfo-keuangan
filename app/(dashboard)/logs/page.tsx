@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/utils";
-import { History, Shield, User, Activity, Clock } from "lucide-react";
+import { History, Shield, User, Activity, Clock, Trash2 } from "lucide-react";
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function fetchLogs() {
+    setLoading(true);
     fetch("/api/logs")
       .then(r => r.json())
       .then(d => {
@@ -16,7 +17,21 @@ export default function LogsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    fetchLogs();
   }, []);
+
+  async function handleDeleteAll() {
+    const conf = prompt("⚠️ PERINGATAN: Seluruh catatan audit akan dihapus permanen.\n\nKetik 'HAPUS' untuk konfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/logs?all=true", { method: "DELETE" });
+      if (res.ok) fetchLogs();
+      else alert("Gagal menghapus.");
+    }
+  }
 
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
@@ -29,6 +44,11 @@ export default function LogsPage() {
           </div>
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Audit Log Aktivitas</h1>
           <p className="body-lg" style={{ margin: 0 }}>Pantau delegasi tugas dan integritas data staff secara real-time</p>
+        </div>
+        <div>
+          <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+            <Trash2 size={16} /> Hapus Semua Log
+          </button>
         </div>
       </div>
 

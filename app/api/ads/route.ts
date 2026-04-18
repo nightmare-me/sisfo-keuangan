@@ -71,8 +71,17 @@ export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const role = (session.user as any)?.role;
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus semua data" }, { status: 403 });
+    await prisma.spentAds.deleteMany({});
+    return NextResponse.json({ success: true });
+  }
+
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
   await prisma.spentAds.delete({ where: { id } });

@@ -37,8 +37,25 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { nama, kategori, jumlah, satuan, hargaBeli, kondisi, tanggalBeli, keterangan, stokMinimum } = body;
 
+  // Bulk create for CSV
+  if (Array.isArray(body)) {
+    const data = body.map((item: any) => ({
+      nama: item.nama,
+      kategori: item.kategori ?? "Umum",
+      jumlah: parseInt(item.jumlah) || 0,
+      satuan: item.satuan ?? "pcs",
+      hargaBeli: parseFloat(item.hargaBeli) || null,
+      kondisi: ["BAIK", "RUSAK_RINGAN", "RUSAK_BERAT"].includes(item.kondisi) ? item.kondisi : "BAIK",
+      tanggalBeli: item.tanggalBeli ? new Date(item.tanggalBeli) : null,
+      keterangan: item.keterangan || null,
+      stokMinimum: parseInt(item.stokMinimum) || 1,
+    }));
+    const result = await prisma.inventaris.createMany({ data });
+    return NextResponse.json({ success: result.count }, { status: 201 });
+  }
+
+  const { nama, kategori, jumlah, satuan, hargaBeli, kondisi, tanggalBeli, keterangan, stokMinimum } = body;
   if (!nama) return NextResponse.json({ error: "Nama barang diperlukan" }, { status: 400 });
 
   const item = await prisma.inventaris.create({
@@ -81,8 +98,17 @@ export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const role = (session.user as any)?.role?.toUpperCase();
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus semua data" }, { status: 403 });
+    await prisma.inventaris.deleteMany({});
+    return NextResponse.json({ success: true });
+  }
+
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
   await prisma.inventaris.delete({ where: { id } });

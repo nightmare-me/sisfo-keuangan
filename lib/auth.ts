@@ -33,6 +33,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role?.slug.toUpperCase() || "USER",
+          roleSlug: user.role?.slug || "user",
           permissions: user.role?.permissions.map(p => p.slug) || [],
         } as any;
       },
@@ -46,8 +47,10 @@ export const authOptions: NextAuthOptions = {
         token.id = dbUser.id;
         token.email = dbUser.email;
         if (dbUser.role) {
-          // Tetap gunakan Uppercase untuk kompatibilitas dengan ribuan pengecekan role lama
           token.role = dbUser.role.toUpperCase();
+        }
+        if (dbUser.roleSlug) {
+          token.roleSlug = dbUser.roleSlug;
         }
         if (dbUser.permissions) {
           token.permissions = dbUser.permissions;
@@ -63,7 +66,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token && session.user) {
         (session.user as any).id = token.id;
-        (session.user as any).role = token.role; // Akan bernilai "ADMIN", "CS", dll
+        (session.user as any).role = token.role;
+        (session.user as any).roleSlug = token.roleSlug;
         (session.user as any).permissions = token.permissions || [];
       }
       return session;

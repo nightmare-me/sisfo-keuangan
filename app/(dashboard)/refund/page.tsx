@@ -11,7 +11,8 @@ import {
   Wallet, 
   MessageCircle,
   AlertCircle,
-  ArrowRight
+  ArrowRight,
+  Trash2
 } from "lucide-react";
 
 const STATUS_BADGE: Record<string, string> = {
@@ -64,6 +65,17 @@ export default function RefundPage() {
     }
   }
 
+  async function handleDeleteAll() {
+    if (role?.toUpperCase() !== "ADMIN") return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh riwayat data REFUND akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/refund?all=true", { method: "DELETE" });
+      if (res.ok) fetchRefunds();
+      else alert("Gagal menghapus.");
+    }
+  }
+
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
       {/* Header Ala Dashboard */}
@@ -75,6 +87,13 @@ export default function RefundPage() {
           </div>
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Manajemen Refund</h1>
           <p className="body-lg" style={{ margin: 0 }}>Verifikasi dan kelola pengembalian dana pembatalan program</p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {role?.toUpperCase() === "ADMIN" && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Semua
+            </button>
+          )}
         </div>
       </div>
 

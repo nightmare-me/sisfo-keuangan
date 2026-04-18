@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, hasPermission, SUPER_ROLES } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 import { 
   Users, 
@@ -15,7 +15,8 @@ import {
   BookOpen,
   Calendar,
   CreditCard,
-  UserPlus
+  UserPlus,
+  Trash2
 } from "lucide-react";
 
 const COLUMNS = [
@@ -27,8 +28,15 @@ const COLUMNS = [
 
 export default function CRMPage() {
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role;
-  const isReadOnly = !["ADMIN", "CS"].includes(role);
+  
+  // Granular Matrix Permissions
+  const canView = hasPermission(session, "crm:view");
+  const canEdit = hasPermission(session, "crm:edit");
+  const canDelete = hasPermission(session, "crm:delete");
+
+  const isReadOnly = !canEdit;
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isSuper = SUPER_ROLES.includes(role);
 
   const [leads, setLeads] = useState<any[]>([]);
   const [csStats, setCsStats] = useState<any[]>([]);
@@ -154,6 +162,8 @@ export default function CRMPage() {
     }
   }
 
+  if (!canView) return <div className="p-12 text-center text-muted">Bapak/Ibu tidak memiliki izin untuk melihat modul ini.</div>;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Header */}
@@ -162,11 +172,30 @@ export default function CRMPage() {
           <h1 className="display-title" style={{ margin: 0 }}>CRM Board</h1>
           <p className="text-secondary" style={{ margin: '4px 0 0 0' }}>Kelola alur pendaftaran calon siswa</p>
         </div>
-        {!isReadOnly && (
-          <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowNewLeadModal(true)}>
-             <Plus size={16} /> Lead Baru
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 12 }}>
+          {role === "ADMIN" && (
+            <button 
+              className="btn btn-secondary" 
+              style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }}
+              onClick={async () => {
+                const conf = prompt("⚠️ PERINGATAN KERAS: Tindakan ini tidak bisa dibatalkan.\n\nSeluruh data lead di semua kolom akan DIHAPUS PERMANEN.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+                if (conf === "HAPUS") {
+                  setLoading(true);
+                  const res = await fetch("/api/crm?all=true", { method: "DELETE" });
+                  if (res.ok) fetchData();
+                  else alert("Gagal menghapus data.");
+                }
+              }}
+            >
+              <Trash2 size={16} /> Hapus Semua Lead
+            </button>
+          )}
+          {!isReadOnly && (
+            <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowNewLeadModal(true)}>
+               <Plus size={16} /> Lead Baru
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Executive Summary Strip */}
@@ -195,7 +224,7 @@ export default function CRMPage() {
           })()}
 
           {/* Admin Performance Overview (Shows All CS CR) */}
-          {role === "ADMIN" && (
+          {isSuper && (
             <div style={{ display: 'flex', gap: 8 }}>
               <div style={{ background: 'var(--surface-container-high)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--secondary)' }}>CR TIM CS</span>
@@ -214,8 +243,8 @@ export default function CRMPage() {
             { label: 'Total Prospek', value: leads.length, unit: 'siswa', color: 'var(--on-surface)' },
             { label: 'Menunggu Bayar', value: leads.filter(l => l.status === 'PENDING').length, color: 'var(--warning)' },
             { 
-              label: role === "ADMIN" ? 'Total Omset' : 'Omset Saya', 
-              value: formatCurrency(role === "ADMIN" 
+              label: isSuper ? 'Total Omset' : 'Omset Saya', 
+              value: formatCurrency(isSuper 
                 ? csStats.reduce((a, b) => a + b.omset, 0) 
                 : (csStats.find(s => s.csId === (session?.user as any)?.id)?.omset || 0)
               ), 

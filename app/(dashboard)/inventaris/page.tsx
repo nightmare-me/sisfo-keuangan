@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+import Papa from "papaparse";
 import { 
   Plus, 
   Search, 
@@ -16,12 +18,18 @@ import {
   Edit2,
   Trash2,
   Boxes,
-  Zap
+  Zap,
+  Download,
+  Upload
 } from "lucide-react";
 
 const KONDISI_BADGE: Record<string,string> = { BAIK:"badge-success", RUSAK_RINGAN:"badge-warning", RUSAK_BERAT:"badge-danger" };
 
 export default function InventarisPage() {
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = role === "ADMIN";
+  const fileRef = useRef<HTMLInputElement>(null);
   const [data, setData] = useState<any[]>([]);
   const [lowStockCount, setLowStockCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -72,6 +80,43 @@ export default function InventarisPage() {
     fetchData();
   }
 
+  async function handleDeleteAll() {
+    if (!isAdmin) return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data INVENTARIS akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/inventaris?all=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else alert("Gagal menghapus.");
+    }
+  }
+
+  function downloadCsvTemplate() {
+    const header = "nama,kategori,jumlah,satuan,hargaBeli,kondisi,tanggalBeli,keterangan,stokMinimum\n";
+    const example = "Kursi Kantor,Furnitur,10,unit,500000,BAIK,2024-03-01,Kursi baru ruang staff,2\n";
+    const note = "# Kondisi: BAIK / RUSAK_RINGAN / RUSAK_BERAT";
+    const blob = new Blob([header + example + note], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "template_inventaris.csv"; a.click();
+  }
+
+  function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const rows = results.data.filter((r:any)=>r.nama && !r.nama.startsWith("#"));
+        if (rows.length === 0) return alert("File kosong atau tidak valid.");
+        const res = await fetch("/api/inventaris", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rows) });
+        if (res.ok) { alert(`Berhasil import ${rows.length} barang!`); fetchData(); }
+        else alert("Gagal import.");
+        if (fileRef.current) fileRef.current.value = "";
+      }
+    });
+  }
+
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
       {/* Header Ala Dashboard */}
@@ -84,16 +129,23 @@ export default function InventarisPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Daftar Inventaris</h1>
           <p className="body-lg" style={{ margin: 0 }}>Monitoring stok perlengkapan dan manajemen aset lembaga operasional</p>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          {lowStockCount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: '100px', fontSize: 13, fontWeight: 700, border: '1px solid rgba(239,68,68,0.2)' }}>
-              <AlertCircle size={14} /> {lowStockCount} Stok Menipis
-            </div>
-          )}
-          <button id="btn-tambah-inventaris" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>{ setEditItem(null); setShowModal(true); }}>
-            <Plus size={18} /> Tambah Barang
-          </button>
-        </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {isAdmin && (
+              <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+                <Trash2 size={16} /> Hapus Semua
+              </button>
+            )}
+            <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
+              <Download size={16} /> Template
+            </button>
+            <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", borderRadius: 'var(--radius-full)', margin: 0 }}>
+              <Upload size={16} /> Import CSV
+              <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
+            </label>
+            <button id="btn-tambah-inventaris" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>{ setEditItem(null); setShowModal(true); }}>
+              <Plus size={18} /> Tambah Barang
+            </button>
+          </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>

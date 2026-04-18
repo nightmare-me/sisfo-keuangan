@@ -14,10 +14,15 @@ import {
   User,
   Hash,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Trash2
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 export default function InvoicePage() {
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = role === "ADMIN";
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -103,6 +108,17 @@ export default function InvoicePage() {
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   }
 
+  async function handleDeleteAll() {
+    if (!isAdmin) return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data INVOICE akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/invoice?all=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else alert("Gagal menghapus.");
+    }
+  }
+
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
       {/* Header Ala Dashboard */}
@@ -114,6 +130,13 @@ export default function InvoicePage() {
           </div>
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>E-Invoice Siswa</h1>
           <p className="body-lg" style={{ margin: 0 }}>Arsip bukti pembayaran dan penagihan resmi lembaga</p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {isAdmin && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Semua
+            </button>
+          )}
         </div>
       </div>
 

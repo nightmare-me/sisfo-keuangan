@@ -116,3 +116,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal Server Error", details: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const role = (session.user as any)?.role?.toUpperCase();
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const all = searchParams.get("all");
+
+  if (all === "true") {
+    if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus data" }, { status: 403 });
+    await prisma.adPerformance.deleteMany({});
+    return NextResponse.json({ success: true });
+  }
+
+  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+  await prisma.adPerformance.delete({ where: { id } });
+  return NextResponse.json({ success: true });
+}

@@ -72,14 +72,16 @@ export function percentageChange(current: number, previous: number): number {
   return ((current - previous) / previous) * 100;
 }
 
+export const SUPER_ROLES = ["ADMIN", "CEO", "COO", "FINANCE"];
+
 export function hasPermission(session: any, permissionSlug: string): boolean {
   if (!session?.user) return false;
   
-  const userRole = (session.user as any).role;
+  const userRole = (session.user as any).role?.toUpperCase();
   const userPermissions = (session.user as any).permissions || [];
   
-  // Administrator bypass: has all permissions
-  if (userRole === 'ADMIN' || userRole === 'admin') return true;
+  // Superuser bypass: Certain roles have full access automatically
+  if (SUPER_ROLES.includes(userRole)) return true;
   
   return userPermissions.includes(permissionSlug);
 }

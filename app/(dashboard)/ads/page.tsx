@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import Papa from "papaparse";
@@ -24,6 +25,9 @@ const PLATFORM_COLOR: Record<string,string> = {
 };
 
 export default function AdsPage() {
+  const { data: session } = useSession();
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = role === "ADMIN";
   const [data, setData] = useState<any[]>([]);
   const [summary, setSummary] = useState({ total:0, count:0 });
   const [byPlatform, setByPlatform] = useState<any[]>([]);
@@ -62,6 +66,17 @@ export default function AdsPage() {
     if (!confirm("Hapus data iklan ini?")) return;
     await fetch(`/api/ads?id=${id}`,{ method:"DELETE" });
     fetchData();
+  }
+
+  async function handleDeleteAll() {
+    if (!isAdmin) return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data SPENT ADS (Biaya Iklan) akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/ads?all=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else alert("Gagal menghapus.");
+    }
   }
 
   function downloadCsvTemplate() {
@@ -165,6 +180,11 @@ export default function AdsPage() {
           <p className="body-lg" style={{ margin: 0 }}>Lacak pengeluaran iklan harian per platform</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
+          {isAdmin && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Semua
+            </button>
+          )}
           <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
             <Download size={16} /> Template
           </button>

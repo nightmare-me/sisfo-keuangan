@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, SUPER_ROLES } from "@/lib/utils";
 
 const TIPE_OPTIONS = ["REGULAR", "PRIVATE", "SEMI_PRIVATE", "ONLINE", "LAINNYA"];
 const TIPE_BADGE: Record<string, string> = {
@@ -38,12 +38,12 @@ const DURASI_LABEL: Record<string, string> = {
   "3_BULAN": "3 Bulan",   "6_BULAN": "6 Bulan", "LAINNYA": "Lainnya",
 };
 
-const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "" };
+const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "", feeClosing: "0", feeClosingRO: "0" };
 
 export default function ProgramPage() {
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role;
-  const isAdmin = role === "ADMIN";
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = SUPER_ROLES.includes(role);
 
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,30 +75,69 @@ export default function ProgramPage() {
       tipe: p.tipe, 
       harga: String(p.harga), 
       kategoriFee: p.kategoriFee || "REG_1B",
-      durasi: p.durasi ?? "" 
+      durasi: p.durasi ?? "",
+      feeClosing: String(p.feeClosing || 0),
+      feeClosingRO: String(p.feeClosingRO || 0)
     });
+    setEditId(p.id);
     setShowModal(true);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const payload = { ...form, harga: parseFloat(form.harga) };
-    if (editId) {
-      await fetch("/api/program", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editId, ...payload }) });
-    } else {
-      await fetch("/api/program", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const payload = { 
+      ...form, 
+      harga: parseFloat(form.harga) || 0,
+      feeClosing: parseFloat(form.feeClosing) || 0,
+      feeClosingRO: parseFloat(form.feeClosingRO) || 0
+    };
+    console.log("SUBMITTING_PAYLOAD:", payload);
+    let res;
+    try {
+      if (editId) {
+        res = await fetch("/api/program", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editId, ...payload }) });
+      } else {
+        res = await fetch("/api/program", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      }
+
+      if (!res.ok) {
+        let msg = "Terjadi kesalahan internal";
+        try {
+          const errData = await res.json();
+          msg = errData.error || msg;
+        } catch (e) {}
+        alert("⚠️ Gagal menyimpan: " + msg);
+      } else {
+        setShowModal(false);
+        setEditId(null);
+        fetchData();
+      }
+    } catch (err: any) {
+      alert("⚠️ Koneksi terputus atau server tidak merespon: " + err.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowModal(false);
-    setEditId(null);
-    fetchData();
   }
 
   async function handleDelete(p: any) {
     if (!confirm(`Nonaktifkan produk "${p.nama}"?\n\nData historis transaksi tetap aman.`)) return;
     await fetch(`/api/program?id=${p.id}`, { method: "DELETE" });
     fetchData();
+  }
+
+  async function handleDeleteAll() {
+    if (role !== "ADMIN") return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data PRODUK/PROGRAM akan dihapus PERMANEN.\n\nPenghapusan akan GAGAL jika program masih digunakan di data kelas/invoice.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/program?deleteAll=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else {
+        const err = await res.json();
+        alert("Gagal menghapus: " + (err.error ?? "Terjadi kesalahan"));
+      }
+    }
   }
 
   async function handleReaktifkan(p: any) {
@@ -130,6 +169,11 @@ export default function ProgramPage() {
             {showNonaktif ? <EyeOff size={16} /> : <Eye size={16} />}
             {showNonaktif ? " Sembunyikan Nonaktif" : " Tampilkan Nonaktif"}
           </button>
+          {role === "ADMIN" && (
+            <button className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Semua
+            </button>
+          )}
           {isAdmin && (
             <button className="btn btn-primary" onClick={openAdd} style={{ borderRadius: 'var(--radius-full)' }}>
               <Plus size={18} /> Tambah Produk
@@ -166,6 +210,8 @@ export default function ProgramPage() {
                 <th>Nama Produk</th>
                 <th>Tipe</th>
                 <th>Harga Normal</th>
+                <th>Fee New</th>
+                <th>Fee RO</th>
                 <th>Durasi</th>
                 <th>Deskripsi</th>
                 <th>Status</th>
@@ -174,9 +220,9 @@ export default function ProgramPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>Loading...</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>Loading...</td></tr>
               ) : data.length === 0 ? (
-                <tr><td colSpan={7}>
+                <tr><td colSpan={9}>
                   <div className="empty-state">
                     <div className="empty-state-icon">📦</div>
                     <h3>Belum ada produk</h3>
@@ -188,6 +234,8 @@ export default function ProgramPage() {
                   <td style={{ fontWeight: 600 }}>{p.nama}</td>
                   <td><span className={`badge ${TIPE_BADGE[p.tipe] ?? "badge-muted"}`}>{p.tipe}</span></td>
                   <td style={{ fontWeight: 700, color: "var(--success)" }}>{formatCurrency(p.harga)}</td>
+                  <td style={{ color: "var(--primary)", fontWeight: 600 }}>{formatCurrency(p.feeClosing || 0)}</td>
+                  <td style={{ color: "var(--warning)", fontWeight: 600 }}>{formatCurrency(p.feeClosingRO || 0)}</td>
                   <td style={{ color: "var(--text-muted)", fontSize: 13 }}>{DURASI_LABEL[p.durasi] ?? p.durasi ?? "—"}</td>
                   <td style={{ fontSize: 12, color: "var(--text-muted)", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.deskripsi || "—"}</td>
                   <td>
@@ -277,6 +325,30 @@ export default function ProgramPage() {
                     <option value="PRIVATE_VIP">Private VIP</option>
                     <option value="PRIVATE_FAMILY">Private FAMILY</option>
                   </select>
+                </div>
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Fee Closing Baru (Rp)</label>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      placeholder="0" 
+                      value={form.feeClosing} 
+                      onChange={e => setForm(f => ({ ...f, feeClosing: e.target.value }))} 
+                      min={0}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Fee Closing RO (Rp)</label>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      placeholder="0" 
+                      value={form.feeClosingRO} 
+                      onChange={e => setForm(f => ({ ...f, feeClosingRO: e.target.value }))} 
+                      min={0}
+                    />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Deskripsi</label>

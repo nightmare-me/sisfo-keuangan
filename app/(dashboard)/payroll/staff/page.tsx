@@ -17,7 +17,7 @@ import {
   AlertCircle,
   RefreshCw
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, SUPER_ROLES } from "@/lib/utils";
 
 export default function StaffPayrollPage() {
   const { data: session } = useSession();
@@ -30,8 +30,8 @@ export default function StaffPayrollPage() {
   
   const [showDetail, setShowDetail] = useState<any>(null);
 
-  const role = (session?.user as any)?.role;
-  const isAdmin = role === "ADMIN";
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = SUPER_ROLES.includes(role);
 
   function fetchPayroll() {
     setLoading(true);
@@ -78,6 +78,17 @@ export default function StaffPayrollPage() {
     setProcessing(false);
   }
 
+  async function handleDeleteAll() {
+    if (role !== "ADMIN") return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh riwayat data PAYROLL STAF (Histori Pembayaran) akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/payroll/staff?all=true", { method: "DELETE" });
+      if (res.ok) fetchPayroll();
+      else alert("Gagal menghapus.");
+    }
+  }
+
   const BULAN_LIST = [
     "Januari", "Februari", "Maret", "April", "Mei", "Juni",
     "Juli", "Agustus", "September", "Oktober", "November", "Desember"
@@ -93,6 +104,11 @@ export default function StaffPayrollPage() {
           </div>
           <h1 className="headline-lg">Payroll Staf & Bonus</h1>
           <p className="text-muted">Manajemen penggajian otomatis berdasarkan kinerja, jam live, dan profit sharing.</p>
+          {role === "ADMIN" && (
+            <button className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', marginTop: 12 }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Histori Payroll
+            </button>
+          )}
         </div>
 
         <div className="card glass" style={{ padding: '8px 16px', display: 'flex', gap: 12, alignItems: 'center' }}>

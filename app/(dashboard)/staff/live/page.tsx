@@ -13,7 +13,7 @@ import {
   ChevronRight,
   History
 } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { formatDate, SUPER_ROLES } from "@/lib/utils";
 import { startOfDay, addDays, subDays } from "date-fns";
 
 export default function StaffLivePage() {
@@ -31,14 +31,18 @@ export default function StaffLivePage() {
     keterangan: ""
   });
 
-  const role = (session?.user as any)?.role;
-  const isAdmin = role === "ADMIN";
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = SUPER_ROLES.includes(role);
 
   useEffect(() => {
-    fetch("/api/users").then(r => r.json()).then(d => {
-      // Filter potential talent roles/staff
-      setTalents(d.filter((u: any) => u.role !== "PENGAJAR"));
-    });
+    fetch("/api/users")
+      .then(r => r.json())
+      .then(d => {
+        // Handle both direct array or wrapped data object
+        const users = Array.isArray(d) ? d : (d.data || []);
+        setTalents(users.filter((u: any) => u.role !== "PENGAJAR"));
+      })
+      .catch(() => setTalents([]));
   }, []);
 
   useEffect(() => {

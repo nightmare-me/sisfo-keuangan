@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Megaphone, Plus, TrendingUp, DollarSign, MousePointer2, Calendar, Layout } from "lucide-react";
+import { Megaphone, Plus, TrendingUp, DollarSign, MousePointer2, Calendar, Layout, Trash2 } from "lucide-react";
 
 export default function AdsPerformancePage() {
   const { data: session } = useSession();
-  const role = (session?.user as any)?.role;
-  const isAdmin = role === "ADMIN";
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = ["ADMIN", "CEO"].includes(role);
 
   const [performances, setPerformances] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +52,17 @@ export default function AdsPerformancePage() {
     }
   }
 
+  async function handleDeleteAll() {
+    if (role !== "ADMIN") return;
+    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data PERFORMA IKLAN akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
+    if (conf === "HAPUS") {
+      setLoading(true);
+      const res = await fetch("/api/ads/performance?all=true", { method: "DELETE" });
+      if (res.ok) fetchData();
+      else alert("Gagal menghapus.");
+    }
+  }
+
   const totalSpent = performances.reduce((a, b) => a + b.spent, 0);
   const totalLeads = performances.reduce((a, b) => a + b.leads, 0);
   const avgCpl = totalLeads > 0 ? (totalSpent / totalLeads) : 0;
@@ -70,6 +81,11 @@ export default function AdsPerformancePage() {
           <p className="body-lg" style={{ margin: 0 }}>Pantau spent, Leads, CPL harian, dan akumulasi fee advertiser</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
+          {role === "ADMIN" && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
+              <Trash2 size={16} /> Hapus Semua
+            </button>
+          )}
           <button className="btn btn-primary" onClick={() => setShowModal(true)} style={{ borderRadius: 'var(--radius-full)' }}>
              <Plus size={18} /> Input Data Harian
           </button>

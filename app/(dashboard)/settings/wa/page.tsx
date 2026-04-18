@@ -7,7 +7,8 @@ import { useSession } from "next-auth/react";
 
 export default function WATemplateSettings() {
   const { data: session } = useSession();
-  const isAdmin = (session?.user as any)?.role === "ADMIN";
+  const role = (session?.user as any)?.role?.toUpperCase();
+  const isAdmin = ["ADMIN", "CEO"].includes(role);
 
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

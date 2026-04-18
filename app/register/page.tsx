@@ -81,7 +81,7 @@ export default function RegisterPage() {
              </p>
           </div>
 
-          <a href="https://speakingpartner.id" className="submit-btn" style={{ textDecoration: 'none', display: 'inline-block', maxWidth: 300 }}>
+          <a href="https://speakingpartner.id" className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-block', width: '100%', maxWidth: 300, padding: '16px', borderRadius: '100px', fontSize: '1.1rem' }}>
              Kembali ke Beranda
           </a>
         </div>
@@ -145,27 +145,21 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-group">
-              <label style={{ marginBottom: 16 }}>Pilih Program Belajarmu <span className="req">*</span></label>
-              <div className="program-list">
+              <label style={{ marginBottom: 12 }}><Sparkles size={14} style={{ marginRight: 6 }} /> Pilih Program Belajarmu <span className="req">*</span></label>
+              <select 
+                className="form-control" 
+                style={{ padding: '16px 20px', fontSize: '1.1rem', borderRadius: '16px', background: 'var(--surface-container-low)', width: '100%' }}
+                required
+                value={form.programId}
+                onChange={(e) => setForm({ ...form, programId: e.target.value })}
+              >
+                <option value="">-- Pilih Program --</option>
                 {programs.map((p) => (
-                  <label key={p.id} className={`program-item ${form.programId === p.id ? "selected" : ""}`}>
-                    <input 
-                      type="radio" 
-                      name="program" 
-                      value={p.id}
-                      checked={form.programId === p.id}
-                      onChange={(e) => setForm({ ...form, programId: e.target.value })}
-                      required
-                      style={{ opacity: 0, position: 'absolute' }}
-                    />
-                    <div className="program-info">
-                      <div className="program-name">{p.nama}</div>
-                      <div className="program-price">{formatCurrency(p.harga)}</div>
-                    </div>
-                    {form.programId === p.id && <CheckCircle2 size={24} color="var(--primary)" />}
-                  </label>
+                  <option key={p.id} value={p.id}>
+                    {p.nama} - {formatCurrency(p.harga)}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
 
             <div className="form-group">
@@ -178,7 +172,7 @@ export default function RegisterPage() {
               />
             </div>
 
-            <button type="submit" className="submit-btn" disabled={submitting}>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '18px', borderRadius: '100px', fontSize: '1.15rem' }} disabled={submitting}>
               {submitting ? "Tunggu sebentar..." : (
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
                   Daftar Sekarang <ChevronRight size={18} />

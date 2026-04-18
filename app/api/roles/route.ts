@@ -5,8 +5,10 @@ import { auth } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
-    const sessionRoleSlug = (session?.user as any)?.roleSlug;
-    if (!session || sessionRoleSlug !== 'admin') {
+    const user = (session?.user as any);
+    const isAdmin = user?.roleSlug === 'admin' || user?.role === 'ADMIN';
+    
+    if (!session || !isAdmin) {
        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -34,33 +36,43 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    const sessionRoleSlug = (session?.user as any)?.roleSlug;
-    if (!session || sessionRoleSlug !== 'admin') {
+    const user = (session?.user as any);
+    const isAdmin = user?.roleSlug === 'admin' || user?.role === 'ADMIN';
+    
+    if (!session || !isAdmin) {
        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     const { id, name, slug, description, permissionIds } = body;
 
-    const result = await prisma.role.upsert({
-      where: { id: id || "new-role" },
-      update: {
-        name,
-        slug,
-        description,
-        permissions: {
-          set: permissionIds.map((pid: string) => ({ id: pid }))
+    let result;
+    if (id) {
+      // UPDATE existing role
+      result = await prisma.role.update({
+        where: { id },
+        data: {
+          name,
+          slug,
+          description,
+          permissions: {
+            set: (permissionIds || []).map((pid: string) => ({ id: pid }))
+          }
         }
-      },
-      create: {
-        name,
-        slug,
-        description,
-        permissions: {
-          connect: permissionIds.map((pid: string) => ({ id: pid }))
+      });
+    } else {
+      // CREATE new role
+      result = await prisma.role.create({
+        data: {
+          name,
+          slug: slug || name.toLowerCase().replace(/ /g, '_'),
+          description: description || "",
+          permissions: {
+            connect: (permissionIds || []).map((pid: string) => ({ id: pid }))
+          }
         }
-      }
-    });
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error) {

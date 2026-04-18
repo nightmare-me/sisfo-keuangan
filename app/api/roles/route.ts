@@ -5,7 +5,8 @@ import { auth } from "@/lib/auth";
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session || (session.user as any).role !== 'admin') {
+    const sessionRoleSlug = (session?.user as any)?.roleSlug;
+    if (!session || sessionRoleSlug !== 'admin') {
        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -33,7 +34,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    if (!session || (session.user as any).role !== 'admin') {
+    const sessionRoleSlug = (session?.user as any)?.roleSlug;
+    if (!session || sessionRoleSlug !== 'admin') {
        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

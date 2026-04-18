@@ -42,8 +42,8 @@ export default function RolesPage() {
     const rolesData = await rolesRes.json();
     const permsData = await permsRes.json();
     
-    setRoles(rolesData);
-    setPermissions(permsData);
+    setRoles(Array.isArray(rolesData) ? rolesData : []);
+    setPermissions(Array.isArray(permsData) ? permsData : []);
     
     if (rolesData.length > 0 && !selectedRole) {
       handleSelectRole(rolesData[0]);

@@ -39,26 +39,26 @@ interface NavGroup {
 
 const navItems: NavGroup[] = [
   { group: "UTAMA", items: [
-    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
+    { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} />, permission: "dashboard:view" },
     { href: "/crm", label: "CRM / Leads", icon: <History size={16} />, permission: "crm:view" },
   ]},
   { group: "KEUANGAN", items: [
     { href: "/pemasukan", label: "Pemasukan", icon: <Wallet size={16} />, permission: "finance:view" },
     { href: "/pengeluaran", label: "Pengeluaran", icon: <FileText size={16} />, permission: "finance:edit" },
     { href: "/ads", label: "Spent Ads", icon: <Megaphone size={16} />, permission: "finance:view" },
-    { href: "/ads/performance", label: "Performa Iklan", icon: <TrendingUp size={16} />, permission: "report:view" },
+    { href: "/ads/performance", label: "Performa Iklan", icon: <TrendingUp size={16} />, permission: "ads:manage" },
     { href: "/laporan-keuangan", label: "Laporan Keuangan", icon: <PieChart size={16} />, permission: "report:view" },
-    { href: "/refund", label: "Manajemen Refund", icon: <History size={16} />, permission: "crm:view" },
-    { href: "/payroll/staff", label: "Payroll Staf", icon: <Briefcase size={16} />, permission: "payroll:manage" },
+    { href: "/refund", label: "Manajemen Refund", icon: <History size={16} />, permission: "refund:approve" },
+    { href: "/payroll/staff", label: "Payroll Staf", icon: <Briefcase size={16} />, permission: "payroll:view" },
   ]},
   { group: "AKADEMIK", items: [
-    { href: "/siswa", label: "Siswa", icon: <Users size={16} />, permission: "siswa:manage" },
+    { href: "/siswa", label: "Siswa", icon: <Users size={16} />, permission: "siswa:view" },
     { href: "/kelas", label: "Manajemen Kelas", icon: <BookOpen size={16} />, permission: "kelas:manage" },
     { href: "/program", label: "Produk / Program", icon: <Target size={16} />, permission: "kelas:manage" },
     { href: "/gaji", label: "Payroll Pengajar", icon: <Wallet size={16} />, permission: "payroll:manage" },
   ]},
   { group: "PENGAJAR", items: [
-    { href: "/pengajar/dashboard", label: "Kelas Saya", icon: <GraduationCap size={16} /> },
+    { href: "/pengajar/dashboard", label: "Kelas Saya", icon: <GraduationCap size={16} />, permission: "pengajar:view" },
   ]},
   { group: "OPERASIONAL", items: [
     { href: "/invoice", label: "Invoice", icon: <FileText size={16} />, permission: "finance:view" },
@@ -67,7 +67,7 @@ const navItems: NavGroup[] = [
   ]},
   { group: "SISTEM", items: [
     { href: "/users", label: "Manajemen User", icon: <UserCog size={16} />, permission: "user:manage" },
-    { href: "/settings/roles", label: "Pengaturan Role", icon: <Package size={16} />, permission: "user:manage" },
+    { href: "/settings/roles", label: "Pengaturan Role", icon: <Package size={16} />, permission: "settings:manage" },
     { href: "/logs", label: "Audit Log", icon: <History size={16} />, permission: "user:manage" },
     { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, permission: "user:manage" },
     { href: "/settings/wa", label: "Template WhatsApp", icon: <MessageCircle size={16} />, permission: "user:manage" },
@@ -106,8 +106,6 @@ export default function Sidebar() {
       <nav className="sidebar-nav">
         {navItems.map((group) => {
           const filteredItems = group.items.filter((item) => {
-            // Dashboard always visible
-            if (item.href === "/dashboard") return true;
             // Pengecekan via permission
             if (item.permission) {
               return hasPermission(session, item.permission);

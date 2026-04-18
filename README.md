@@ -29,8 +29,19 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Update 18 April 2026
-- Perbaikan Sinkronisasi Statistik CRM.
-- Otomatisasi Refund & Pembatalan Invoice.
-- Penyelarasan Dashboard Utama & Laporan Keuangan.
-- Pembaruan struktur database (Relasi Refund & Pemasukan).
+## Update Log - 18 April 2026
+
+### 🚀 Fitur Baru & Peningkatan
+- **Ads Performance Monitoring**: Penambahan halaman performa iklan (`/ads/performance`) untuk memantau efektivitas kampanye.
+- **CRM Stats & Optimization**: Implementasi API statistik CRM dan pemindahan Executive Summary ke strip horizontal untuk memaksimalkan ruang kerja Kanban.
+- **Payroll Logic Update**: Pembaruan sistem kalkulasi gaji pengajar (`lib/payroll.ts`) untuk akurasi honorarium.
+- **Restrukturisasi Menu**: Reorganisasi halaman Laporan menjadi **Laporan Keuangan** untuk kejelasan modul.
+
+### 💻 Optimasi UI/UX (Responsivitas)
+- **Laptop Screen Optimization**: Penyesuaian menyeluruh untuk layar 1366px - 1280px.
+- **Global Design System**: Sidebar lebih ramping (260px), padding kontainer lebih efisien, dan ukuran font/tombol yang lebih proporsional.
+- **Fix Kanban Cropping**: Perbaikan kolom Kanban yang terpotong di layar laptop kecil.
+
+### 🛠️ Teknis & Database
+- **Schema Synchronization**: Pembaruan relasi Refund, Pemasukan, dan penambahan field durasi pada Program.
+- **Audit System**: Implementasi sistem audit log untuk pelacakan aktivitas.

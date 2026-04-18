@@ -30,7 +30,7 @@ To learn more about Next.js, take a look at the following resources:
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
 ## Update 18 April 2026
-Perbaikan Sinkronisasi Statistik CRM.
-Otomatisasi Refund & Pembatalan Invoice.
-Penyelarasan Dashboard Utama & Laporan Keuangan.
-Pembaruan struktur database (Relasi Refund & Pemasukan).
+- Perbaikan Sinkronisasi Statistik CRM.
+- Otomatisasi Refund & Pembatalan Invoice.
+- Penyelarasan Dashboard Utama & Laporan Keuangan.
+- Pembaruan struktur database (Relasi Refund & Pemasukan).

@@ -21,7 +21,8 @@ import {
   Download,
   MessageCircle,
   Briefcase,
-  TrendingUp
+  TrendingUp,
+  Clock
 } from "lucide-react";
 
 interface NavItem {
@@ -51,12 +52,13 @@ const navItems: NavGroup[] = [
     { href: "/ads/performance", label: "Performa Iklan", icon: <TrendingUp size={16} />, adminOnly: true },
     { href: "/laporan-keuangan", label: "Laporan Keuangan", icon: <PieChart size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
     { href: "/refund", label: "Manajemen Refund", icon: <History size={16} />, hideFor: ["PENGAJAR", "AKADEMIK"] },
+    { href: "/payroll/staff", label: "Payroll Staf", icon: <Briefcase size={16} />, adminOnly: true },
   ]},
   { group: "AKADEMIK", items: [
     { href: "/siswa", label: "Siswa", icon: <Users size={16} /> },
     { href: "/kelas", label: "Manajemen Kelas", icon: <BookOpen size={16} /> },
     { href: "/program", label: "Produk / Program", icon: <Target size={16} /> },
-    { href: "/gaji", label: "Gaji Pengajar", icon: <Briefcase size={16} />, hideFor: ["CS", "PENGAJAR"] },
+    { href: "/gaji", label: "Payroll Pengajar", icon: <Wallet size={16} />, hideFor: ["CS", "PENGAJAR"] },
   ]},
   { group: "PENGAJAR", items: [
     { href: "/pengajar/dashboard", label: "Kelas Saya", icon: <GraduationCap size={16} />, pengajarOnly: true },
@@ -64,6 +66,7 @@ const navItems: NavGroup[] = [
   { group: "OPERASIONAL", items: [
     { href: "/invoice", label: "Invoice", icon: <FileText size={16} />, hideFor: ["AKADEMIK"] },
     { href: "/inventaris", label: "Inventaris", icon: <Package size={16} />, hideFor: ["CS", "PENGAJAR", "AKADEMIK"] },
+    { href: "/staff/live", label: "Input Jam Live", icon: <Clock size={16} />, adminOnly: true },
   ]},
   { group: "SISTEM", items: [
     { href: "/users", label: "Manajemen User", icon: <UserCog size={16} />, adminOnly: true },

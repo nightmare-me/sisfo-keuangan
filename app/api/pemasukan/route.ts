@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
         siswa: { select: { nama: true, noSiswa: true, id: true } },
         program: { select: { nama: true, tipe: true } },
         cs: { select: { name: true } },
+        talent: { select: { name: true } },
         invoice: { select: { noInvoice: true } },
       },
     });
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { siswaId, namaSiswa, programId, csId, hargaNormal, diskon, hargaFinal: rawHargaFinal, metodeBayar, keterangan, tanggal } = body;
+  const { siswaId, namaSiswa, programId, csId, talentId, hargaNormal, diskon, hargaFinal: rawHargaFinal, metodeBayar, keterangan, tanggal, isRO } = body;
 
   let finalSiswaId = siswaId || null;
 
@@ -140,6 +141,8 @@ export async function POST(request: NextRequest) {
       hargaFinal,
       metodeBayar: metodeBayar ?? "CASH",
       keterangan,
+      isRO: !!isRO,
+      talentId: talentId || null,
       invoice: {
         create: {
           noInvoice,

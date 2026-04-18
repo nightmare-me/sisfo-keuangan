@@ -26,6 +26,9 @@ model User {
   refundsAsFin Refund[]       @relation("FinanceRefund")
   spentAds       SpentAds[]
   adPerformances AdPerformance[]
+  liveSessions   LiveSession[]
+  gajiStaf       GajiStaf[]
+  pemasukanTalent Pemasukan[]    @relation("TalentPemasukan")
   karyawanProfile KaryawanProfile?
 }
 
@@ -47,6 +50,35 @@ model KaryawanProfile {
   keterangan      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model LiveSession {
+  id        String   @id @default(cuid())
+  userId    String
+  tanggal   DateTime @default(now())
+  durasi    Float    // Dalam jam
+  keterangan String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model GajiStaf {
+  id           String      @id @default(cuid())
+  userId       String
+  bulan        Int
+  tahun        Int
+  gapok        Float
+  tunjangan    Float
+  fee          Float
+  bonus        Float
+  total        Float
+  statusBayar  StatusBayar @default(BELUM_BAYAR)
+  tanggalBayar DateTime?
+  metodeBayar  MetodeBayar @default(TRANSFER)
+  keterangan   String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation(fields: [userId], references: [id])
 }
 
 model Program {
@@ -140,11 +172,13 @@ model Pemasukan {
   hargaFinal  Float
   metodeBayar MetodeBayar @default(CASH)
   isRO        Boolean     @default(false)
+  talentId    String?
   keterangan  String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   invoice     Invoice?
   cs          User?       @relation("CSPemasukan", fields: [csId], references: [id])
+  talent      User?       @relation("TalentPemasukan", fields: [talentId], references: [id])
   program     Program?    @relation(fields: [programId], references: [id])
   siswa       Siswa?      @relation(fields: [siswaId], references: [id])
   refunds     Refund[]

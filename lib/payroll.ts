@@ -92,3 +92,75 @@ export function calculateAdvFee(
 
   return feePerLead * leadsCount;
 }
+
+/**
+ * Calculate Talent Live Bonus based on personal Omset
+ */
+export function calculateBonusTalent(omsetTalent: number): number {
+  if (omsetTalent < 30000000) return 0;
+  if (omsetTalent <= 35000000) return omsetTalent * 0.025;
+  return omsetTalent * 0.05;
+}
+
+/**
+ * Calculate SPV Akademik Bonus based on RO Omset
+ */
+export function calculateBonusAkademikRO(omsetRO: number): number {
+  if (omsetRO < 200000000) return omsetRO * 0.0025;
+  if (omsetRO <= 400000000) return omsetRO * 0.005;
+  return omsetRO * 0.01;
+}
+
+/**
+ * Calculate Bonus for Tim Multimedia Eksternal based on Nett Profit
+ */
+export function calculateBonusMultimediaEksternal(nettProfit: number): number {
+  if (nettProfit < 50000000) return 0;
+  if (nettProfit <= 100000000) return nettProfit * 0.05;
+  if (nettProfit <= 150000000) return nettProfit * 0.08;
+  return nettProfit * 0.12;
+}
+
+/**
+ * Calculate TOEFL Profit Sharing for a user based on their position
+ */
+export function calculateSharingTOEFL(toeflProfit: number, posisi: string): number {
+  const teamShare = toeflProfit * 0.5; // Tim TOEFL gets 50%
+  
+  const rates: Record<string, number> = {
+    'CEO': 0.825,
+    'COO': 0.05,
+    'SPV AKADEMIK': 0.05,
+    'SPV ADV': 0.025,
+    'SPV MULTIMEDIA': 0.02,
+    'ASSISTANT CEO': 0.02,
+    'FINANCE': 0.01
+  };
+
+  const rate = rates[posisi.toUpperCase()] || 0;
+  return teamShare * rate;
+}
+
+/**
+ * Calculate Revenue-based Bonus (from Gross Profit)
+ */
+export function calculateBonusGrossProfit(grossProfit: number, posisi: string): number {
+  const rates: Record<string, number> = {
+    'CEO': 0.015,
+    'ASSISTANT CEO': 0.015,
+    'COO': 0.03,
+    'FINANCE': 0.01,
+    'SPV ADV': 0.015,
+    'SPV MULTIMEDIA': 0.015
+  };
+
+  const rate = rates[posisi.toUpperCase()] || 0;
+  return grossProfit * rate;
+}
+
+/**
+ * Calculate Salary from Live Hours
+ */
+export function calculateGajiLive(totalJam: number): number {
+  return totalJam * 13500;
+}

@@ -43,5 +43,8 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 - **Fix Kanban Cropping**: Perbaikan kolom Kanban yang terpotong di layar laptop kecil.
 
 ### 🛠️ Teknis & Database
+- **Employee & Payroll Database**: Implementasi model `KaryawanProfile` untuk menyimpan NIK, data bank, dan parameter penggajian.
+- **Auto-Generate NIK**: Sistem penomoran otomatis karyawan dengan format `SP-*****`.
+- **Management UI**: Penambahan modal pengaturan payroll pada halaman Manajemen Personil untuk akses Admin/Finance.
 - **Schema Synchronization**: Pembaruan relasi Refund, Pemasukan, dan penambahan field durasi pada Program.
 - **Audit System**: Implementasi sistem audit log untuk pelacakan aktivitas.

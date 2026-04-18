@@ -19,7 +19,11 @@ import {
   ChevronRight,
   Info,
   Layers,
-  Briefcase
+  Briefcase,
+  Banknote,
+  Wallet,
+  CreditCard,
+  Target
 } from "lucide-react";
 
 
@@ -60,6 +64,15 @@ export default function UsersPage() {
 
   // Bulk rows
   const [bulkRows, setBulkRows] = useState([{ ...emptyRow }, { ...emptyRow }, { ...emptyRow }]);
+
+  // ── Payroll Profile States ──
+  const [showPayrollModal, setShowPayrollModal] = useState(false);
+  const [payrollUser, setPayrollUser] = useState<any>(null);
+  const [loadingPayroll, setLoadingPayroll] = useState(false);
+  const [payrollForm, setPayrollForm] = useState({
+    nik: "", posisi: "", bankName: "", rekeningNomor: "", rekeningNama: "",
+    gajiPokok: 0, tunjangan: 0, feeClosing: 0, feeLead: 0, bonusTarget: 0, bonusNominal: 0, keterangan: ""
+  });
 
   function fetchData() {
     setLoading(true);
@@ -193,6 +206,64 @@ export default function UsersPage() {
     fetchData();
   }
 
+  // ── Payroll Profile Handlers ──
+  async function openPayroll(user: any) {
+    setPayrollUser(user);
+    setLoadingPayroll(true);
+    setShowPayrollModal(true);
+    try {
+      const res = await fetch(`/api/karyawan?userId=${user.id}`);
+      const data = await res.json();
+      if (data) {
+        setPayrollForm({
+          nik: data.nik || "",
+          posisi: data.posisi || "",
+          bankName: data.bankName || "",
+          rekeningNomor: data.rekeningNomor || "",
+          rekeningNama: data.rekeningNama || "",
+          gajiPokok: data.gajiPokok || 0,
+          tunjangan: data.tunjangan || 0,
+          feeClosing: data.feeClosing || 0,
+          feeLead: data.feeLead || 0,
+          bonusTarget: data.bonusTarget || 0,
+          bonusNominal: data.bonusNominal || 0,
+          keterangan: data.keterangan || ""
+        });
+      } else {
+        setPayrollForm({
+          nik: "", posisi: "", bankName: "", rekeningNomor: "", rekeningNama: "",
+          gajiPokok: 0, tunjangan: 0, feeClosing: 0, feeLead: 0, bonusTarget: 0, bonusNominal: 0, keterangan: ""
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingPayroll(false);
+    }
+  }
+
+  async function handlePayrollSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/karyawan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: payrollUser.id, ...payrollForm })
+      });
+      if (res.ok) {
+        setShowPayrollModal(false);
+        fetchData();
+      } else {
+        alert("Gagal menyimpan profil payroll");
+      }
+    } catch (e) {
+      alert("Error saving payroll");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
       {/* Header Ala Dashboard */}
@@ -316,7 +387,15 @@ export default function UsersPage() {
                       <button
                         onClick={() => openEdit(user)}
                         style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "#818cf8", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                        title="Edit User"
                       >✏️</button>
+                      {(selfRole === "ADMIN" || selfRole === "FINANCE") && (
+                        <button
+                          onClick={() => openPayroll(user)}
+                          style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "#10b981", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                          title="Payroll Profile"
+                        >💳</button>
+                      )}
                       <button
                         onClick={() => handleDeactivate(user)}
                         style={{ background: user.aktif ? "rgba(239,68,68,0.1)" : "rgba(10,185,129,0.1)", border: user.aktif ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(10,185,129,0.3)", color: user.aktif ? "#f87171" : "#34d399", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
@@ -483,6 +562,135 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+
+      {/* ── Payroll Modal ──────────────────────────────────────── */}
+      {showPayrollModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowPayrollModal(false); }}>
+          <div className="modal" style={{ maxWidth: 640, width: "95vw" }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <CreditCard size={20} style={{ color: 'var(--success)' }} />
+                <span>Payroll Profile: {payrollUser?.name}</span>
+              </div>
+              <button className="modal-close" onClick={() => setShowPayrollModal(false)}>✕</button>
+            </div>
+            
+            <form onSubmit={handlePayrollSubmit}>
+              <div className="modal-body">
+                {loadingPayroll ? (
+                  <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Mengambil data payroll...</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    
+                    {/* Seksi Identitas & Posisi */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div className="form-group">
+                        <label className="form-label">NIK (Nomor Induk Karyawan)</label>
+                        <input type="text" className="form-control" value={payrollForm.nik} placeholder="SP-***** (Generated)" readOnly style={{ background: 'var(--surface-container-low)', fontWeight: 700, color: 'var(--primary)' }} />
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tergenerate otomatis jika kosong</span>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Posisi / Jabatan</label>
+                        <div style={{ position: 'relative' }}>
+                          <Briefcase size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                          <input type="text" className="form-control" style={{ paddingLeft: 38 }} placeholder="Contoh: Manager, Senior CS..." value={payrollForm.posisi} onChange={e => setPayrollForm(f => ({ ...f, posisi: e.target.value }))} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Seksi Perbankan */}
+                    <div className="card" style={{ background: 'var(--surface-container-lowest)', padding: 16, border: '1px solid var(--ghost-border)', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--on-surface)', fontWeight: 700, fontSize: 13 }}>
+                        <Wallet size={16} /> DATA REKENING BANK
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 12, marginBottom: 12 }}>
+                        <div className="form-group">
+                          <label className="form-label">Nama Bank</label>
+                          <input type="text" className="form-control" placeholder="BCA / Mandiri..." value={payrollForm.bankName} onChange={e => setPayrollForm(f => ({ ...f, bankName: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Nomor Rekening</label>
+                          <input type="text" className="form-control" placeholder="XXXX-XXXX-XXXX" value={payrollForm.rekeningNomor} onChange={e => setPayrollForm(f => ({ ...f, rekeningNomor: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Nama Pemilik Rekening</label>
+                        <input type="text" className="form-control" placeholder="Harus sesuai buku tabungan" value={payrollForm.rekeningNama} onChange={e => setPayrollForm(f => ({ ...f, rekeningNama: e.target.value }))} />
+                      </div>
+                    </div>
+
+                    {/* Seksi Financial Params */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--on-surface)', fontWeight: 700, fontSize: 13 }}>
+                        <Banknote size={16} /> KOMPONEN GAJI & FEE
+                      </div>
+                      <div className="form-grid-2">
+                        <div className="form-group">
+                          <label className="form-label">Gaji Pokok (Bulanan)</label>
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Rp</span>
+                            <input type="number" className="form-control" style={{ paddingLeft: 44 }} value={payrollForm.gajiPokok} onChange={e => setPayrollForm(f => ({ ...f, gajiPokok: parseFloat(e.target.value) || 0 }))} />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Tunjangan Tetap</label>
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Rp</span>
+                            <input type="number" className="form-control" style={{ paddingLeft: 44 }} value={payrollForm.tunjangan} onChange={e => setPayrollForm(f => ({ ...f, tunjangan: parseFloat(e.target.value) || 0 }))} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="form-grid-2" style={{ marginTop: 12 }}>
+                        <div className="form-group">
+                          <label className="form-label">Fee per Closing (CS)</label>
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Rp</span>
+                            <input type="number" className="form-control" style={{ paddingLeft: 44 }} value={payrollForm.feeClosing} onChange={e => setPayrollForm(f => ({ ...f, feeClosing: parseFloat(e.target.value) || 0 }))} />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Fee per Lead (Adv)</label>
+                          <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Rp</span>
+                            <input type="number" className="form-control" style={{ paddingLeft: 44 }} value={payrollForm.feeLead} onChange={e => setPayrollForm(f => ({ ...f, feeLead: parseFloat(e.target.value) || 0 }))} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="card" style={{ marginTop: 16, background: 'rgba(99,102,241,0.04)', border: '1px dashed rgba(99,102,241,0.2)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                          <div className="form-group">
+                             <label className="form-label"><Target size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Target Bonus (Unit)</label>
+                             <input type="number" className="form-control" value={payrollForm.bonusTarget} onChange={e => setPayrollForm(f => ({ ...f, bonusTarget: parseInt(e.target.value) || 0 }))} />
+                          </div>
+                          <div className="form-group">
+                             <label className="form-label">Nominal Bonus Target</label>
+                             <input type="number" className="form-control" value={payrollForm.bonusNominal} onChange={e => setPayrollForm(f => ({ ...f, bonusNominal: parseFloat(e.target.value) || 0 }))} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                       <label className="form-label">Catatan Tambahan</label>
+                       <textarea className="form-control" rows={2} value={payrollForm.keterangan} onChange={e => setPayrollForm(f => ({ ...f, keterangan: e.target.value }))}></textarea>
+                    </div>
+
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowPayrollModal(false)}>Batal</button>
+                <button type="submit" className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} disabled={saving || loadingPayroll}>
+                  {saving ? "Menyimpan..." : "💾 Simpan Profil Payroll"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

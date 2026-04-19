@@ -36,20 +36,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 ### 🏆 Final ERP Finance Optimization & Sync (Update 3)
 - **Full-Spectrum Finance Sync**: 
   - **Advertiser Sync**: Data dari Advertiser (AdPerformance) kini terhubung 100% ke Dashboard Finansial dan Laporan Keuangan sebagai sumber kebenaran data iklan.
-  - **Automated Payroll Expense**: Setiap pembayaran gaji (Staf & Pengajar) otomatis tercatat sebagai pengeluaran perusahaan secara real-time, memastikan Laba Bersih selalu akurat.
+  - **Automated Payroll Expense**: Setiap pembayaran gaji (Staf & Pengajar) otomatis tercatat sebagai pengeluaran perusahaan secara real-time.
   - **Integrated Inventory**: Belanja barang inventaris baru otomatis terdaftar sebagai pengeluaran operasional perusahaan.
-- **Advanced Dashboard Filters**: Penambahan fitur selector periode waktu yang dinamis (Hari Ini, Kemarin, Minggu Ini, Bulan Ini, dan Custom Date Range) untuk analisis finansial yang lebih fleksibel.
+- **Advanced Dashboard Filters**: Penambahan fitur selector periode waktu yang dinamis (Hari Ini, Kemarin, Minggu Ini, Bulan Ini, dan Custom Date Range).
 - **Revenue Source Identification**: Klasifikasi otomatis sumber pemasukan ke dalam 4 kategori strategis: **Regular**, **Repeat Order (RO)**, **Produk Live**, dan **Produk TOEFL**.
+- **Automated CSV Imports**:
+  - Dukungan import massal untuk Pemasukan, Siswa, Karyawan, dan Inventaris.
+  - **Auto CS Tracking**: Import Pemasukan kini otomatis mengenali CS berdasarkan kolom `nama_cs`.
+  - **Standard Format**: `nama_siswa`, `tanggal`, `program`, `harga_normal`, `diskon`, `nama_cs`, `ro`, `metode`, `keterangan`.
 - **The "Bagan" Standard (TOEFL Sharing)**:
   - Implementasi sistem bagi hasil TOEFL 50/50 sesuai standar alur keuangan perusahaan.
-  - Penambahan flag `isProfitSharing` pada manajemen produk untuk membedakan TOEFL Internal (Milik Perusahaan) dan TOEFL Partnership (Bagi Hasil).
+  - Penambahan flag `isProfitSharing` pada manajemen produk untuk membedakan TOEFL Internal dan Partnership.
   - Perhitungan profit bersih departemen TOEFL (Omset dikurangi Ads & Fees) sebelum dilakukan pembagian profit ke tim.
+- **Reporting & UX Excellence**:
+  - Fitur **Export Excel & PDF** kini menyertakan rincian breakdown sumber pemasukan.
+  - Fitur **"Hitung Otomatis"** sesi mengajar pada payroll guru berdasarkan data absensi terkini.
 
 ### 🛠️ Stabilitas & Bug Fixes
-- **Prisma Schema Update**: Penambahan field `isProfitSharing` pada model Program untuk mendukung diferensiasi produk partnership.
-- **API Optimization**: Peningkatan performa aggregation pada `/api/laporan` untuk mendukung breakdown data yang lebih kompleks.
-- **System Synchronization**: Reset server menyeluruh untuk memastikan semua skema database terbaru terbaca sempurna.
-- **Reporting Excellence**: Update fitur **Export Excel & PDF** yang kini menyertakan rincian breakdown sumber pemasukan.
+- **Prisma Schema Update**: Penambahan field `isProfitSharing` pada model Program.
+- **API Optimization**: Peningkatan performa aggregation pada `/api/laporan`.
+- **System Synchronization**: Reset dan restart server secara menyeluruh untuk sinkronisasi schema database terbaru.
 
 ---
 
@@ -59,4 +65,3 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 - **Dynamic Roles & Granular Permissions**: Implementasi sistem perijinan dinamis berbasis database untuk skalabilitas pengelolaan staf.
 - **Role Management UI**: Dashboard baru di `/settings/roles` untuk mengatur hak akses secara visual.
 - **Ads-Spent Sync Automation**: Sinkronisasi otomatis input Performa Iklan ke Laporan Keuangan.
-- **React v18 Downgrade**: Perbaikan stabilitas NextAuth dan Dashboard dengan downgrade ke React 18.2.0.

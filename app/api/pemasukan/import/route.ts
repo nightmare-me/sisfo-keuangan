@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     // Pre-load lookup data
     const allPrograms = await prisma.program.findMany();
     const allSiswa = await prisma.siswa.findMany();
+    const allCS = await prisma.user.findMany({ where: { roleSlug: "cs" } });
 
     let successCount = 0;
     
@@ -38,6 +39,13 @@ export async function POST(request: NextRequest) {
           pName?.includes(p.nama.toLowerCase())
         );
 
+        // Matching CS (Pencarian otomatis CS berdasarkan nama di CSV)
+        let finalCSId = role === "CS" ? userId : undefined;
+        if (item.nama_cs) {
+           const targetCS = allCS.find(u => u.name?.toLowerCase().includes(item.nama_cs.toLowerCase()));
+           if (targetCS) finalCSId = targetCS.id;
+        }
+
         const hargaNormal = parseFloat(item.harga_normal || 0);
         const diskon = parseFloat(item.diskon || 0);
         const hargaFinal = Math.max(0, hargaNormal - diskon);
@@ -49,10 +57,11 @@ export async function POST(request: NextRequest) {
               tanggal: new Date(item.tanggal),
               siswaId: targetSiswa.id,
               programId: targetProgram?.id,
-              csId: role === "CS" ? userId : undefined,
+              csId: finalCSId,
               hargaNormal,
               diskon,
               hargaFinal,
+              isRO: !!item.ro,
               metodeBayar: ["CASH", "TRANSFER", "QRIS"].includes(item.metode?.toUpperCase()) ? item.metode.toUpperCase() : "CASH",
               keterangan: item.keterangan || "Imported massal",
             }

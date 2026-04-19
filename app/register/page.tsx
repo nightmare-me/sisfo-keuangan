@@ -16,7 +16,10 @@ import {
 } from "lucide-react";
 import "./register.css";
 
-export default function RegisterPage() {
+function RegisterContent() {
+  const searchParams = useSearchParams();
+  const teamParam = searchParams.get("team")?.toUpperCase() || "REGULAR"; // REGULAR, RO, TOEFL, LIVE
+  
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -28,16 +31,34 @@ export default function RegisterPage() {
     email: "",
     programId: "",
     preferensiJadwal: "",
+    isRO: teamParam === "RO",
   });
 
   useEffect(() => {
     fetch("/api/public/programs")
       .then((res) => res.json())
       .then((data) => {
-        setPrograms(data);
+        // FILTER PROGRAM BERDASARKAN PINTU (TEAM)
+        let filtered = data;
+        if (teamParam === "TOEFL") {
+          filtered = data.filter((p: any) => p.nama.toLowerCase().includes("toefl"));
+        } else if (teamParam === "LIVE") {
+          filtered = data.filter((p: any) => p.nama.toLowerCase().includes("live"));
+        } else if (teamParam === "RO") {
+          // Asumsi RO bisa milih semua program tapi statusnya dikunci RO
+          filtered = data;
+        } else {
+          // Regular: Sembunyikan produk yang ada kata TOEFL atau LIVE agar tidak salah pilih
+          filtered = data.filter((p: any) => 
+            !p.nama.toLowerCase().includes("toefl") && 
+            !p.nama.toLowerCase().includes("live")
+          );
+        }
+
+        setPrograms(filtered);
         setLoading(false);
       });
-  }, []);
+  }, [teamParam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,9 +120,16 @@ export default function RegisterPage() {
         <div className="register-header">
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--surface-container-low)', padding: '8px 16px', borderRadius: '100px', color: 'var(--on-surface)', marginBottom: 24 }}>
              <Sparkles size={16} color="var(--primary)" />
-             <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>New Registration</span>
+             <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                {teamParam === "REGULAR" ? "New Registration" : `REGISTRATION - ${teamParam} TEAM`}
+             </span>
           </div>
-          <h1>Mulai Belajar Hari Ini!</h1>
+          <h1>
+            {teamParam === "REGULAR" ? "Mulai Belajar Hari Ini!" : 
+             teamParam === "RO" ? "Pendaftaran Siswa Lanjutan (RO)" :
+             teamParam === "TOEFL" ? "Pendaftaran Tes TOEFL" :
+             "Pendaftaran Kelas Live"}
+          </h1>
           <p>Tingkatkan rasa percaya diri bicaramu dengan kurikulum terbaik di Speaking Partner.</p>
         </div>
 

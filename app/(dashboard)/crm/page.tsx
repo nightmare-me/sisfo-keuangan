@@ -18,10 +18,13 @@ import {
   UserPlus,
   Trash2,
   Upload,
+  Share2,
   FileSpreadsheet,
   TrendingUp,
   Edit,
-  RotateCcw
+  RotateCcw,
+  ChevronRight,
+  ShieldCheck
 } from "lucide-react";
 
 const COLUMNS = [
@@ -67,6 +70,7 @@ export default function CRMPage() {
   const [selectedEditLead, setSelectedEditLead] = useState<any>(null);
 
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
+  const [showShareLinksModal, setShowShareLinksModal] = useState(false);
   const [submittingLead, setSubmittingLead] = useState(false);
   const [newLeadForm, setNewLeadForm] = useState({
     nama: "",
@@ -254,6 +258,9 @@ export default function CRMPage() {
             )}
             {!isReadOnly && (
               <div style={{ display: 'flex', gap: 12 }}>
+                <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowShareLinksModal(true)}>
+                  <Share2 size={16} /> Bagikan Link
+                </button>
                 <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowImportModal(true)}>
                   <FileSpreadsheet size={16} /> Input Bulk
                 </button>
@@ -877,6 +884,63 @@ export default function CRMPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL BAGIKAN LINK */}
+      {showShareLinksModal && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowShareLinksModal(false); }}>
+          <div className="modal" style={{ maxWidth: 550 }}>
+            <div className="modal-header">
+              <div className="modal-title">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Share2 size={20} style={{ color: 'var(--primary)' }} />
+                  <span>Salin Link Pendaftaran</span>
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setShowShareLinksModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+                Gunakan link khusus di bawah ini untuk memastikan Lead masuk ke tim CS yang tepat secara otomatis.
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {[
+                  { label: "Link Jalur REGULAR", team: "", color: "var(--primary)" },
+                  { label: "Link Jalur RO (Repeat Order)", team: "RO", color: "#8b5cf6" },
+                  { label: "Link Jalur TES TOEFL", team: "TOEFL", color: "#f59e0b" },
+                  { label: "Link Jalur KELAS LIVE", team: "LIVE", color: "#ef4444" },
+                ].map((link, idx) => {
+                  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+                  const fullUrl = `${baseUrl}/register${link.team ? `?team=${link.team}` : ''}`;
+                  
+                  return (
+                    <div key={idx} className="glass" style={{ padding: 16, borderRadius: 12, border: '1px solid var(--ghost-border)' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: link.color, textTransform: 'uppercase', marginBottom: 8 }}>{link.label}</div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input 
+                          readOnly 
+                          className="form-control" 
+                          style={{ fontSize: 12, height: 36, flex: 1, background: 'var(--surface-container-low)' }} 
+                           value={fullUrl} 
+                        />
+                        <button 
+                          className="btn btn-sm btn-primary"
+                          style={{ padding: '0 12px' }}
+                          onClick={() => {
+                            navigator.clipboard.writeText(fullUrl);
+                            alert(`${link.label} berhasil disalin!`);
+                          }}
+                        >
+                          Salin
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}

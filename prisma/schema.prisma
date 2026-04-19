@@ -485,6 +485,15 @@ enum StatusRefund {
   REJECTED
 }
 
+model KategoriPengeluaran {
+  id        String   @id @default(cuid())
+  nama      String   @unique
+  slug      String   @unique
+  color     String?  @default("#ef4444")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum KategoriPengeluaran {
   GAJI_PENGAJAR
   GAJI_STAF

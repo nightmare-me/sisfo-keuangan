@@ -19,13 +19,7 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 
-const KATEGORI = ["GAJI_PENGAJAR","GAJI_STAF","SEWA_TEMPAT","UTILITAS","ATK","MARKETING","PERALATAN","PEMELIHARAAN","LAINNYA"];
-const METODE = ["CASH","TRANSFER"];
-const KATEGORI_LABEL: Record<string,string> = {
-  GAJI_PENGAJAR:"Gaji Pengajar",GAJI_STAF:"Gaji Staf",SEWA_TEMPAT:"Sewa Tempat",
-  UTILITAS:"Utilitas",ATK:"ATK",MARKETING:"Marketing",PERALATAN:"Peralatan",
-  PEMELIHARAAN:"Pemeliharaan",LAINNYA:"Lainnya"
-};
+const METODE = ["CASH", "TRANSFER"];
 
 export default function PengeluaranPage() {
   const { data: session } = useSession();
@@ -42,6 +36,16 @@ export default function PengeluaranPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [kategoriList, setKategoriList] = useState<any[]>([]);
+  const [showCatModal, setShowCatModal] = useState(false);
+  const [newCat, setNewCat] = useState({ nama: "", color: "#ef4444" });
+  const [form, setForm] = useState({
+    jumlah: "",
+    kategori: "LAINNYA",
+    metodeBayar: "CASH",
+    keterangan: "",
+    tanggal: new Date().toISOString().slice(0, 10),
+  });
 
   function fetchData() {
     const p = new URLSearchParams();
@@ -56,7 +60,14 @@ export default function PengeluaranPage() {
     });
   }
 
-  useEffect(()=>{ fetchData(); },[filter]);
+  function fetchCategories() {
+    fetch("/api/pengeluaran/kategori").then(r => r.json()).then(setKategoriList);
+  }
+
+  useEffect(() => {
+    fetchData();
+    fetchCategories();
+  }, [filter]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
@@ -176,7 +187,7 @@ export default function PengeluaranPage() {
               {byKategori.sort((a,b)=>(b._sum.jumlah??0)-(a._sum.jumlah??0)).map(k=>(
                 <div key={k.kategori}>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                    <span style={{ fontSize:13, fontWeight:600 }}>{KATEGORI_LABEL[k.kategori]??k.kategori}</span>
+                    <span style={{ fontSize:13, fontWeight:600 }}>{k.kategori}</span>
                     <span style={{ fontSize:13, fontWeight:700, color:"var(--danger)" }}>{formatCurrency(k._sum.jumlah??0)}</span>
                   </div>
                   <div style={{ height:6, background:"var(--bg-elevated)", borderRadius:3, overflow:"hidden" }}>
@@ -205,8 +216,11 @@ export default function PengeluaranPage() {
               <div style={{ display: "flex", gap: 12, flex: 1 }}>
                 <select className="form-control" value={filter.kategori} onChange={e=>setFilter(f=>({...f,kategori:e.target.value}))} style={{ padding: '8px 12px' }}>
                   <option value="">Semua Kategori</option>
-                  {KATEGORI.map(k=><option key={k} value={k}>{KATEGORI_LABEL[k]}</option>)}
+                  {kategoriList.map(k => <option key={k.id} value={k.nama}>{k.nama}</option>)}
                 </select>
+                <button className="btn btn-secondary btn-icon" onClick={() => setShowCatModal(true)} title="Kelola Kategori">
+                  <Plus size={16} />
+                </button>
                 <select className="form-control" value={filter.metodeBayar} onChange={e=>setFilter(f=>({...f,metodeBayar:e.target.value}))} style={{ padding: '8px 12px' }}>
                   <option value="">Semua Metode</option>
                   {METODE.map(m=><option key={m} value={m}>{m}</option>)}
@@ -257,7 +271,7 @@ export default function PengeluaranPage() {
                   <td style={{ fontSize:14, color:"var(--text-muted)", whiteSpace:"nowrap" }}>{formatDateTime(item.tanggal)}</td>
                   <td>
                     <span className="badge badge-danger" style={{ padding: '6px 14px', borderRadius: 100 }}>
-                      {KATEGORI_LABEL[item.kategori]??item.kategori}
+                      {item.kategori}
                     </span>
                   </td>
                   <td style={{ color:"var(--text-secondary)", fontSize:14 }}>{item.keterangan||"—"}</td>
@@ -294,7 +308,8 @@ export default function PengeluaranPage() {
                   <div className="form-group">
                     <label className="form-label required">Kategori</label>
                     <select id="sel-kategori-pengeluaran" className="form-control" value={form.kategori} onChange={e=>setForm(f=>({...f,kategori:e.target.value}))}>
-                      {KATEGORI.map(k=><option key={k} value={k}>{KATEGORI_LABEL[k]}</option>)}
+                      <option value="">-- Pilih Kategori --</option>
+                      {kategoriList.map(k=><option key={k.id} value={k.nama}>{k.nama}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
@@ -430,6 +445,46 @@ export default function PengeluaranPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowImportModal(false)}>Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KELOLA KATEGORI */}
+      {showCatModal && (
+        <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) setShowCatModal(false); }}>
+          <div className="modal" style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <div className="modal-title">Kelola Kategori</div>
+              <button className="modal-close" onClick={()=>setShowCatModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+               <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                 <input type="text" className="form-control" placeholder="Nama kategori baru..." value={newCat.nama} onChange={e=>setNewCat({...newCat, nama: e.target.value})} />
+                 <button className="btn btn-primary" onClick={async () => {
+                   if (!newCat.nama) return;
+                   await fetch("/api/pengeluaran/kategori", { 
+                     method:"POST", 
+                     headers: { "Content-Type": "application/json" },
+                     body: JSON.stringify(newCat) 
+                   });
+                   setNewCat({ nama: "", color: "#ef4444" });
+                   fetchCategories();
+                 }}>Tambah</button>
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
+                 {kategoriList.map(cat => (
+                   <div key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--surface-container-low)', borderRadius: 8 }}>
+                     <span style={{ fontSize: 13, fontWeight: 600 }}>{cat.nama}</span>
+                     <button className="btn btn-icon" style={{ color: 'var(--danger)', padding: 4 }} onClick={async () => {
+                       if(confirm(`Hapus kategori "${cat.nama}"?`)) {
+                         await fetch(`/api/pengeluaran/kategori?id=${cat.id}`, { method:"DELETE" });
+                         fetchCategories();
+                       }
+                     }}><Trash2 size={14} /></button>
+                   </div>
+                 ))}
+               </div>
             </div>
           </div>
         </div>

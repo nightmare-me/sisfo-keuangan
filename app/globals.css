@@ -369,6 +369,7 @@ p {
 }
 
 .kpi-card {
+  container-type: inline-size;
   background: var(--surface-container-lowest);
   border-radius: var(--radius-xl);
   padding: 24px;
@@ -409,11 +410,15 @@ p {
 }
 
 .kpi-value {
-  font-size: 2.25rem;
+  font-size: clamp(1rem, 12cqw, 2rem);
   font-family: var(--font-display);
   font-weight: 800;
   color: var(--on-surface);
   margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.02em;
 }
 
 /* ===== TABLE REFINEMENTS ===== */

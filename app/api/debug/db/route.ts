@@ -3,21 +3,24 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const listTable = await prisma.$queryRaw`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`;
-    const kategoriCount = await prisma.kategoriPengeluaran.count();
-    const categories = await prisma.kategoriPengeluaran.findMany();
+    const totalPengeluaran = await prisma.pengeluaran.aggregate({
+      _sum: { jumlah: true }
+    });
+
+    const pengeluaranTerakhir = await prisma.pengeluaran.findMany({
+      orderBy: { tanggal: 'desc' },
+      take: 10
+    });
     
     return NextResponse.json({
       status: "OK",
-      tables: listTable,
-      count: kategoriCount,
-      data: categories
+      totalDb: totalPengeluaran._sum.jumlah || 0,
+      recent: pengeluaranTerakhir
     });
   } catch (error: any) {
     return NextResponse.json({
       status: "ERROR",
-      message: error.message,
-      stack: error.stack
+      message: error.message
     }, { status: 500 });
   }
 }

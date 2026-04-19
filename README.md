@@ -13,8 +13,9 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 *   **Status Lengkap**: Mendukung siklus `PAID`, `REFUNDED`, dan `CANCELLED` dengan sinkronisasi database otomatis.
 *   **Indikator RO**: Marker khusus untuk siswa lama (Repeat Order) di semua tampilan.
 
-### 3. Pengeluaran Dinamis 💸
-*   **Kelola Kategori**: Bapak bisa menambah, mengedit, atau menghapus kategori pengeluaran secara mandiri langsung dari dashboard tanpa menyentuh kode.
+### 3. Pengeluaran Dinamis & UI Responsif 💸
+*   **Kelola Kategori**: Bapak bisa menambah, mengedit, atau menghapus kategori pengeluaran secara mandiri langsung dari dashboard.
+*   **Fluid Typography**: Kartu metrik otomatis menyesuaikan ukuran font (Responsive Container) sehingga nominal besar (puluhan/ratusan juta) tetap terlihat rapi tanpa merusak layout.
 *   **Smart Breakdown**: Grafik laporan pengeluaran otomatis menyesuaikan dengan kategori yang Bapak buat.
 
 ### 4. Smart Payroll Engine 💰
@@ -22,4 +23,4 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 *   **Safety Integration**: Sistem gajian tahan banting terhadap data yang tidak lengkap atau null.
 
 ---
-*Created with ❤️ by Antigravity for Speaking Partner Efficiency. Selamat Beristirahat, Pak Muis!*
+*Created with ❤️ by Antigravity for Speaking Partner Efficiency. Semua sistem beroperasi normal 100%. Selamat Beristirahat, Pak Muis!*

@@ -4,3 +4,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig; // Reload triggered to sync prisma client
+// RO update sync

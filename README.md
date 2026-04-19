@@ -2,29 +2,28 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🚀 Fitur Utama (Update Terbaru)
+## 🚀 Fitur Baru: Automasi & Intelijen Bisnis (Terbaru!)
 
-### 1. CRM & Leads Dashboard (SaaS Style) 📊
-*   **KPI Dashboard**: Indikator real-time untuk Total Lead, Lunas (PAID), Menunggu (PENDING), dan **Refunded**.
-*   **Interactive Follow-up (Bubbles)**: Sistem gelembung **W, 1, 2, 3, 4** dengan logika kumulatif untuk tracking progres CS secara cepat.
-*   **Optimistic UI**: Penarikan data kilat dan perubahan status instan di layar tanpa jeda loading.
-*   **Advanced Matching**: Pencarian pintar berdasarkan Nama atau WhatsApp (otomatis deteksi format 08/62).
+### 1. Sistem Antrian Berputar (Round Robin) 🔄
+*   **Segmentasi Tim Otomatis**: Lead tidak lagi menumpuk di satu tempat, melainkan dibagi otomatis berdasarkan jenis produk:
+    *   **Tim Live**: Otomatis untuk produk dengan kata "Live".
+    *   **Tim TOEFL**: Otomatis untuk produk dengan kata "tes TOEFL".
+    *   **Tim RO (Repeat Order)**: Jalur khusus untuk siswa lama (via Checkbox isRO).
+    *   **Tim Regular**: Untuk semua produk lainnya.
+*   **Keadilan Sistem**: Pembagian setiap tim dipisahkan gilirannya agar porsi jatah Lead tetap adil bagi setiap CS di timnya masing-masing.
 
-### 2. Automated Financial Sync 🔄
-*   **Refund Integration**: Setiap pengembalian dana yang disetujui otomatis merubah status CRM Lead terkait menjadi **REFUNDED** (Merah).
-*   **Net Omset Logic**: Dashboard keuangan secara cerdas memotong status refund dari total omset harian/bulanan.
-*   **Payroll & Inventory Sync**: Pengeluaran gaji dan belanja barang otomatis tercatat dalam arus kas perusahaan.
+### 2. CRM Dashboard SaaS Premium 📊
+*   **Status Baru (Refunded & Cancelled)**: Sekarang mendukung siklus hidup lead yang lengkap. Data sudah sinkron otomatis dengan modul keuangan.
+*   **KPI Summary Grid**: Kartu ringkasan real-time untuk memantau omset bersih, rasio konversi, hingga jumlah pembatalan/refund secara visual.
+*   **Interactive Follow-up (Bubbles)**: Tracking progres follow-up CS yang instan dan informatif.
 
-### 3. CRM Lead Management 🛠️
-*   **Edit Manual**: Fitur edit (Pensil) untuk menyesuaikan data Nama, WhatsApp, Program, dan Status jika terjadi kesalahan input.
-*   **Bulk Import/Export**: Kemudahan integrasi data eksternal via CSV/Excel.
-*   **Role Based Security**: Perlindungan data sensitif dengan hak akses Admin dan CS.
+### 3. Smart Payroll Engine 💸
+*   **Mata-Mata Otomatis**: Penghitungan gaji CS TOEFL kini bisa mendeteksi otomatis kata "Elite" atau "Master" dari nama produk untuk menentukan besaran fee (2.500 / 5.000) sebagai fallback jika kategori lupa diisi.
+*   **Fee Dinamis**: Mendukung komisi persenan (10%) untuk produk TOEFL lain-lain secara otomatis.
 
-## 🛠️ Arsitektur Teknologi
-*   **Frontend**: Next.js 14 (App Router) dengan Vanilla CSS Aesthetics.
-*   **Backend**: API Routes dengan proteksi Auth & Audit Logs.
-*   **Database**: Prisma ORM + PostgreSQL (Full Indexing).
-*   **Real-time**: Cache-Busting Sync System untuk data yang selalu segar.
+### 4. Sinkronisasi Database & Server 🛠️
+*   **Auto-Sync Enums**: Server sekarang sudah mengenali status `REFUNDED` dan `CANCELLED` di level inti database.
+*   **Audit Trail**: Setiap perubahan status dan owner tersimpan dalam log audit untuk transparansi tim.
 
 ---
-*Created with ❤️ by Antigravity for Speaking Partner Efficiency.*
+*Created with ❤️ by Antigravity for Speaking Partner Efficiency. Selamat Beristirahat!*

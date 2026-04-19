@@ -30,6 +30,7 @@ const COLUMNS = [
   { id: "PENDING", title: "Menunggu Bayar", color: "#f97316", icon: <Clock size={18} /> },
   { id: "PAID", title: "Lunas (Selesai)", color: "#10b981", icon: <CheckCircle2 size={18} /> },
   { id: "REFUNDED", title: "Refunded", color: "#ef4444", icon: <RotateCcw size={18} /> },
+  { id: "CANCELLED", title: "Cancelled", color: "#64748b", icon: <Trash2 size={18} /> },
 ];
 
 export default function CRMPage() {
@@ -72,6 +73,7 @@ export default function CRMPage() {
     whatsapp: "",
     programId: "",
     preferensiJadwal: "",
+    isRO: false,
   });
   const [programs, setPrograms] = useState<any[]>([]);
 
@@ -135,7 +137,8 @@ export default function CRMPage() {
           whatsapp: updatedLead.whatsapp,
           programId: updatedLead.programId,
           keterangan: updatedLead.keterangan,
-          status: updatedLead.status
+          status: updatedLead.status,
+          isRO: updatedLead.isRO
         })
       });
       fetchData();
@@ -183,6 +186,7 @@ export default function CRMPage() {
       body: JSON.stringify({ 
         ...newLeadForm, 
         whatsapp: wa, 
+        isRO: newLeadForm.isRO,
         csId: role === "CS" ? (session?.user as any)?.id : undefined 
       }),
     });
@@ -288,6 +292,11 @@ export default function CRMPage() {
             <div className="kpi-label">Refunded</div>
             <div className="kpi-value">{leads.filter(l => l.status === 'REFUNDED').length}</div>
           </div>
+          <div className="kpi-card" style={{ "--kpi-color": "#64748b", "--kpi-bg": "rgba(100, 116, 139, 0.1)" } as any}>
+            <div className="kpi-icon" style={{ color: "#64748b" }}><Trash2 size={24} /></div>
+            <div className="kpi-label">Cancelled</div>
+            <div className="kpi-value">{leads.filter(l => l.status === 'CANCELLED').length}</div>
+          </div>
         </div>
       </div>
 
@@ -368,21 +377,23 @@ export default function CRMPage() {
                       </div>
                     </td>
                     <td>
-                      <span className={`badge ${
-                        lead.status === 'PAID' ? 'badge-success' : 
-                        lead.status === 'REFUNDED' ? 'badge-danger' :
-                        lead.status === 'PENDING' ? 'badge-warning' : 
-                        lead.status === 'FOLLOW_UP' ? 'badge-info' : 
-                        'badge-muted'
-                      }`}>
-                        {
-                          lead.status === 'PAID' ? 'Selesai' : 
-                          lead.status === 'REFUNDED' ? 'Refunded' :
-                          lead.status === 'PENDING' ? 'Menunggu' : 
-                          lead.status === 'FOLLOW_UP' ? 'Follow Up' : 
-                          'Baru'
-                        }
-                      </span>
+                        <span className={`badge ${
+                          lead.status === 'PAID' ? 'badge-success' : 
+                          lead.status === 'REFUNDED' ? 'badge-danger' :
+                          lead.status === 'CANCELLED' ? 'badge-muted' :
+                          lead.status === 'PENDING' ? 'badge-warning' : 
+                          lead.status === 'FOLLOW_UP' ? 'badge-info' : 
+                          'badge-muted'
+                        }`}>
+                          {
+                            lead.status === 'PAID' ? 'Selesai' : 
+                            lead.status === 'REFUNDED' ? 'Refunded' :
+                            lead.status === 'CANCELLED' ? 'Cancelled' :
+                            lead.status === 'PENDING' ? 'Menunggu' : 
+                            lead.status === 'FOLLOW_UP' ? 'Follow Up' : 
+                            'Baru'
+                          }
+                        </span>
                     </td>
                     <td>
                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -548,6 +559,16 @@ export default function CRMPage() {
                         ))}
                       </select>
                    </div>
+                    <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: -10, marginBottom: 15 }}>
+                       <input 
+                         type="checkbox" 
+                         id="newLeadRO" 
+                         style={{ width: 18, height: 18, cursor: 'pointer' }}
+                         checked={newLeadForm.isRO}
+                         onChange={(e) => setNewLeadForm({ ...newLeadForm, isRO: e.target.checked })}
+                       />
+                       <label htmlFor="newLeadRO" style={{ fontSize: 14, fontWeight: 600, cursor: 'pointer', color: 'var(--primary)' }}>Repeat Order (RO)</label>
+                    </div>
                    <div className="form-group">
                       <label className="form-label">Preferensi Jadwal (Opsional)</label>
                       <input type="text" className="form-control" placeholder="Cth: Malam hari jam 19.00" value={newLeadForm.preferensiJadwal} onChange={(e) => setNewLeadForm({ ...newLeadForm, preferensiJadwal: e.target.value })} />
@@ -828,6 +849,16 @@ export default function CRMPage() {
                     <option value="REFUNDED">Refunded</option>
                     <option value="CANCELLED">Cancelled</option>
                   </select>
+                </div>
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <input 
+                    type="checkbox" 
+                    id="editLeadRO" 
+                    style={{ width: 18, height: 18, cursor: 'pointer' }}
+                    checked={selectedEditLead.isRO || false}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, isRO: e.target.checked })}
+                  />
+                  <label htmlFor="editLeadRO" style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', color: 'var(--primary)' }}>Repeat Order (RO)</label>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Keterangan / Catatan</label>

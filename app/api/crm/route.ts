@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, status, csId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId } = body;
+  const { id, status, csId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId, isRO } = body;
 
   const data: any = {};
   if (status) data.status = status;
@@ -68,6 +68,7 @@ export async function PUT(request: NextRequest) {
   if (keterangan !== undefined) data.keterangan = keterangan;
   if (nama) data.nama = nama;
   if (whatsapp) data.whatsapp = whatsapp;
+  if (isRO !== undefined) data.isRO = isRO;
   if (programId !== undefined) data.programId = programId === "" ? null : programId;
   
   if (incrementFollowUp) data.followUpCount = { increment: 1 };
@@ -75,6 +76,18 @@ export async function PUT(request: NextRequest) {
 
   // Auto-assign: Jika status berubah dari NEW dan csId masih kosong,
   // assign ke user yang mengubahnya (jika user adalah CS)
+  if (status && status !== "NEW" && role === "CS") {
+    const lead = await prisma.lead.findUnique({ where: { id } });
+    if (lead && !lead.csId) {
+      data.csId = (session.user as any).id;
+    }
+  } else if (setFollowUp && role === "CS") {
+    // Juga auto-assign jika CS klik gelembung follow-up
+    const lead = await prisma.lead.findUnique({ where: { id } });
+    if (lead && !lead.csId) {
+      data.csId = (session.user as any).id;
+    }
+  }
   try {
     const update = await prisma.lead.update({
       where: { id },

@@ -59,8 +59,17 @@ export function calculateCSFee(
   }
 
   if (csCategory === 'CS_TOEFL') {
+    // Cek Kategori Dulu (Explicit)
     if (productType === 'ELITE' || productType === 'ELITE_PRO') return 2500;
     if (productType === 'MASTER') return 5000;
+
+    // Fallback: Cek dari Nama Program jika kategori kosong/tidak sesuai
+    if (program && (program as any).nama) {
+      const lowerName = (program as any).nama.toLowerCase();
+      if (lowerName.includes("elite")) return 2500;
+      if (lowerName.includes("master")) return 5000;
+    }
+
     return price * 0.10; // Lain-lain: 10% x Harga Produk
   }
 

@@ -281,6 +281,7 @@ model Lead {
   preferensiJadwal String?
   followUpCount    Int        @default(0)
   programId        String?
+  isRO             Boolean    @default(false)
   status           LeadStatus @default(NEW)
   kodeUnik         Int?
   nominalTagihan   Float?

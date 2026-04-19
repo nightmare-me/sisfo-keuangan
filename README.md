@@ -2,28 +2,24 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🚀 Fitur Baru: Automasi & Intelijen Bisnis (Terbaru!)
+## 🚀 Fitur Baru: Automasi & Intelijen Bisnis (Final Session)
 
 ### 1. Sistem Antrian Berputar (Round Robin) 🔄
-*   **Segmentasi Tim Otomatis**: Lead tidak lagi menumpuk di satu tempat, melainkan dibagi otomatis berdasarkan jenis produk:
-    *   **Tim Live**: Otomatis untuk produk dengan kata "Live".
-    *   **Tim TOEFL**: Otomatis untuk produk dengan kata "tes TOEFL".
-    *   **Tim RO (Repeat Order)**: Jalur khusus untuk siswa lama (via Checkbox isRO).
-    *   **Tim Regular**: Untuk semua produk lainnya.
-*   **Keadilan Sistem**: Pembagian setiap tim dipisahkan gilirannya agar porsi jatah Lead tetap adil bagi setiap CS di timnya masing-masing.
+*   **Segmentasi Tim Otomatis**: Lead dibagi otomatis berdasarkan jenis produk (Live, TOEFL, RO, Regular).
+*   **4 Pintu Registrasi**: Jalur pendaftaran khusus via URL parameter (`?team=RO`, `?team=TOEFL`, dll) untuk filtrasi produk dan CS yang presisi.
 
-### 2. CRM Dashboard SaaS Premium 📊
-*   **Status Baru (Refunded & Cancelled)**: Sekarang mendukung siklus hidup lead yang lengkap. Data sudah sinkron otomatis dengan modul keuangan.
-*   **KPI Summary Grid**: Kartu ringkasan real-time untuk memantau omset bersih, rasio konversi, hingga jumlah pembatalan/refund secara visual.
-*   **Interactive Follow-up (Bubbles)**: Tracking progres follow-up CS yang instan dan informatif.
+### 2. CRM Dashboard & KPI 📊
+*   **Bagikan Link**: Tombol akses cepat di dashboard untuk menyalin link pendaftaran setiap jalur tim.
+*   **Status Lengkap**: Mendukung siklus `PAID`, `REFUNDED`, dan `CANCELLED` dengan sinkronisasi database otomatis.
+*   **Indikator RO**: Marker khusus untuk siswa lama (Repeat Order) di semua tampilan.
 
-### 3. Smart Payroll Engine 💸
-*   **Mata-Mata Otomatis**: Penghitungan gaji CS TOEFL kini bisa mendeteksi otomatis kata "Elite" atau "Master" dari nama produk untuk menentukan besaran fee (2.500 / 5.000) sebagai fallback jika kategori lupa diisi.
-*   **Fee Dinamis**: Mendukung komisi persenan (10%) untuk produk TOEFL lain-lain secara otomatis.
+### 3. Pengeluaran Dinamis 💸
+*   **Kelola Kategori**: Bapak bisa menambah, mengedit, atau menghapus kategori pengeluaran secara mandiri langsung dari dashboard tanpa menyentuh kode.
+*   **Smart Breakdown**: Grafik laporan pengeluaran otomatis menyesuaikan dengan kategori yang Bapak buat.
 
-### 4. Sinkronisasi Database & Server 🛠️
-*   **Auto-Sync Enums**: Server sekarang sudah mengenali status `REFUNDED` dan `CANCELLED` di level inti database.
-*   **Audit Trail**: Setiap perubahan status dan owner tersimpan dalam log audit untuk transparansi tim.
+### 4. Smart Payroll Engine 💰
+*   **Detection Fallback**: Bonus TOEFL (Elite/Master) dideteksi otomatis dari nama produk jika kategori fee di database kosong.
+*   **Safety Integration**: Sistem gajian tahan banting terhadap data yang tidak lengkap atau null.
 
 ---
-*Created with ❤️ by Antigravity for Speaking Partner Efficiency. Selamat Beristirahat!*
+*Created with ❤️ by Antigravity for Speaking Partner Efficiency. Selamat Beristirahat, Pak Muis!*

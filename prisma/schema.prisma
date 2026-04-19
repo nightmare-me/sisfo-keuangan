@@ -192,7 +192,7 @@ model Pengeluaran {
   id          String              @id @default(cuid())
   tanggal     DateTime            @default(now())
   jumlah      Float
-  kategori    KategoriPengeluaran
+  kategori    String              @default("LAINNYA")
   metodeBayar MetodeBayar         @default(CASH)
   keterangan  String?
   dibuatOleh  String?
@@ -492,18 +492,6 @@ model KategoriPengeluaran {
   color     String?  @default("#ef4444")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-enum KategoriPengeluaran {
-  GAJI_PENGAJAR
-  GAJI_STAF
-  SEWA_TEMPAT
-  UTILITAS
-  ATK
-  MARKETING
-  PERALATAN
-  PEMELIHARAAN
-  LAINNYA
 }
 
 enum PlatformAds {

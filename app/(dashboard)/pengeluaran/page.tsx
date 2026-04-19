@@ -64,6 +64,13 @@ export default function PengeluaranPage() {
     fetch("/api/pengeluaran/kategori").then(r => r.json()).then(setKategoriList);
   }
 
+  async function syncCategories() {
+    setSaving(true);
+    await fetch("/api/pengeluaran/kategori"); // Ini akan memicu ensureCategories di server
+    fetchCategories();
+    setSaving(false);
+  }
+
   useEffect(() => {
     fetchData();
     fetchCategories();
@@ -216,7 +223,7 @@ export default function PengeluaranPage() {
               <div style={{ display: "flex", gap: 12, flex: 1 }}>
                 <select className="form-control" value={filter.kategori} onChange={e=>setFilter(f=>({...f,kategori:e.target.value}))} style={{ padding: '8px 12px' }}>
                   <option value="">Semua Kategori</option>
-                  {kategoriList.map(k => <option key={k.id} value={k.nama}>{k.nama}</option>)}
+                  {Array.isArray(kategoriList) && kategoriList.map(k => <option key={k.id} value={k.nama}>{k.nama}</option>)}
                 </select>
                 <button className="btn btn-secondary btn-icon" onClick={() => setShowCatModal(true)} title="Kelola Kategori">
                   <Plus size={16} />
@@ -309,7 +316,7 @@ export default function PengeluaranPage() {
                     <label className="form-label required">Kategori</label>
                     <select id="sel-kategori-pengeluaran" className="form-control" value={form.kategori} onChange={e=>setForm(f=>({...f,kategori:e.target.value}))}>
                       <option value="">-- Pilih Kategori --</option>
-                      {kategoriList.map(k=><option key={k.id} value={k.nama}>{k.nama}</option>)}
+                      {Array.isArray(kategoriList) && kategoriList.map(k=><option key={k.id} value={k.nama}>{k.nama}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
@@ -459,6 +466,11 @@ export default function PengeluaranPage() {
               <button className="modal-close" onClick={()=>setShowCatModal(false)}>✕</button>
             </div>
             <div className="modal-body">
+               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+                 <button className="btn btn-secondary w-full" onClick={syncCategories} disabled={saving} style={{ background: 'var(--info-bg)', color: 'var(--info)', borderColor: 'var(--info)' }}>
+                   {saving ? "Memproses..." : "🔄 Sinkronkan Kategori Standar"}
+                 </button>
+               </div>
                <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                  <input type="text" className="form-control" placeholder="Nama kategori baru..." value={newCat.nama} onChange={e=>setNewCat({...newCat, nama: e.target.value})} />
                  <button className="btn btn-primary" onClick={async () => {
@@ -473,7 +485,7 @@ export default function PengeluaranPage() {
                  }}>Tambah</button>
                </div>
                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
-                 {kategoriList.map(cat => (
+                 {Array.isArray(kategoriList) && kategoriList.map(cat => (
                    <div key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--surface-container-low)', borderRadius: 8 }}>
                      <span style={{ fontSize: 13, fontWeight: 600 }}>{cat.nama}</span>
                      <button className="btn btn-icon" style={{ color: 'var(--danger)', padding: 4 }} onClick={async () => {

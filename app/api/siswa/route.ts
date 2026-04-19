@@ -129,27 +129,29 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get("id");
   const all = searchParams.get("all");
 
-  if (all === "true") {
-    try {
-      // Nuke dependencies first
+  try {
+    if (all === "true") {
       await prisma.absensi.deleteMany({});
       await prisma.pendaftaran.deleteMany({});
-      // Pemasukan & Invoice usually linked to students
       await prisma.invoice.deleteMany({});
       await prisma.pemasukan.deleteMany({});
       await prisma.siswa.deleteMany({});
       return NextResponse.json({ success: true });
-    } catch (err: any) {
-      return NextResponse.json({ error: "Gagal menyapu bersih data: " + err.message }, { status: 500 });
     }
-  }
 
-  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+    if (id) {
+       await prisma.siswa.delete({ where: { id } });
+       return NextResponse.json({ success: true });
+    }
 
-  try {
-    await prisma.siswa.delete({ where: { id } });
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Gagal hapus — mungkin ada data terkait yang harus dihapus dulu" }, { status: 400 });
+    const body = await request.json().catch(() => ({}));
+    if (body.ids && Array.isArray(body.ids)) {
+      await prisma.siswa.deleteMany({ where: { id: { in: body.ids } } });
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "ID atau IDs diperlukan" }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ error: "Gagal menghapus: " + err.message }, { status: 500 });
   }
 }

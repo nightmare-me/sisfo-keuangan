@@ -44,15 +44,39 @@ export async function GET(request: NextRequest) {
         .filter(exp => exp.kategori !== "GAJI_STAF" && exp.kategori !== "GAJI_PENGAJAR")
         .reduce((s, e) => s + e.jumlah, 0);
     
-    // Revenue TOEFL Khusus
-    const toeflRevenue = pemasukanAll
-        .filter(p => p.program?.nama.toUpperCase().includes("TOEFL"))
-        .reduce((s, p) => s + p.hargaFinal, 0);
+    // 2. ANALISIS KHUSUS TOEFL (Sesuai Gambar Flowchart)
+    let toeflRevenue = 0;
+    let toeflFeeCS = 0;
+    let toeflFeeAdv = 0;
     
-    // Untuk saat ini asumsi Profit TOEFL = Revenue TOEFL (kecuali ada biaya spesifik)
-    const toeflProfit = toeflRevenue; 
+    pemasukanAll.filter(p => p.program?.isProfitSharing).forEach(p => {
+      toeflRevenue += p.hargaFinal;
+      // Hitung jatah CS untuk pengeluaran TOEFL
+      toeflFeeCS += calculateCSFee(
+        "CS_TOEFL",
+        p.program?.nama?.toUpperCase() || "",
+        p.hargaFinal,
+        p.isRO,
+        0,
+        p.program || undefined
+      );
+    });
 
-    // 2. AMBIL SEMUA KARYAWAN
+    // Ambil pengeluaran iklan TOEFL (Asumsi Platform Ads dengan Keterangan TOEFL atau dari Advertiser khusus TOEFL)
+    const toeflAdsSpent = adsAll._sum.jumlah || 0; // Sementara ambil total ads atau filter jika ada kategori
+
+    // Hitung jatah Adv untuk pengeluaran TOEFL
+    const toeflTeam = await prisma.user.findMany({ where: { teamType: "ADV_TOEFL" as any }, include: { adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } } } });
+    toeflTeam.forEach(adv => {
+       adv.adPerformances.forEach(perf => {
+         toeflFeeAdv += calculateAdvFee("ADV_TOEFL" as any, perf.cpl, perf.leads);
+       });
+    });
+
+    // PROFIT TOEFL MURNI (Sesuai Bagan Bapak: Pemasukan - Pengeluaran)
+    const toeflProfit = toeflRevenue - toeflFeeCS - toeflFeeAdv - toeflAdsSpent;
+
+    // 3. AMBIL SEMUA KARYAWAN
     const employees = await prisma.user.findMany({
       where: { karyawanProfile: { isNot: null }, aktif: true },
       include: { 

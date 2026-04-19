@@ -38,7 +38,7 @@ const DURASI_LABEL: Record<string, string> = {
   "3_BULAN": "3 Bulan",   "6_BULAN": "6 Bulan", "LAINNYA": "Lainnya",
 };
 
-const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "", feeClosing: "0", feeClosingRO: "0" };
+const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "", feeClosing: "0", feeClosingRO: "0", isProfitSharing: false };
 
 export default function ProgramPage() {
   const { data: session } = useSession();
@@ -77,7 +77,8 @@ export default function ProgramPage() {
       kategoriFee: p.kategoriFee || "REG_1B",
       durasi: p.durasi ?? "",
       feeClosing: String(p.feeClosing || 0),
-      feeClosingRO: String(p.feeClosingRO || 0)
+      feeClosingRO: String(p.feeClosingRO || 0),
+      isProfitSharing: !!p.isProfitSharing
     });
     setEditId(p.id);
     setShowModal(true);
@@ -231,7 +232,14 @@ export default function ProgramPage() {
                 </td></tr>
               ) : data.map(p => (
                 <tr key={p.id} style={{ opacity: p.aktif ? 1 : 0.5 }}>
-                  <td style={{ fontWeight: 600 }}>{p.nama}</td>
+                  <td style={{ fontWeight: 600 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {p.nama}
+                      {p.isProfitSharing && (
+                        <span className="badge badge-warning" style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4 }}>SHARING</span>
+                      )}
+                    </div>
+                  </td>
                   <td><span className={`badge ${TIPE_BADGE[p.tipe] ?? "badge-muted"}`}>{p.tipe}</span></td>
                   <td style={{ fontWeight: 700, color: "var(--success)" }}>{formatCurrency(p.harga)}</td>
                   <td style={{ color: "var(--primary)", fontWeight: 600 }}>{formatCurrency(p.feeClosing || 0)}</td>
@@ -349,6 +357,27 @@ export default function ProgramPage() {
                       min={0}
                     />
                   </div>
+                </div>
+
+                <div className="form-group" style={{ 
+                  background: 'var(--surface-container-low)', 
+                  padding: '12px 16px', 
+                  borderRadius: 12, 
+                  marginTop: 16,
+                  border: form.isProfitSharing ? '1px solid var(--primary)' : '1px solid var(--ghost-border)'
+                }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', margin: 0 }}>
+                    <input 
+                      type="checkbox" 
+                      checked={form.isProfitSharing} 
+                      onChange={e => setForm(f => ({ ...f, isProfitSharing: e.target.checked }))}
+                      style={{ width: 20, height: 20 }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: form.isProfitSharing ? 'var(--primary)' : 'inherit' }}>Aktifkan Profit Sharing 🚀</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Centang jika produk ini menggunakan sistem bagi hasil 50/50 untuk tim.</div>
+                    </div>
+                  </label>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Deskripsi</label>

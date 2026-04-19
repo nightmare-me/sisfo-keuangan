@@ -31,7 +31,9 @@ interface DashboardData {
     pemasukanHariIni: number;
     pemasukanKemarin: number;
     pengeluaranHariIni: number;
+    pengeluaranKemarin: number;
     adsHariIni: number;
+    adsKemarin: number;
     labaHariIni: number;
     siswAktif: number;
   };
@@ -105,14 +107,45 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [akademikData, setAkademikData] = useState<AkademikData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState("TODAY");
+  const [customRange, setCustomRange] = useState({ from: "", to: "" });
+
+  function getPeriodParams() {
+    const now = new Date();
+    let from = "", to = "";
+    
+    if (period === "TODAY") {
+      from = to = now.toISOString().slice(0, 10);
+    } else if (period === "YESTERDAY") {
+      const yest = new Date(now);
+      yest.setDate(now.getDate() - 1);
+      from = to = yest.toISOString().slice(0, 10);
+    } else if (period === "WEEK") {
+      const week = new Date(now);
+      week.setDate(now.getDate() - 7);
+      from = week.toISOString().slice(0, 10);
+      to = now.toISOString().slice(0, 10);
+    } else if (period === "MONTH") {
+      const month = new Date(now);
+      month.setDate(now.getDate() - 30);
+      from = month.toISOString().slice(0, 10);
+      to = now.toISOString().slice(0, 10);
+    } else if (period === "CUSTOM") {
+      from = customRange.from;
+      to = customRange.to;
+    }
+    return { from, to };
+  }
 
   useEffect(() => {
     setLoading(true);
     const promises = [];
+    const { from, to } = getPeriodParams();
+    const query = from && to ? `?from=${from}&to=${to}` : "";
     
     if (canViewAkademik) {
       promises.push(
-        fetch("/api/dashboard-akademik")
+        fetch("/api/dashboard-akademik" + query)
           .then(r => r.json())
           .then(d => setAkademikData(d))
       );
@@ -120,7 +153,7 @@ export default function DashboardPage() {
     
     if (canViewFinance) {
       promises.push(
-        fetch("/api/dashboard")
+        fetch("/api/dashboard" + query)
           .then(r => r.json())
           .then(d => setData(d))
       );
@@ -131,7 +164,7 @@ export default function DashboardPage() {
     } else {
       setLoading(false);
     }
-  }, [canViewAkademik, canViewFinance]);
+  }, [canViewAkademik, canViewFinance, period, customRange]);
 
   const today = new Date();
   const hour = today.getHours();
@@ -149,6 +182,8 @@ export default function DashboardPage() {
 
   // ── Main Dashboard Combined ─────────────────────────
   const pemasukanChange = data?.kpi ? percentageChange(data.kpi.pemasukanHariIni, data.kpi.pemasukanKemarin) : 0;
+  const adsChange = data?.kpi ? percentageChange(data.kpi.adsHariIni, data.kpi.adsKemarin || 0) : 0;
+  const pengeluaranChange = data?.kpi ? percentageChange(data.kpi.pengeluaranHariIni, data.kpi.pengeluaranKemarin || 0) : 0;
   
   if (!canViewAkademik && !canViewFinance) {
     return (
@@ -168,8 +203,37 @@ export default function DashboardPage() {
         </div>
         <h1 className="text-gradient" style={{ fontSize: 32, fontWeight: 800 }}>{greeting}, {userName}!</h1>
         <p style={{ color: "var(--text-muted)", marginTop: 4 }}>
-           {canViewFinance ? "Berikut adalah ringkasan operasional bisnis kamu hari ini." : "Pantau perkembangan akademik siswa hari ini."}
+           {canViewFinance ? "Berikut adalah ringkasan operasional bisnis kamu." : "Pantau perkembangan akademik siswa."}
         </p>
+      </div>
+
+      {/* Period Selector Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)', padding: '10px 16px', borderRadius: 'var(--radius-full)', marginBottom: 32, border: '1px solid var(--ghost-border)' }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[
+            { id: "TODAY", label: "Hari Ini" },
+            { id: "YESTERDAY", label: "Kemarin" },
+            { id: "WEEK", label: "Minggu Ini" },
+            { id: "MONTH", label: "Bulan Ini" },
+            { id: "CUSTOM", label: "Custom" },
+          ].map(p => (
+            <button 
+              key={p.id} 
+              className={`btn ${period === p.id ? "btn-primary" : "btn-secondary"}`}
+              style={{ padding: '6px 20px', fontSize: 13, borderRadius: 'var(--radius-full)' }}
+              onClick={() => setPeriod(p.id)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {period === "CUSTOM" && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <input type="date" className="form-control" style={{ padding: '4px 12px', fontSize: 13, width: 150 }} value={customRange.from} onChange={e => setCustomRange({...customRange, from: e.target.value})} />
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>s/d</span>
+            <input type="date" className="form-control" style={{ padding: '4px 12px', fontSize: 13, width: 150 }} value={customRange.to} onChange={e => setCustomRange({...customRange, to: e.target.value})} />
+          </div>
+        )}
       </div>
 
       {/* KPI Section */}
@@ -192,6 +256,18 @@ export default function DashboardPage() {
                    <div className={`kpi-change ${pemasukanChange >= 0 ? "up" : "down"}`}>
                      {pemasukanChange >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                      {Math.abs(pemasukanChange).toFixed(1)}%
+                   </div>
+                 )}
+                 {cfg.key === "pengeluaranHariIni" && pengeluaranChange !== 0 && (
+                   <div className={`kpi-change ${pengeluaranChange <= 0 ? "up" : "down"}`}>
+                     {pengeluaranChange <= 0 ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                     {Math.abs(pengeluaranChange).toFixed(1)}%
+                   </div>
+                 )}
+                 {cfg.key === "adsHariIni" && adsChange !== 0 && (
+                   <div className={`kpi-change ${adsChange <= 0 ? "up" : "down"}`}>
+                     {adsChange <= 0 ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                     {Math.abs(adsChange).toFixed(1)}%
                    </div>
                  )}
                </div>
@@ -233,6 +309,7 @@ export default function DashboardPage() {
                       <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
                       <Tooltip content={<PremiumTooltip />} />
                       <Line type="monotone" dataKey="pemasukan" stroke="#10b981" strokeWidth={3} dot={false} />
+                      {canViewFinance && <Line type="monotone" dataKey="ads" stroke="#f59e0b" strokeWidth={2} dot={false} />}
                       {canViewFinance && <Line type="monotone" dataKey="pengeluaran" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="5 5" />}
                    </LineChart>
                 </ResponsiveContainer>

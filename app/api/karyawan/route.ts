@@ -96,3 +96,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  const role = (session?.user as any)?.role;
+  if (!session || !(["ADMIN", "FINANCE"].includes(role))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { ids } = await request.json();
+    if (!ids || !Array.isArray(ids)) {
+      return NextResponse.json({ error: "Invalid IDs" }, { status: 400 });
+    }
+
+    await prisma.karyawanProfile.deleteMany({
+      where: { userId: { in: ids } }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Error deleting profiles:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

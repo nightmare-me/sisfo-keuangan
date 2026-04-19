@@ -68,12 +68,13 @@ export default function LaporanPage() {
       [`Periode: ${formatDate(data.periode.from)} - ${formatDate(data.periode.to)}`],
       [],
       ["RINGKASAN"],
-      ["Total Pemasukan", data.ringkasan.totalPemasukan],
-      ["Total Diskon", data.ringkasan.totalDiskon],
-      ["Total Pengeluaran Operasional", data.ringkasan.totalPengeluaran],
-      ["Total Spent Ads", data.ringkasan.totalAds],
-      ["Laba Kotor", data.ringkasan.labaKotor],
       ["Laba Bersih", data.ringkasan.labaBersih],
+      [],
+      ["BREAKDOWN SUMBER PEMASUKAN"],
+      ["Regular (Murid Baru)", data.ringkasan.sourceBreakdown?.REGULAR || 0],
+      ["Repeat Order (RO)", data.ringkasan.sourceBreakdown?.RO || 0],
+      ["Produk Live", data.ringkasan.sourceBreakdown?.LIVE || 0],
+      ["Produk TOEFL (Shared)", data.ringkasan.sourceBreakdown?.TOEFL || 0],
     ];
     const ws1 = XLSX.utils.aoa_to_sheet(ringkasanData);
     XLSX.utils.book_append_sheet(wb, ws1, "Ringkasan");
@@ -125,6 +126,11 @@ export default function LaporanPage() {
         ["Pengeluaran Operasional", `- ${formatCurrency(d.ringkasan.totalPengeluaran)}`],
         ["Spent Ads", `- ${formatCurrency(d.ringkasan.totalAds)}`],
         ["LABA BERSIH", formatCurrency(d.ringkasan.labaBersih)],
+        [],
+        ["SUMBER: REGULAR", formatCurrency(d.ringkasan.sourceBreakdown?.REGULAR || 0)],
+        ["SUMBER: REPEAT ORDER", formatCurrency(d.ringkasan.sourceBreakdown?.RO || 0)],
+        ["SUMBER: PRODUK LIVE", formatCurrency(d.ringkasan.sourceBreakdown?.LIVE || 0)],
+        ["SUMBER: PRODUK TOEFL", formatCurrency(d.ringkasan.sourceBreakdown?.TOEFL || 0)],
       ],
       styles: { fontSize:9 },
       headStyles: { fillColor:[99,102,241] },
@@ -249,6 +255,37 @@ export default function LaporanPage() {
                   <div className="kpi-value">{formatCurrency(item.value)}</div>
                 </div>
               ))}
+            </div>
+
+            {/* Source Breakdown Section */}
+            <div className="card" style={{ marginBottom: 48, padding: '24px 32px' }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+                <Layers size={18} style={{ color: "var(--primary)" }} />
+                <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Breakdown Sumber Pemasukan</h3>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
+                {[
+                  { label: "Regular (Murid Baru)", key: "REGULAR", color: "#6366f1", icon: "🌱" },
+                  { label: "Repeat Order (RO)", key: "RO", color: "#10b981", icon: "🔁" },
+                  { label: "Produk Live", key: "LIVE", color: "#f59e0b", icon: "📹" },
+                  { label: "Produk TOEFL", key: "TOEFL", color: "#ec4899", icon: "📝" }
+                ].map(s => {
+                  const val = data.ringkasan.sourceBreakdown?.[s.key] || 0;
+                  const total = data.ringkasan.totalPemasukan || 1;
+                  const pct = (val / total) * 100;
+                  return (
+                    <div key={s.key} style={{ background: 'var(--surface-container-lowest)', padding: 20, borderRadius: 16, border: '1px solid var(--ghost-border)', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, height: 4, width: `${pct}%`, background: s.color }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <span style={{ fontSize: 24 }}>{s.icon}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: s.color }}>{pct.toFixed(1)}%</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{s.label}</div>
+                      <div style={{ fontSize: 18, fontWeight: 800 }}>{formatCurrency(val)}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Charts Row */}

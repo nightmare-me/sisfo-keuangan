@@ -93,38 +93,43 @@ export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   
-  const role = (session.user as any).role;
+  const role = (session.user as any).role?.toUpperCase();
   const isSuperAdmin = role === "ADMIN";
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
   const all = searchParams.get("all");
 
-  if (all === "true") {
-    if (!isSuperAdmin) return NextResponse.json({ error: "Hanya Super Admin yang bisa menghapus semua data" }, { status: 403 });
-    
-    const count = await prisma.lead.count();
-    await recordLog((session.user as any).id, "Hapus Semua Lead", "BATCH DELETE", `Menghapus ${count} data lead secara permanen.`);
-    await prisma.lead.deleteMany({});
-    return NextResponse.json({ success: true, count });
+  try {
+    if (all === "true") {
+      if (!isSuperAdmin) return NextResponse.json({ error: "Hanya Super Admin yang bisa menghapus semua data" }, { status: 403 });
+      
+      const count = await prisma.lead.count();
+      await recordLog((session.user as any).id, "Hapus Semua Lead", "BATCH DELETE", `Menghapus ${count} data lead secara permanen.`);
+      await prisma.lead.deleteMany({});
+      return NextResponse.json({ success: true, count });
+    }
+
+    if (id) {
+      if (!["ADMIN", "CS"].includes(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      const lead = await prisma.lead.findUnique({ where: { id } });
+      if (lead) {
+        await recordLog((session.user as any).id, "Hapus Lead", lead.nama, `WhatsApp: ${lead.whatsapp}`);
+        await prisma.lead.delete({ where: { id } });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    if (body.ids && Array.isArray(body.ids)) {
+      if (!["ADMIN", "CS"].includes(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      await recordLog((session.user as any).id, "Hapus Lead Masal", "BULK DELETE", `Menghapus ${body.ids.length} data lead.`);
+      await prisma.lead.deleteMany({ where: { id: { in: body.ids } } });
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "ID atau IDs diperlukan" }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ error: "Gagal menghapus", message: err.message }, { status: 500 });
   }
-
-  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
-
-  if (!["ADMIN", "CS"].includes(role)) {
-    return NextResponse.json({ error: "Hanya Admin dan CS yang bisa menghapus data" }, { status: 403 });
-  }
-
-  const lead = await prisma.lead.findUnique({ where: { id } });
-  if (lead) {
-    await recordLog(
-      (session.user as any).id,
-      "Hapus Lead",
-      lead.nama,
-      `WhatsApp: ${lead.whatsapp}`
-    );
-    await prisma.lead.delete({ where: { id } });
-  }
-
-  return NextResponse.json({ success: true });
 }

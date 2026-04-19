@@ -341,13 +341,20 @@ export default function AdsPage() {
                       {item.platform}
                     </span>
                   </td>
-                  <td style={{ color:"var(--text-secondary)", fontSize:14 }}>{item.keterangan||"—"}</td>
+                  <td style={{ color:"var(--text-secondary)", fontSize:14 }}>
+                    {item.keterangan||"—"}
+                    {item.isPerformanceData && (
+                      <span style={{ marginLeft: 8, fontSize: 10, background: 'var(--primary-bg)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>VERIFIED REPORT</span>
+                    )}
+                  </td>
                   <td style={{ fontSize:14, color:"var(--text-muted)" }}>{item.user?.name??"—"}</td>
                   <td className="text-right" style={{ fontWeight:800, color: "var(--on-surface)", fontSize: 16 }}>{formatCurrency(item.jumlah)}</td>
                   <td className="text-center">
-                    <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
-                      <Trash2 size={16} />
-                    </button>
+                    {!item.isPerformanceData && (
+                      <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

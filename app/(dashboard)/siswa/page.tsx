@@ -24,7 +24,8 @@ import {
   XCircle,
   GraduationCap,
   Edit3,
-  Wallet
+  Wallet,
+  FileSpreadsheet
 } from "lucide-react";
 
 const STATUS_OPTIONS = ["AKTIF","TIDAK_AKTIF","ALUMNI"];
@@ -60,6 +61,9 @@ export default function SiswaPage() {
   const [selectedForRefund, setSelectedForRefund] = useState<any>(null);
   const [refundForm, setRefundForm] = useState<any>({ jumlah: "", alasan: "", rekeningTujuan: "", pemasukanId: "", invoiceId: "" });
   const [submittingRefund, setSubmittingRefund] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   function fetchData() {
     const p = new URLSearchParams({ page: String(page), limit: "20" });
@@ -114,6 +118,36 @@ export default function SiswaPage() {
     fetchData();
   }
 
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Hapus ${selectedIds.length} siswa terpilih secara permanen?`)) return;
+    
+    setLoading(true);
+    const res = await fetch("/api/siswa", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: selectedIds })
+    });
+    
+    if (res.ok) {
+      alert("Siswa terpilih berhasil dihapus.");
+      setSelectedIds([]);
+      fetchData();
+    } else {
+      alert("Gagal menghapus beberapa data.");
+      setLoading(false);
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  function handleSelectAll() {
+    if (selectedIds.length === data.length) setSelectedIds([]);
+    else setSelectedIds(data.map(s => s.id));
+  }
+
   async function handleRequestRefund(e: React.FormEvent) {
     e.preventDefault();
     setSubmittingRefund(true);
@@ -139,66 +173,6 @@ export default function SiswaPage() {
     setSubmittingRefund(false);
   }
 
-  // ── CSV Import ──────────────────────────────────────────
-  function downloadCsvTemplate() {
-    const header = "nama,telepon,email,alamat,tanggalLahir,catatan\n";
-    const examples = [
-      "Budi Santoso,08123456789,budi@email.com,Jl. Mawar No.1 Kediri,2000-05-15,Siswa baru",
-      "Dewi Lestari,08987654321,dewi@email.com,Jl. Melati No.5 Kediri,,",
-      "Andi Pratama,08111222333,,,1999-12-01,Referral dari alumni",
-    ].join("\n") + "\n";
-    const notes = [
-      "",
-      "# PANDUAN:",
-      "# - nama: wajib diisi",
-      "# - telepon: tanpa tanda hubung (08xxxxxxxxxx)",
-      "# - tanggalLahir: format YYYY-MM-DD (boleh kosong)",
-      "# - kolom lain boleh dikosongkan",
-    ].join("\n");
-    const blob = new Blob([header + examples + notes], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "template_siswa.csv"; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]; if (!file) return;
-    setCsvLoading(true);
-    const text = await file.text();
-    const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    // Skip baris komentar (#) dan header
-    const lines = normalized.split("\n")
-      .filter(l => l.trim().length > 0 && !l.trim().startsWith("#"))
-      .slice(1);
-
-    let success = 0;
-    const errors: string[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const delimiter = lines[i].includes(";") ? ";" : ",";
-      const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ""));
-      const [nama, telepon, email, alamat, tanggalLahir, catatan] = cols;
-
-      if (!nama) { errors.push(`Baris ${i + 2}: nama kosong`); continue; }
-
-      const res = await fetch("/api/siswa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nama, telepon: telepon||"", email: email||"", alamat: alamat||"", tanggalLahir: tanggalLahir||"", catatan: catatan||"" }),
-      });
-      if (res.ok) { success++; } else {
-        const err = await res.json().catch(() => ({}));
-        errors.push(`Baris ${i + 2} (${nama}): ${err.error ?? res.status}`);
-      }
-    }
-
-    setCsvLoading(false);
-    if (fileRef.current) fileRef.current.value = "";
-    let msg = `✅ Import selesai: ${success} dari ${lines.length} siswa berhasil ditambahkan.`;
-    if (errors.length > 0) msg += `\n\n⚠️ Catatan (${errors.length}):\n` + errors.slice(0, 7).join("\n");
-    alert(msg);
-    fetchData();
-  }
 
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
@@ -218,13 +192,14 @@ export default function SiswaPage() {
               <Trash2 size={16} /> Hapus Semua
             </button>
           )}
-          <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
-            <Download size={16} /> Template
+          {selectedIds.length > 0 && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
+              <Trash2 size={16} /> Hapus ({selectedIds.length})
+            </button>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={() => setShowImportModal(true)} style={{ borderRadius: 'var(--radius-full)' }}>
+             <FileSpreadsheet size={16} /> Import CSV
           </button>
-          <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", borderRadius: 'var(--radius-full)', margin: 0 }}>
-             <Upload size={16} /> {csvLoading ? "Importing..." : "Import CSV"}
-             <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
-          </label>
           <button id="btn-tambah-siswa" className="btn btn-primary" onClick={openAdd} style={{ borderRadius: 'var(--radius-full)' }}>
             <UserPlus size={18} /> Tambah Siswa
           </button>
@@ -286,6 +261,9 @@ export default function SiswaPage() {
           <table>
             <thead>
               <tr>
+                <th style={{ width: 40 }}>
+                  <input type="checkbox" checked={selectedIds.length === data.length && data.length > 0} onChange={handleSelectAll} />
+                </th>
                 <th>No Siswa</th>
                 <th>Nama Lengkap</th>
                 <th>Telepon</th>
@@ -297,9 +275,9 @@ export default function SiswaPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign:"center",padding:48,color:"var(--text-muted)" }}>Loading data...</td></tr>
+                <tr><td colSpan={8} style={{ textAlign:"center",padding:48,color:"var(--text-muted)" }}>Loading data...</td></tr>
               ) : data.length===0 ? (
-                <tr><td colSpan={7}>
+                <tr><td colSpan={8}>
                   <div className="empty-state">
                     <div className="empty-state-icon"><Users size={48} /></div>
                     <h3 className="title-lg">Belum ada data siswa</h3>
@@ -308,6 +286,9 @@ export default function SiswaPage() {
                 </td></tr>
               ) : data.map(s=>(
                 <tr key={s.id}>
+                  <td>
+                    <input type="checkbox" checked={selectedIds.includes(s.id)} onChange={() => toggleSelect(s.id)} />
+                  </td>
                   <td style={{ fontFamily:"monospace", fontSize:12, color:"var(--text-muted)" }}>{s.noSiswa}</td>
                   <td style={{ fontWeight:700, color: 'var(--on-surface)' }}>{s.nama}</td>
                   <td style={{ fontSize:14 }}>{s.telepon||"—"}</td>
@@ -488,6 +469,107 @@ export default function SiswaPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Import CSV */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+          <div className="modal" style={{ maxWidth: 500 }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Upload size={20} style={{ color: 'var(--primary)' }} />
+                <span>Import Data Siswa via CSV</span>
+              </div>
+              <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Gunakan format CSV berikut untuk mengimpor data masal siswa baru.
+                </p>
+                <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
+                  nama,telepon,email,alamat,tanggallahir,catatan
+                </div>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
+                  onClick={() => {
+                    const csvContent = "nama,telepon,email,alamat,tanggallahir,catatan\n" +
+                                     "Rendi Wijaya,081233445566,rendi@email.com,Jl Kediri No 10,2005-01-20,Siswa pindahan\n" +
+                                     "Siska Putri,089977665544,siska@email.com,Kec. Pesantren,2006-05-12,Target IELTS";
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "template_siswa.csv");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  📥 Download Template CSV
+                </button>
+              </div>
+              
+              <div style={{ border: '2px dashed var(--ghost-border)', borderRadius: 12, padding: 32, textAlign: 'center', background: 'var(--surface-container-lowest)' }}>
+                <FileSpreadsheet size={32} style={{ color: 'var(--primary)', marginBottom: 12 }} />
+                <div style={{ marginBottom: 16 }}>
+                  <label className="btn btn-primary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', padding: '10px 24px' }}>
+                    <Upload size={16} /> {importing ? "Memproses..." : "Pilih File CSV"}
+                    <input type="file" accept=".csv" style={{ display: 'none' }} disabled={importing} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const text = event.target?.result as string;
+                        const lines = text.split("\n").filter(l => l.trim());
+                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+                        
+                        const jsonData = lines.slice(1).map(line => {
+                          const values = line.split(",").map(v => v.trim());
+                          const obj: any = {};
+                          headers.forEach((h, i) => {
+                            obj[h] = values[i];
+                          });
+                          return obj;
+                        });
+
+                        if (confirm(`Impor ${jsonData.length} data siswa baru?`)) {
+                          setImporting(true);
+                          try {
+                            const res = await fetch("/api/siswa/import", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(jsonData)
+                            });
+                            if (res.ok) {
+                              alert("Berhasil mengimpor data siswa!");
+                              setShowImportModal(false);
+                              fetchData();
+                            } else {
+                              const err = await res.json();
+                              alert("Gagal impor: " + err.error);
+                            }
+                          } catch (err) {
+                            alert("Terjadi kesalahan saat mengunggah.");
+                          } finally {
+                            setImporting(false);
+                          }
+                        }
+                      };
+                      reader.readAsText(file);
+                    }} />
+                  </label>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Format UTF-8</p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowImportModal(false)}>Tutup</button>
+            </div>
           </div>
         </div>
       )}

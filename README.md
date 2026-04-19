@@ -29,35 +29,34 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Update Log - 18 April 2026
+---
 
-### 🚀 Fitur Baru & Peningkatan (Update 2)
-- **Ads-Spent Sync Automation**: Implementasi sinkronisasi otomatis antara input **Performa Iklan** (Advertiser) dengan **Spent Ads** (Dashboard Finansial). Total spent harian harian per platform kini terupdate otomatis saat advertiser menyimpan data.
+## Update Log - 19 April 2026
 
-## Update Terbaru: Granular Role-Based Access Control (RBAC) - 18 April 2026
+### 🏆 Final ERP Finance Optimization & Sync (Update 3)
+- **Full-Spectrum Finance Sync**: 
+  - **Advertiser Sync**: Data dari Advertiser (AdPerformance) kini terhubung 100% ke Dashboard Finansial dan Laporan Keuangan sebagai sumber kebenaran data iklan.
+  - **Automated Payroll Expense**: Setiap pembayaran gaji (Staf & Pengajar) otomatis tercatat sebagai pengeluaran perusahaan secara real-time, memastikan Laba Bersih selalu akurat.
+  - **Integrated Inventory**: Belanja barang inventaris baru otomatis terdaftar sebagai pengeluaran operasional perusahaan.
+- **Advanced Dashboard Filters**: Penambahan fitur selector periode waktu yang dinamis (Hari Ini, Kemarin, Minggu Ini, Bulan Ini, dan Custom Date Range) untuk analisis finansial yang lebih fleksibel.
+- **Revenue Source Identification**: Klasifikasi otomatis sumber pemasukan ke dalam 4 kategori strategis: **Regular**, **Repeat Order (RO)**, **Produk Live**, dan **Produk TOEFL**.
+- **The "Bagan" Standard (TOEFL Sharing)**:
+  - Implementasi sistem bagi hasil TOEFL 50/50 sesuai standar alur keuangan perusahaan.
+  - Penambahan flag `isProfitSharing` pada manajemen produk untuk membedakan TOEFL Internal (Milik Perusahaan) dan TOEFL Partnership (Bagi Hasil).
+  - Perhitungan profit bersih departemen TOEFL (Omset dikurangi Ads & Fees) sebelum dilakukan pembagian profit ke tim.
 
-Sistem telah bermigrasi dari *Static Role-Based Access* ke sistem **Granular Role & Permission** yang dinamis untuk skalabilitas pengelolaan staf yang lebih baik.
-
-### Fitur Utama RBAC:
-- **Dynamic Roles**: Role tidak lagi statis (enum), melainkan dikelola melalui database.
-- **Granular Permissions**: Setiap Role dapat diberikan hak akses spesifik (contoh: `user:manage`, `payroll:view`, dll).
-- **Role Management UI**: Dashboard baru di `/settings/roles` untuk mengatur hak akses secara visual dengan checkbox.
-- **Improved Security**: Administrator memiliki *bypass* penuh, sementara role lain dibatasi secara ketat berdasarkan permission.
-- **Backward Compatibility**: Sesi tetap mendukung pengecekan role huruf besar (ADMIN, CS, FINANCE) untuk memastikan portal lama tetap berjalan normal.
-
-### Perubahan Teknis:
-- **Database**: Tabel `Role` dan `Permission` ditambahkan, kolom `role` pada `User` diganti menjadi relasi `roleId`.
-- **Auth**: `NextAuth` kini menyertakan daftar `permissions` ke dalam JWT dan Session.
-- **Utility**: Implementasi fungsi `hasPermission(session, slug)` sebagai standar pengecekan akses di seluruh aplikasi.
-- **Layout**: Sidebar kini render secara dinamis hanya menampilkan menu yang diizinkan untuk user tersebut.
+### 🛠️ Stabilitas & Bug Fixes
+- **Prisma Schema Update**: Penambahan field `isProfitSharing` pada model Program untuk mendukung diferensiasi produk partnership.
+- **API Optimization**: Peningkatan performa aggregation pada `/api/laporan` untuk mendukung breakdown data yang lebih kompleks.
+- **System Synchronization**: Reset server menyeluruh untuk memastikan semua skema database terbaru terbaca sempurna.
+- **Reporting Excellence**: Update fitur **Export Excel & PDF** yang kini menyertakan rincian breakdown sumber pemasukan.
 
 ---
 
-- **Enhanced Ad Platform Tracking**: Penambahan field **Platform** (Meta, Google, TikTok, dll) pada modul performa iklan untuk akurasi sinkronisasi data biaya.
-- **Advanced API Validation**: Penguatan API ads performance dengan validasi data numerik (pencegahan NaN) dan penanganan error yang lebih detail.
+## Update Log - 18 April 2026
 
-### 🛠️ Teknis & Stabilitas Sistem
-- **React v18 Downgrade**: Melakukan downgrade `react` & `react-dom` dari v19 ke v18.2.0 untuk memastikan kompatibilitas penuh dengan Next.js 14, memperbaiki error `TypeError: ... (reading 'call')` pada NextAuth, serta mengatasi masalah *white screen* pada dashboard.
-- **Prisma Client Alignment**: Sinkronisasi skema database terbaru dengan Prisma Client untuk mendukung field platform baru.
-- **Optimasi Optional Chaining**: Perbaikan sintaks pada dashboard untuk mencegah crash saat data API belum termuat.
-- **Audit System**: Implementasi sistem audit log untuk pelacakan aktivitas yang lebih komprehensif.
+### 🚀 Granular Role-Based Access Control (RBAC)
+- **Dynamic Roles & Granular Permissions**: Implementasi sistem perijinan dinamis berbasis database untuk skalabilitas pengelolaan staf.
+- **Role Management UI**: Dashboard baru di `/settings/roles` untuk mengatur hak akses secara visual.
+- **Ads-Spent Sync Automation**: Sinkronisasi otomatis input Performa Iklan ke Laporan Keuangan.
+- **React v18 Downgrade**: Perbaikan stabilitas NextAuth dan Dashboard dengan downgrade ke React 18.2.0.

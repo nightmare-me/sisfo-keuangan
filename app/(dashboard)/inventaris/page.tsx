@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import Papa from "papaparse";
 import { 
   Plus, 
   Search, 
@@ -20,7 +19,8 @@ import {
   Boxes,
   Zap,
   Download,
-  Upload
+  Upload,
+  FileSpreadsheet
 } from "lucide-react";
 
 const KONDISI_BADGE: Record<string,string> = { BAIK:"badge-success", RUSAK_RINGAN:"badge-warning", RUSAK_BERAT:"badge-danger" };
@@ -39,6 +39,9 @@ export default function InventarisPage() {
   const [search, setSearch] = useState("");
   const [kondisiFilter, setKondisiFilter] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [form, setForm] = useState({ nama:"", kategori:"", jumlah:"0", satuan:"pcs", hargaBeli:"", kondisi:"BAIK", tanggalBeli:"", keterangan:"", stokMinimum:"1" });
 
   function fetchData() {
@@ -91,31 +94,36 @@ export default function InventarisPage() {
     }
   }
 
-  function downloadCsvTemplate() {
-    const header = "nama,kategori,jumlah,satuan,hargaBeli,kondisi,tanggalBeli,keterangan,stokMinimum\n";
-    const example = "Kursi Kantor,Furnitur,10,unit,500000,BAIK,2024-03-01,Kursi baru ruang staff,2\n";
-    const note = "# Kondisi: BAIK / RUSAK_RINGAN / RUSAK_BERAT";
-    const blob = new Blob([header + example + note], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "template_inventaris.csv"; a.click();
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Hapus ${selectedIds.length} item inventaris terpilih secara permanen?`)) return;
+    
+    setLoading(true);
+    const res = await fetch("/api/inventaris", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: selectedIds })
+    });
+    
+    if (res.ok) {
+      alert("Item terpilih berhasil dihapus.");
+      setSelectedIds([]);
+      fetchData();
+    } else {
+      alert("Gagal menghapus beberapa data.");
+      setLoading(false);
+    }
   }
 
-  function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        const rows = results.data.filter((r:any)=>r.nama && !r.nama.startsWith("#"));
-        if (rows.length === 0) return alert("File kosong atau tidak valid.");
-        const res = await fetch("/api/inventaris", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(rows) });
-        if (res.ok) { alert(`Berhasil import ${rows.length} barang!`); fetchData(); }
-        else alert("Gagal import.");
-        if (fileRef.current) fileRef.current.value = "";
-      }
-    });
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
+
+  function handleSelectAll() {
+    if (selectedIds.length === data.length) setSelectedIds([]);
+    else setSelectedIds(data.map(item => item.id));
+  }
+
 
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
@@ -135,13 +143,14 @@ export default function InventarisPage() {
                 <Trash2 size={16} /> Hapus Semua
               </button>
             )}
-            <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
-              <Download size={16} /> Template
+            {selectedIds.length > 0 && (
+              <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
+                <Trash2 size={16} /> Hapus ({selectedIds.length})
+              </button>
+            )}
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowImportModal(true)} style={{ borderRadius: 'var(--radius-full)' }}>
+              <FileSpreadsheet size={16} /> Import CSV
             </button>
-            <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", borderRadius: 'var(--radius-full)', margin: 0 }}>
-              <Upload size={16} /> Import CSV
-              <input ref={fileRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCsvImport} />
-            </label>
             <button id="btn-tambah-inventaris" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>{ setEditItem(null); setShowModal(true); }}>
               <Plus size={18} /> Tambah Barang
             </button>
@@ -205,6 +214,9 @@ export default function InventarisPage() {
           <table>
             <thead>
               <tr>
+                <th style={{ width: 40 }}>
+                  <input type="checkbox" checked={selectedIds.length === data.length && data.length > 0} onChange={handleSelectAll} />
+                </th>
                 <th>Nama Barang</th>
                 <th>Kategori</th>
                 <th>Stok</th>
@@ -217,9 +229,9 @@ export default function InventarisPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ textAlign:"center",padding:32,color:"var(--text-muted)" }}>Loading...</td></tr>
+                <tr><td colSpan={9} style={{ textAlign:"center",padding:32,color:"var(--text-muted)" }}>Loading...</td></tr>
               ) : data.length===0 ? (
-                <tr><td colSpan={8}>
+                <tr><td colSpan={9}>
                   <div className="empty-state">
                     <div className="empty-state-icon">📦</div>
                     <h3>Belum ada data inventaris</h3>
@@ -228,6 +240,9 @@ export default function InventarisPage() {
                 </td></tr>
               ) : data.map(item=>(
                 <tr key={item.id} style={{ background: item.isLowStock ? "rgba(239,68,68,0.04)" : "" }}>
+                  <td>
+                    <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} />
+                  </td>
                   <td>
                     <div style={{ fontWeight:600 }}>{item.nama}</div>
                     {item.keterangan && <div style={{ fontSize:11,color:"var(--text-muted)" }}>{item.keterangan}</div>}
@@ -318,6 +333,113 @@ export default function InventarisPage() {
                 <button id="btn-simpan-inventaris" type="submit" className="btn btn-primary" disabled={saving}>{saving?"Menyimpan...":"📦 Simpan"}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Import CSV */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+          <div className="modal" style={{ maxWidth: 550 }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Upload size={20} style={{ color: 'var(--warning)' }} />
+                <span>Import Data Inventaris</span>
+              </div>
+              <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+                  Gunakan format CSV berikut untuk mengimpor aset:
+                </p>
+                <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)', marginBottom: 16 }}>
+                  nama,kategori,jumlah,satuan,hargabeli,kondisi,tanggalbeli,stokminimum
+                </div>
+                
+                <div style={{ padding: 12, background: 'var(--surface-container-low)', borderRadius: 8, fontSize: 11 }}>
+                  <p style={{ fontWeight: 700, marginBottom: 4 }}>💡 Tips Kondisi:</p>
+                  <p>Gunakan: <strong>BAIK</strong>, <strong>RUSAK_RINGAN</strong>, atau <strong>RUSAK_BERAT</strong></p>
+                </div>
+
+                <button 
+                  className="btn btn-sm" 
+                  style={{ marginTop: 12, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
+                  onClick={() => {
+                    const csvContent = "nama,kategori,jumlah,satuan,hargabeli,kondisi,tanggalbeli,stokminimum\n" +
+                                     "Laptop Asus,Elektronik,5,unit,7500000,BAIK,2024-01-10,1\n" +
+                                     "Meja Kerja,Furnitur,10,unit,1200000,BAIK,2024-01-15,2";
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "template_inventaris.csv");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  📥 Download Template CSV
+                </button>
+              </div>
+              
+              <div style={{ border: '2px dashed var(--ghost-border)', borderRadius: 12, padding: 32, textAlign: 'center', background: 'var(--surface-container-lowest)' }}>
+                <FileSpreadsheet size={32} style={{ color: 'var(--warning)', marginBottom: 12 }} />
+                <div style={{ marginBottom: 16 }}>
+                  <label className="btn btn-primary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', padding: '10px 24px', background: 'var(--warning)', border: 'none' }}>
+                    <Upload size={16} /> {importing ? "Memproses..." : "Pilih File CSV"}
+                    <input type="file" accept=".csv" style={{ display: 'none' }} disabled={importing} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const text = event.target?.result as string;
+                        const lines = text.split("\n").filter(l => l.trim());
+                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+                        
+                        const jsonData = lines.slice(1).map(line => {
+                          const values = line.split(",").map(v => v.trim());
+                          const obj: any = {};
+                          headers.forEach((h, i) => {
+                            obj[h] = values[i];
+                          });
+                          return obj;
+                        });
+
+                        if (confirm(`Impor ${jsonData.length} item inventaris?`)) {
+                          setImporting(true);
+                          try {
+                            const res = await fetch("/api/inventaris/import", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(jsonData)
+                            });
+                            if (res.ok) {
+                              alert("Berhasil mengimpor data inventaris!");
+                              setShowImportModal(false);
+                              fetchData();
+                            } else {
+                              const err = await res.json();
+                              alert("Gagal impor: " + err.error);
+                            }
+                          } catch (err) {
+                            alert("Terjadi kesalahan saat mengunggah.");
+                          } finally {
+                            setImporting(false);
+                          }
+                        }
+                      };
+                      reader.readAsText(file);
+                    }} />
+                  </label>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Format UTF-8</p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowImportModal(false)}>Tutup</button>
+            </div>
           </div>
         </div>
       )}

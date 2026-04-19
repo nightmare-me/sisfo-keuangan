@@ -14,7 +14,9 @@ import {
   Wallet,
   CreditCard,
   Trash2,
-  PieChart
+  PieChart,
+  Upload,
+  FileSpreadsheet
 } from "lucide-react";
 
 const KATEGORI = ["GAJI_PENGAJAR","GAJI_STAF","SEWA_TEMPAT","UTILITAS","ATK","MARKETING","PERALATAN","PEMELIHARAAN","LAINNYA"];
@@ -36,8 +38,10 @@ export default function PengeluaranPage() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState({ from:"", to:"", kategori:"", metodeBayar:"" });
-  const [form, setForm] = useState({ jumlah:"", kategori:"LAINNYA", metodeBayar:"CASH", keterangan:"", tanggal: new Date().toISOString().slice(0,10) });
   const [editId, setEditId] = useState<string|null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [csvLoading, setCsvLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   function fetchData() {
     const p = new URLSearchParams();
@@ -80,6 +84,36 @@ export default function PengeluaranPage() {
     }
   }
 
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Hapus ${selectedIds.length} pengeluaran terpilih secara permanen?`)) return;
+    
+    setLoading(true);
+    const res = await fetch("/api/pengeluaran", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: selectedIds })
+    });
+    
+    if (res.ok) {
+      alert("Pengeluaran terpilih berhasil dihapus.");
+      setSelectedIds([]);
+      fetchData();
+    } else {
+      alert("Gagal menghapus beberapa data.");
+      setLoading(false);
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  function handleSelectAll() {
+    if (selectedIds.length === data.length) setSelectedIds([]);
+    else setSelectedIds(data.map(item => item.id));
+  }
+
   const maxKategori = Math.max(...byKategori.map(k=>k._sum.jumlah??0), 1);
 
   return (
@@ -100,6 +134,14 @@ export default function PengeluaranPage() {
               <Trash2 size={16} /> Hapus Semua
             </button>
           )}
+          {selectedIds.length > 0 && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
+              <Trash2 size={16} /> Hapus ({selectedIds.length})
+            </button>
+          )}
+          <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowImportModal(true)}>
+            <FileSpreadsheet size={16} /> Import CSV
+          </button>
           <button id="btn-tambah-pengeluaran" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowModal(true)}>
             <Plus size={18} /> Tambah Pengeluaran
           </button>
@@ -184,6 +226,9 @@ export default function PengeluaranPage() {
           <table>
             <thead>
               <tr>
+                <th style={{ width: 40 }}>
+                  <input type="checkbox" checked={selectedIds.length === data.length && data.length > 0} onChange={handleSelectAll} />
+                </th>
                 <th>Tanggal</th>
                 <th>Kategori</th>
                 <th>Keterangan</th>
@@ -195,9 +240,9 @@ export default function PengeluaranPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} style={{ textAlign:"center",padding:48,color:"var(--text-muted)" }}>Loading data...</td></tr>
+                <tr><td colSpan={8} style={{ textAlign:"center",padding:48,color:"var(--text-muted)" }}>Loading data...</td></tr>
               ) : data.length===0 ? (
-                <tr><td colSpan={7}>
+                <tr><td colSpan={8}>
                   <div className="empty-state">
                     <div className="empty-state-icon"><TrendingDown size={48} /></div>
                     <h3 className="title-lg">Belum ada data pengeluaran</h3>
@@ -206,6 +251,9 @@ export default function PengeluaranPage() {
                 </td></tr>
               ) : data.map(item=>(
                 <tr key={item.id}>
+                  <td>
+                    <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} />
+                  </td>
                   <td style={{ fontSize:14, color:"var(--text-muted)", whiteSpace:"nowrap" }}>{formatDateTime(item.tanggal)}</td>
                   <td>
                     <span className="badge badge-danger" style={{ padding: '6px 14px', borderRadius: 100 }}>
@@ -276,6 +324,113 @@ export default function PengeluaranPage() {
                 <button id="btn-simpan-pengeluaran" type="submit" className="btn btn-primary" disabled={saving}>{saving?"Menyimpan...":"💸 Simpan"}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Import CSV */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+          <div className="modal" style={{ maxWidth: 550 }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Upload size={20} style={{ color: 'var(--danger)' }} />
+                <span>Import Pengeluaran Operasional</span>
+              </div>
+              <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+                  Silakan gunakan format kolom berikut:
+                </p>
+                <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)', marginBottom: 16 }}>
+                  tanggal,kategori,jumlah,metode,keterangan
+                </div>
+                
+                <div style={{ padding: 12, background: 'var(--warning-bg)', borderRadius: 8, fontSize: 11 }}>
+                  <p style={{ fontWeight: 700, marginBottom: 4, color: 'var(--on-warning-container)' }}>⚠️ Kategori Valid (Pilih salah satu):</p>
+                  <p>{KATEGORI.join(", ")}</p>
+                </div>
+
+                <button 
+                  className="btn btn-sm" 
+                  style={{ marginTop: 12, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
+                  onClick={() => {
+                    const csvContent = "tanggal,kategori,jumlah,metode,keterangan\n" +
+                                     "2024-03-01,ATK,150000,CASH,Beli Kertas & Tinta\n" +
+                                     "2024-03-02,UTILITAS,500000,TRANSFER,Listrik & WiFi Bulanan";
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "template_pengeluaran.csv");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  📥 Download Template CSV
+                </button>
+              </div>
+              
+              <div style={{ border: '2px dashed var(--ghost-border)', borderRadius: 12, padding: 32, textAlign: 'center', background: 'var(--surface-container-lowest)' }}>
+                <FileSpreadsheet size={32} style={{ color: 'var(--danger)', marginBottom: 12 }} />
+                <div style={{ marginBottom: 16 }}>
+                  <label className="btn btn-primary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', padding: '10px 24px', background: 'var(--danger)' }}>
+                    <Upload size={16} /> {csvLoading ? "Memproses..." : "Pilih File CSV"}
+                    <input type="file" accept=".csv" style={{ display: 'none' }} disabled={csvLoading} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const text = event.target?.result as string;
+                        const lines = text.split("\n").filter(l => l.trim());
+                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+                        
+                        const jsonData = lines.slice(1).map(line => {
+                          const values = line.split(",").map(v => v.trim());
+                          const obj: any = {};
+                          headers.forEach((h, i) => {
+                            obj[h] = values[i];
+                          });
+                          return obj;
+                        });
+
+                        if (confirm(`Impor ${jsonData.length} data pengeluaran?`)) {
+                          setCsvLoading(true);
+                          try {
+                            const res = await fetch("/api/pengeluaran/import", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(jsonData)
+                            });
+                            if (res.ok) {
+                              alert("Berhasil mengimpor data pengeluaran!");
+                              setShowImportModal(false);
+                              fetchData();
+                            } else {
+                              const err = await res.json();
+                              alert("Gagal impor: " + err.error);
+                            }
+                          } catch (err) {
+                            alert("Terjadi kesalahan saat mengunggah.");
+                          } finally {
+                            setCsvLoading(false);
+                          }
+                        }
+                      };
+                      reader.readAsText(file);
+                    }} />
+                  </label>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Format UTF-8</p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowImportModal(false)}>Tutup</button>
+            </div>
           </div>
         </div>
       )}

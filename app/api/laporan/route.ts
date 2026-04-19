@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       pemasukanAgg, 
       pengeluaranAgg, 
       adsAgg,
+      adsPerfAgg,
       refundAgg,
       rawPemasukanPerProgram, 
       rawPengeluaranPerKategori, 
@@ -60,11 +61,16 @@ export async function GET(request: NextRequest) {
         _sum: { jumlah: true }, 
         _count: true 
       }),
-      // 3. Ads Aggregation
+      // 3. Ads Aggregation (SpentAds + AdPerformance)
       prisma.spentAds.aggregate({ 
         where: { tanggal: dateFilter }, 
         _sum: { jumlah: true }, 
         _count: true 
+      }),
+      prisma.adPerformance.aggregate({
+        where: { date: dateFilter },
+        _sum: { spent: true },
+        _count: true
       }),
       // 4. Approved Refunds Aggregation
       prisma.refund.aggregate({
@@ -86,14 +92,14 @@ export async function GET(request: NextRequest) {
         _sum: { jumlah: true },
         _count: true,
       }),
-      // 7. Pemasukan per CS
+      // 8. Pemasukan per CS
       prisma.pemasukan.groupBy({
         by: ["csId"],
         where: { tanggal: dateFilter },
         _sum: { hargaFinal: true },
         _count: true,
       }),
-      // 8. Pemasukan per Metode
+      // 9. Pemasukan per Metode
       prisma.pemasukan.groupBy({
         by: ["metodeBayar"],
         where: { tanggal: dateFilter },
@@ -108,7 +114,7 @@ export async function GET(request: NextRequest) {
     const totalPemasukanNeto = totalPemasukanBruto - totalRefund;
     
     const totalPengeluaran = pengeluaranAgg._sum.jumlah ?? 0;
-    const totalAds = adsAgg._sum.jumlah ?? 0;
+    const totalAds = (adsAgg._sum.jumlah ?? 0) + (adsPerfAgg._sum.spent ?? 0);
     const labaKotor = totalPemasukanNeto - totalPengeluaran;
     const labaBersih = labaKotor - totalAds;
 
@@ -120,6 +126,34 @@ export async function GET(request: NextRequest) {
       prisma.user.findMany({ where: { id: { in: csIds } }, select: { id: true, name: true } }),
       prisma.program.findMany({ where: { id: { in: programIds } }, select: { id: true, nama: true, tipe: true } }),
     ]);
+
+    // 10. Breakdown sumber (RO, TOEFL, Live, Regular)
+    const rawBreakdown = await prisma.pemasukan.findMany({
+      where: { tanggal: dateFilter },
+      select: { isRO: true, hargaFinal: true, programId: true, program: { select: { nama: true } } }
+    });
+
+    const sourceBreakdown = {
+      RO: 0,
+      TOEFL: 0,
+      LIVE: 0,
+      REGULAR: 0
+    };
+
+    rawBreakdown.forEach(p => {
+      const nama = p.program?.nama?.toUpperCase() || "";
+      const isSharing = p.program?.isProfitSharing || false;
+      
+      if (p.isRO) {
+        sourceBreakdown.RO += p.hargaFinal;
+      } else if (isSharing) {
+        sourceBreakdown.TOEFL += p.hargaFinal;
+      } else if (nama.includes("LIVE")) {
+        sourceBreakdown.LIVE += p.hargaFinal;
+      } else {
+        sourceBreakdown.REGULAR += p.hargaFinal;
+      }
+    });
 
     return NextResponse.json({
       periode: { from: startDate, to: endDate, type },
@@ -134,6 +168,7 @@ export async function GET(request: NextRequest) {
         labaBersih,
         jumlahTransaksiIn: pemasukanAgg._count,
         jumlahTransaksiOut: pengeluaranAgg._count,
+        sourceBreakdown
       },
       pemasukanPerProgram: rawPemasukanPerProgram.map(p => {
         const prog = programs.find(pr => pr.id === p.programId);

@@ -16,7 +16,9 @@ import {
   Calendar,
   CreditCard,
   UserPlus,
-  Trash2
+  Trash2,
+  Upload,
+  FileSpreadsheet
 } from "lucide-react";
 
 const COLUMNS = [
@@ -43,7 +45,9 @@ export default function CRMPage() {
   const [loading, setLoading] = useState(true);
   const [waTemplates, setWaTemplates] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [convertForm, setConvertForm] = useState({
     hargaFinal: "",
@@ -99,6 +103,31 @@ export default function CRMPage() {
       body: JSON.stringify({ id, status }),
     });
     fetchData();
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Hapus ${selectedIds.length} lead terpilih secara permanen?`)) return;
+    
+    setLoading(true);
+    const res = await fetch("/api/crm", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: selectedIds })
+    });
+    
+    if (res.ok) {
+      alert("Leads terpilih berhasil dihapus.");
+      setSelectedIds([]);
+      fetchData();
+    } else {
+      alert("Gagal menghapus beberapa data.");
+      setLoading(false);
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
   async function submitNewLead(e: React.FormEvent) {
@@ -173,7 +202,12 @@ export default function CRMPage() {
           <p className="text-secondary" style={{ margin: '4px 0 0 0' }}>Kelola alur pendaftaran calon siswa</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          {role === "ADMIN" && (
+           {selectedIds.length > 0 && (
+             <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
+               <Trash2 size={16} /> Hapus ({selectedIds.length})
+             </button>
+           )}
+           {role === "ADMIN" && (
             <button 
               className="btn btn-secondary" 
               style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }}
@@ -191,9 +225,14 @@ export default function CRMPage() {
             </button>
           )}
           {!isReadOnly && (
-            <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowNewLeadModal(true)}>
-               <Plus size={16} /> Lead Baru
-            </button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowImportModal(true)}>
+                <FileSpreadsheet size={16} /> Import CSV
+              </button>
+              <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowNewLeadModal(true)}>
+                <Plus size={16} /> Lead Baru
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -291,7 +330,10 @@ export default function CRMPage() {
                     {loading ? (
                       [1, 2].map(i => <div key={i} className="skeleton" style={{ height: 160, borderRadius: 'var(--radius-xl)' }} />)
                     ) : colLeads.map(lead => (
-                      <div key={lead.id} className="card" style={{ padding: '14px 16px', cursor: 'default', margin: 0, boxShadow: 'var(--shadow-sm)', transition: 'box-shadow var(--transition)' }}>
+                      <div key={lead.id} className="card" style={{ padding: '14px 16px', cursor: 'default', margin: 0, boxShadow: 'var(--shadow-sm)', transition: 'box-shadow var(--transition)', position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: 12, right: 32 }}>
+                          <input type="checkbox" checked={selectedIds.includes(lead.id)} onChange={() => toggleSelect(lead.id)} style={{ width: 14, height: 14, cursor: 'pointer' }} />
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                           <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.05rem', color: "var(--on-surface)", maxWidth: '85%', lineHeight: 1.2 }}>
                             {lead.nama}
@@ -515,6 +557,107 @@ export default function CRMPage() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal Import CSV */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+          <div className="modal" style={{ maxWidth: 500 }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Upload size={20} style={{ color: 'var(--primary)' }} />
+                <span>Import Data Leads via CSV</span>
+              </div>
+              <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Gunakan format CSV berikut untuk mengimpor data masal calon siswa.
+                </p>
+                <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
+                  nama,whatsapp,program,preferensi
+                </div>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
+                  onClick={() => {
+                    const csvContent = "nama,whatsapp,program,preferensi\n" +
+                                     "Ahmad Fauzi,081234567890,REGULAR 1 BULAN,Malam hari\n" +
+                                     "Linda Sari,089988776655,IELTS PREPARATION,Pagi hari";
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "template_leads.csv");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  📥 Download Template CSV
+                </button>
+              </div>
+              
+              <div style={{ border: '2px dashed var(--ghost-border)', borderRadius: 12, padding: 32, textAlign: 'center', background: 'var(--surface-container-lowest)' }}>
+                <FileSpreadsheet size={32} style={{ color: 'var(--primary)', marginBottom: 12 }} />
+                <div style={{ marginBottom: 16 }}>
+                  <label className="btn btn-primary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', padding: '10px 24px' }}>
+                    <Upload size={16} /> Pilih File CSV
+                    <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const text = event.target?.result as string;
+                        const lines = text.split("\n").filter(l => l.trim());
+                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+                        
+                        const jsonData = lines.slice(1).map(line => {
+                          const values = line.split(",").map(v => v.trim());
+                          const obj: any = {};
+                          headers.forEach((h, i) => {
+                            obj[h] = values[i];
+                          });
+                          return obj;
+                        });
+
+                        if (confirm(`Impor ${jsonData.length} data leads?`)) {
+                          setLoading(true);
+                          try {
+                            const res = await fetch("/api/crm/import", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(jsonData)
+                            });
+                            if (res.ok) {
+                              alert("Berhasil mengimpor data leads!");
+                              setShowImportModal(false);
+                              fetchData();
+                            } else {
+                              const err = await res.json();
+                              alert("Gagal impor: " + err.error);
+                            }
+                          } catch (err) {
+                            alert("Terjadi kesalahan saat mengunggah.");
+                          } finally {
+                            setLoading(false);
+                          }
+                        }
+                      };
+                      reader.readAsText(file);
+                    }} />
+                  </label>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Format UTF-8</p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowImportModal(false)}>Tutup</button>
             </div>
           </div>
         </div>

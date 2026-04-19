@@ -59,8 +59,9 @@ export function calculateCSFee(
   }
 
   if (csCategory === 'CS_TOEFL') {
-    if (productType === 'TOEFL') return price * 0.05;
-    if (productType === 'CERTIFICATE') return price * 0.10;
+    if (productType === 'ELITE' || productType === 'ELITE_PRO') return 2500;
+    if (productType === 'MASTER') return 5000;
+    return price * 0.10; // Lain-lain: 10% x Harga Produk
   }
 
   if (csCategory === 'CS_RO') {
@@ -93,8 +94,8 @@ export function calculateAdvFee(
     else feePerLead = 300;
   }
 
-  if (advCategory === 'ADV_PROJECT') {
-    if (cpl < 5000) feePerLead = 500;
+  if (advCategory === 'ADV_PROJECT' || advCategory === 'ADV_TOEFL' as any) {
+    if (cpl < 15000) feePerLead = 500;
     else feePerLead = 250;
   }
 

@@ -12,24 +12,81 @@ export async function GET(request: NextRequest) {
   const platform = searchParams.get("platform");
 
   const where: any = {};
-  if (from && to) where.tanggal = { gte: new Date(from), lte: new Date(to) };
-  if (platform) where.platform = platform;
+  const wherePerf: any = {};
+  if (from && to) {
+    where.tanggal = { gte: new Date(from), lte: new Date(to) };
+    wherePerf.date = { gte: new Date(from), lte: new Date(to) };
+  }
+  if (platform) {
+    where.platform = platform;
+    wherePerf.platform = platform;
+  }
 
-  const [data, summary, byPlatform] = await Promise.all([
+  // Fetch from both tables
+  const [spentData, perfData, summarySpent, summaryPerf, byPlatformSpent, byPlatformPerf] = await Promise.all([
     prisma.spentAds.findMany({
       where,
       orderBy: { tanggal: "desc" },
       include: { user: { select: { name: true } } },
     }),
+    prisma.adPerformance.findMany({
+      where: wherePerf,
+      orderBy: { date: "desc" },
+      include: { adv: { select: { name: true } } },
+    }),
     prisma.spentAds.aggregate({ where, _sum: { jumlah: true }, _count: true }),
+    prisma.adPerformance.aggregate({ where: wherePerf, _sum: { spent: true }, _count: true }),
     prisma.spentAds.groupBy({
       by: ["platform"],
       where,
       _sum: { jumlah: true },
     }),
+    prisma.adPerformance.groupBy({
+      by: ["platform"],
+      where: wherePerf,
+      _sum: { spent: true },
+    }),
   ]);
 
-  return NextResponse.json({ data, summary: { total: summary._sum.jumlah ?? 0, count: summary._count }, byPlatform });
+  // Combine and Format data for table display
+  // We transform AdPerformance records to look like SpentAds records
+  const formattedPerfData = perfData.map(p => ({
+    id: p.id,
+    tanggal: p.date,
+    platform: p.platform,
+    jumlah: p.spent,
+    keterangan: `Laporan Advertiser: ${p.adv.name}`,
+    user: { name: p.adv.name },
+    isPerformanceData: true
+  }));
+
+  const allData = [...spentData, ...formattedPerfData].sort((a,b) => 
+    new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
+  );
+
+  // Combine Summaries
+  const totalAmount = (summarySpent._sum.jumlah ?? 0) + (summaryPerf._sum.spent ?? 0);
+  const totalCount = (summarySpent._count ?? 0) + (summaryPerf._count ?? 0);
+
+  // Combine platform breakdown
+  const platformMap: Record<string, number> = {};
+  byPlatformSpent.forEach(p => {
+    platformMap[p.platform] = (platformMap[p.platform] || 0) + (p._sum.jumlah || 0);
+  });
+  byPlatformPerf.forEach(p => {
+    platformMap[p.platform] = (platformMap[p.platform] || 0) + (p._sum.spent || 0);
+  });
+
+  const combinedByPlatform = Object.entries(platformMap).map(([platform, amount]) => ({
+    platform,
+    _sum: { jumlah: amount }
+  }));
+
+  return NextResponse.json({ 
+    data: allData, 
+    summary: { total: totalAmount, count: totalCount }, 
+    byPlatform: combinedByPlatform 
+  });
 }
 
 export async function POST(request: NextRequest) {

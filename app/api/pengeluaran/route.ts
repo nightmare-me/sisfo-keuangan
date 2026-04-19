@@ -90,14 +90,26 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get("id");
   const all = searchParams.get("all");
 
-  if (all === "true") {
-    if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus semua data" }, { status: 403 });
-    await prisma.pengeluaran.deleteMany({});
-    return NextResponse.json({ success: true });
+  try {
+    if (all === "true") {
+      if (role !== "ADMIN") return NextResponse.json({ error: "Hanya Admin yang bisa menghapus semua data" }, { status: 403 });
+      await prisma.pengeluaran.deleteMany({});
+      return NextResponse.json({ success: true });
+    }
+
+    if (id) {
+       await prisma.pengeluaran.delete({ where: { id } });
+       return NextResponse.json({ success: true });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    if (body.ids && Array.isArray(body.ids)) {
+      await prisma.pengeluaran.deleteMany({ where: { id: { in: body.ids } } });
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "ID atau IDs diperlukan" }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ error: "Gagal menghapus", message: err.message }, { status: 500 });
   }
-
-  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
-
-  await prisma.pengeluaran.delete({ where: { id } });
-  return NextResponse.json({ success: true });
 }

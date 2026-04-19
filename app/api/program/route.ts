@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await request.json();
-    const { nama, deskripsi, tipe, harga, kategoriFee, durasi, feeClosing, feeClosingRO } = body;
+    const { nama, deskripsi, tipe, harga, kategoriFee, durasi, feeClosing, feeClosingRO, isProfitSharing } = body;
     
     if (!nama || !harga) return NextResponse.json({ error: "Nama dan harga diperlukan" }, { status: 400 });
     
@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
         kategoriFee,
         feeClosing: Number(feeClosing) || 0,
         feeClosingRO: Number(feeClosingRO) || 0,
+        isProfitSharing: !!isProfitSharing,
         durasi: durasi ?? null 
       } 
     });

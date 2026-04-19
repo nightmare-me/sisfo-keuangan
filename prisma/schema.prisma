@@ -96,6 +96,7 @@ model Program {
   kategoriFee  String?
   feeClosing   Float       @default(0)
   feeClosingRO Float       @default(0)
+  isProfitSharing Boolean   @default(false)
   kelas        Kelas[]
   leads        Lead[]
   pemasukan    Pemasukan[]

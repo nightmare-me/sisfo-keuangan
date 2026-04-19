@@ -15,9 +15,17 @@ import {
   Edit2,
   ChevronRight,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  Trash2,
+  Upload,
+  FileSpreadsheet
 } from "lucide-react";
 import { formatCurrency, hasPermission } from "@/lib/utils";
+
+const rowSelectedStyle = {
+  background: 'rgba(99, 102, 241, 0.08)',
+  transition: 'all 0.2s'
+};
 
 export default function KaryawanPage() {
   const { data: session } = useSession();
@@ -34,6 +42,9 @@ export default function KaryawanPage() {
     nik: "", posisi: "", bankName: "", rekeningNomor: "", rekeningNama: "",
     gajiPokok: 0, tunjangan: 0, feeClosing: 0, feeLead: 0, bonusTarget: 0, bonusNominal: 0, keterangan: ""
   });
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   async function fetchData() {
     setLoading(true);
@@ -55,6 +66,42 @@ export default function KaryawanPage() {
     if (search && !u.name.toLowerCase().includes(search.toLowerCase()) && !u.email.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.length === filtered.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filtered.map(u => u.id));
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.length === 0) return;
+    if (!confirm(`Hapus data profil karyawan untuk ${selectedIds.length} orang terpilih?\n\nAkun user tidak akan terhapus, hanya profil finansial karyawannya saja.`)) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/karyawan", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      if (res.ok) {
+        setSelectedIds([]);
+        fetchData();
+      } else {
+        alert("Gagal menghapus data");
+      }
+    } catch (e) {
+      alert("Error deleting data");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const roles = Array.from(new Set(data.map(u => u.role?.name))).filter(Boolean);
 
@@ -116,6 +163,16 @@ export default function KaryawanPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Data Karyawan</h1>
           <p className="body-lg" style={{ margin: 0 }}>Manajemen profil finansial, struktur gaji, dan bonus tim</p>
         </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          {selectedIds.length > 0 && (
+            <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
+              <Trash2 size={16} /> Hapus ({selectedIds.length})
+            </button>
+          )}
+          <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowImportModal(true)}>
+            <FileSpreadsheet size={16} /> Import CSV
+          </button>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
@@ -159,6 +216,9 @@ export default function KaryawanPage() {
           <table>
             <thead>
               <tr>
+                <th style={{ width: 40, textAlign: 'center' }}>
+                  <input type="checkbox" checked={selectedIds.length === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ cursor: 'pointer' }} />
+                </th>
                 <th>Karyawan</th>
                 <th>NIK</th>
                 <th>Posisi</th>
@@ -174,7 +234,10 @@ export default function KaryawanPage() {
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={7} style={{ textAlign: "center", padding: 64 }}>Data kosong</td></tr>
               ) : filtered.map(u => (
-                <tr key={u.id}>
+                <tr key={u.id} style={selectedIds.includes(u.id) ? rowSelectedStyle : {}}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input type="checkbox" checked={selectedIds.includes(u.id)} onChange={() => toggleSelect(u.id)} style={{ cursor: 'pointer' }} />
+                  </td>
                   <td>
                     <div style={{ fontWeight: 700 }}>{u.name}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.email}</div>
@@ -325,6 +388,107 @@ export default function KaryawanPage() {
         </div>
       )}
 
+      {/* Modal Import CSV */}
+      {showImportModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+          <div className="modal" style={{ maxWidth: 500 }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Upload size={20} style={{ color: 'var(--primary)' }} />
+                <span>Import Data Karyawan via CSV</span>
+              </div>
+              <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Gunakan format CSV berikut untuk mengimpor data masal. Baris pertama wajib judul kolom.
+                </p>
+                <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
+                  email,nama,role,nik,posisi,gajipokok,tunjangan,bank,rekeningnomor,rekeningnama
+                </div>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
+                  onClick={() => {
+                    const csvContent = "email,nama,role,nik,posisi,gajipokok,tunjangan,bank,rekeningnomor,rekeningnama\n" +
+                                     "budi@example.com,Budi Santoso,CS,SP-00001,Customer Service,3500000,500000,BCA,123456789,Budi Santoso\n" +
+                                     "siti@example.com,Siti Aminah,Finance,SP-00002,Finance Staff,4000000,750000,Mandiri,987654321,Siti Aminah";
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "template_karyawan.csv");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  📥 Download Template CSV
+                </button>
+              </div>
+              
+              <div style={{ border: '2px dashed var(--ghost-border)', borderRadius: 12, padding: 32, textAlign: 'center', background: 'var(--surface-container-lowest)' }}>
+                <FileSpreadsheet size={32} style={{ color: 'var(--primary)', marginBottom: 12 }} />
+                <div style={{ marginBottom: 16 }}>
+                  <label className="btn btn-primary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', padding: '10px 24px' }}>
+                    <Upload size={16} /> Pilih File CSV
+                    <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const text = event.target?.result as string;
+                        const lines = text.split("\n").filter(l => l.trim());
+                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+                        
+                        const jsonData = lines.slice(1).map(line => {
+                          const values = line.split(",").map(v => v.trim());
+                          const obj: any = {};
+                          headers.forEach((h, i) => {
+                            obj[h] = values[i];
+                          });
+                          return obj;
+                        });
+
+                        if (confirm(`Impor ${jsonData.length} data karyawan?`)) {
+                          setLoading(true);
+                          try {
+                            const res = await fetch("/api/karyawan/import", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(jsonData)
+                            });
+                            if (res.ok) {
+                              alert("Berhasil mengimpor data!");
+                              setShowImportModal(false);
+                              fetchData();
+                            } else {
+                              const err = await res.json();
+                              alert("Gagal impor: " + err.error);
+                            }
+                          } catch (err) {
+                            alert("Terjadi kesalahan saat mengunggah.");
+                          } finally {
+                            setLoading(false);
+                          }
+                        }
+                      };
+                      reader.readAsText(file);
+                    }} />
+                  </label>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Format UTF-8</p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowImportModal(false)}>Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

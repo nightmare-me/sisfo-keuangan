@@ -10,13 +10,28 @@ export async function GET(request: NextRequest) {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const today = new Date();
-    const todayStart = startOfDay(today);
-    const todayEnd = endOfDay(today);
-    const yesterdayStart = startOfDay(subDays(today, 1));
-    const yesterdayEnd = endOfDay(subDays(today, 1));
+    const { searchParams } = new URL(request.url);
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
 
-    // AMBIL SEMUA REFUND APPROVED UNTUK FILTERING (Termasuk fallback logic student+amount)
+    let startDate: Date, endDate: Date, prevStartDate: Date, prevEndDate: Date;
+
+    if (fromParam && toParam) {
+      startDate = startOfDay(new Date(fromParam));
+      endDate = endOfDay(new Date(toParam));
+      const diff = endDate.getTime() - startDate.getTime();
+      prevStartDate = new Date(startDate.getTime() - diff - 1);
+      prevEndDate = new Date(startDate.getTime() - 1);
+    } else {
+      // Default: Today
+      const today = new Date();
+      startDate = startOfDay(today);
+      endDate = endOfDay(today);
+      prevStartDate = startOfDay(subDays(today, 1));
+      prevEndDate = endOfDay(subDays(today, 1));
+    }
+
+    // AMBIL SEMUA REFUND APPROVED UNTUK FILTERING
     const approvedRefunds = await prisma.refund.findMany({
       where: { status: "APPROVED" },
       select: { pemasukanId: true, siswaId: true, jumlah: true }
@@ -29,38 +44,50 @@ export async function GET(request: NextRequest) {
       return !!match;
     };
 
-    // HITUNG PEMASUKAN HARI INI (Net Sales)
-    const [pemasukanHariIniAll, pemasukanKemarinAll] = await Promise.all([
-      prisma.pemasukan.findMany({ where: { tanggal: { gte: todayStart, lte: todayEnd } } }),
-      prisma.pemasukan.findMany({ where: { tanggal: { gte: yesterdayStart, lte: yesterdayEnd } } })
+    // HITUNG PEMASUKAN PERIODE INI vs PERIODE SEBELUMNYA
+    const [pemasukanPeriodeIni, pemasukanPeriodeLalu] = await Promise.all([
+      prisma.pemasukan.findMany({ where: { tanggal: { gte: startDate, lte: endDate } } }),
+      prisma.pemasukan.findMany({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } } })
     ]);
     
-    const totalPemasukanHariIni = pemasukanHariIniAll.filter(p => !checkRefund(p)).reduce((s, p) => s + p.hargaFinal, 0);
-    const totalPemasukanKemarin = pemasukanKemarinAll.filter(p => !checkRefund(p)).reduce((s, p) => s + p.hargaFinal, 0);
+    const totalPemasukanIni = pemasukanPeriodeIni.filter(p => !checkRefund(p)).reduce((s, p) => s + p.hargaFinal, 0);
+    const totalPemasukanLalu = pemasukanPeriodeLalu.filter(p => !checkRefund(p)).reduce((s, p) => s + p.hargaFinal, 0);
 
     // Pengeluaran & Ads & Siswa
-    const [pengeluaranHariIni, adsHariIni, siswAktif] = await Promise.all([
-      prisma.pengeluaran.aggregate({ where: { tanggal: { gte: todayStart, lte: todayEnd } }, _sum: { jumlah: true } }),
-      prisma.spentAds.aggregate({ where: { tanggal: { gte: todayStart, lte: todayEnd } }, _sum: { jumlah: true } }),
+    const [pengeluaranIni, adsIniSpent, adsIniPerf, pengeluaranLalu, adsLaluSpent, adsLaluPerf, siswAktif] = await Promise.all([
+      prisma.pengeluaran.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
+      prisma.spentAds.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
+      prisma.adPerformance.aggregate({ where: { date: { gte: startDate, lte: endDate } }, _sum: { spent: true } }),
+      prisma.pengeluaran.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
+      prisma.spentAds.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
+      prisma.adPerformance.aggregate({ where: { date: { gte: prevStartDate, lte: prevEndDate } }, _sum: { spent: true } }),
       prisma.siswa.count({ where: { status: "AKTIF" } })
     ]);
 
-    // Trend 30 Hari
+    const totalAdsIni = (adsIniSpent._sum.jumlah ?? 0) + (adsIniPerf._sum.spent ?? 0);
+    const totalAdsLalu = (adsLaluSpent._sum.jumlah ?? 0) + (adsLaluPerf._sum.spent ?? 0);
+    const totalExIni = pengeluaranIni._sum.jumlah ?? 0;
+    const totalExLalu = pengeluaranLalu._sum.jumlah ?? 0;
+
+    // Trend always shows recent 30 days regardless of filter? 
+    // Usually better to keep it fixed or adjust to filter. Let's keep it 30 days for now for stability.
+    const today = new Date();
     const trendData = [];
     for (let i = 29; i >= 0; i--) {
       const date = subDays(today, i);
       const ds = startOfDay(date);
       const de = endOfDay(date);
-      const [incomeRaw, expAgg, adsAgg] = await Promise.all([
+      const [incomeRaw, expAgg, adsAggSpent, adsAggPerf] = await Promise.all([
         prisma.pemasukan.findMany({ where: { tanggal: { gte: ds, lte: de } } }),
         prisma.pengeluaran.aggregate({ where: { tanggal: { gte: ds, lte: de } }, _sum: { jumlah: true } }),
-        prisma.spentAds.aggregate({ where: { tanggal: { gte: ds, lte: de } }, _sum: { jumlah: true } })
+        prisma.spentAds.aggregate({ where: { tanggal: { gte: ds, lte: de } }, _sum: { jumlah: true } }),
+        prisma.adPerformance.aggregate({ where: { date: { gte: ds, lte: de } }, _sum: { spent: true } }),
       ]);
       trendData.push({
         date: date.toISOString(),
         pemasukan: incomeRaw.filter(p => !checkRefund(p)).reduce((s, p) => s + p.hargaFinal, 0),
         pengeluaran: expAgg._sum.jumlah ?? 0,
-        ads: adsAgg._sum.jumlah ?? 0,
+        ads: (adsAggSpent._sum.jumlah ?? 0) + (adsAggPerf._sum.spent ?? 0),
       });
     }
 
@@ -72,10 +99,19 @@ export async function GET(request: NextRequest) {
     });
     const transaksiTerkini = recentRaw.filter(p => !checkRefund(p)).slice(0, 10);
 
-    const labaHariIni = totalPemasukanHariIni - (pengeluaranHariIni._sum.jumlah ?? 0) - (adsHariIni._sum.jumlah ?? 0);
+    const labaIni = totalPemasukanIni - totalExIni - totalAdsIni;
 
     return NextResponse.json({
-      kpi: { pemasukanHariIni: totalPemasukanHariIni, pemasukanKemarin: totalPemasukanKemarin, pengeluaranHariIni: pengeluaranHariIni._sum.jumlah ?? 0, adsHariIni: adsHariIni._sum.jumlah ?? 0, labaHariIni, siswAktif },
+      kpi: { 
+        pemasukanHariIni: totalPemasukanIni, 
+        pemasukanKemarin: totalPemasukanLalu, 
+        pengeluaranHariIni: totalExIni, 
+        pengeluaranKemarin: totalExLalu,
+        adsHariIni: totalAdsIni, 
+        adsKemarin: totalAdsLalu, 
+        labaHariIni: labaIni, 
+        siswAktif 
+      },
       trendData,
       transaksiTerkini
     });

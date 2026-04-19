@@ -37,8 +37,21 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { pengajarId, kelasId, bulan, tahun, jumlahSesi, tarifPerSesi, totalGaji, metodeBayar, keterangan } = body;
   const gaji = await prisma.gajiPengajar.create({
-    data: { pengajarId, kelasId: kelasId || null, bulan, tahun, jumlahSesi, tarifPerSesi, totalGaji, metodeBayar: metodeBayar ?? "TRANSFER", keterangan },
+    data: { pengajarId, kelasId: kelasId || null, bulan, tahun, jumlahSesi, tarifPerSesi, totalGaji, metodeBayar: metodeBayar ?? "TRANSFER", keterangan, statusBayar: "LUNAS", tanggalBayar: new Date() },
   });
+
+  // OTOMATIS CATAT KE PENGELUARAN
+  await prisma.pengeluaran.create({
+    data: {
+      tanggal: new Date(),
+      jumlah: totalGaji,
+      kategori: "GAJI_PENGAJAR",
+      metodeBayar: metodeBayar || "TRANSFER",
+      keterangan: `Gaji Pengajar: ${gaji.id} (${bulan}/${tahun}). ${keterangan || ""}`,
+      dibuatOleh: (session.user as any).id
+    }
+  });
+
   return NextResponse.json(gaji, { status: 201 });
 }
 
@@ -47,10 +60,28 @@ export async function PUT(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json();
   const { id, ...data } = body;
+  const existing = await prisma.gajiPengajar.findUnique({ where: { id } });
+  if (!existing) return NextResponse.json({ error: "Data tidak ditemukan" }, { status: 404 });
+
   const gaji = await prisma.gajiPengajar.update({
     where: { id },
     data: { ...data, tanggalBayar: data.tanggalBayar ? new Date(data.tanggalBayar) : undefined },
   });
+
+  // Jika status berubah jadi LUNAS, catat ke Pengeluaran
+  if (data.statusBayar === "LUNAS" && existing.statusBayar !== "LUNAS") {
+    await prisma.pengeluaran.create({
+      data: {
+        tanggal: new Date(),
+        jumlah: gaji.totalGaji,
+        kategori: "GAJI_PENGAJAR",
+        metodeBayar: gaji.metodeBayar || "TRANSFER",
+        keterangan: `Pembayaran Gaji Pengajar: ${gaji.id} (${gaji.bulan}/${gaji.tahun})`,
+        dibuatOleh: (session.user as any).id
+      }
+    });
+  }
+
   return NextResponse.json(gaji);
 }
 

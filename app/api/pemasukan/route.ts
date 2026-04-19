@@ -183,34 +183,35 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get("id");
   const all = searchParams.get("all");
 
-  if (all === "true") {
-    const count = await prisma.pemasukan.count();
-    await recordLog((session.user as any).id, "Hapus Semua Pemasukan", "BATCH DELETE", `Menghapus seluruh ${count} data transaksi pemasukan dan invoice terkait.`);
-    
-    // Harus hapus invoice dulu karena ada relasi
-    await prisma.invoice.deleteMany({});
-    await prisma.pemasukan.deleteMany({});
-    
-    return NextResponse.json({ success: true, count });
+  try {
+    if (all === "true") {
+      const count = await prisma.pemasukan.count();
+      await recordLog((session.user as any).id, "Hapus Semua Pemasukan", "BATCH DELETE", `Menghapus seluruh ${count} data transaksi pemasukan dan invoice terkait.`);
+      await prisma.invoice.deleteMany({});
+      await prisma.pemasukan.deleteMany({});
+      return NextResponse.json({ success: true, count });
+    }
+
+    if (id) {
+      const item = await prisma.pemasukan.findUnique({ where: { id }, include: { siswa: true, invoice: true } });
+      if (item) {
+        await recordLog((session.user as any).id, "Hapus Pemasukan", item.siswa?.nama || "Non-Siswa", `Transaksi senilai ${item.hargaFinal} dihapus. No Invoice: ${item.invoice?.noInvoice}`);
+        if (item.invoice) await prisma.invoice.delete({ where: { id: item.invoice.id } });
+        await prisma.pemasukan.delete({ where: { id } });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    if (body.ids && Array.isArray(body.ids)) {
+      await recordLog((session.user as any).id, "Hapus Pemasukan Masal", "BULK DELETE", `Menghapus ${body.ids.length} data transaksi pemasukan.`);
+      await prisma.invoice.deleteMany({ where: { pemasukanId: { in: body.ids } } });
+      await prisma.pemasukan.deleteMany({ where: { id: { in: body.ids } } });
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "ID atau IDs diperlukan" }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ error: "Gagal menghapus: " + err.message }, { status: 500 });
   }
-
-  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
-
-  const item = await prisma.pemasukan.findUnique({
-    where: { id },
-    include: { siswa: true, invoice: true }
-  });
-
-  if (item) {
-    await recordLog(
-      (session.user as any).id,
-      "Hapus Pemasukan",
-      item.siswa?.nama || "Non-Siswa",
-      `Transaksi senilai ${item.hargaFinal} dihapus. No Invoice: ${item.invoice?.noInvoice}`
-    );
-    if (item.invoice) await prisma.invoice.delete({ where: { id: item.invoice.id } });
-    await prisma.pemasukan.delete({ where: { id } });
-  }
-
-  return NextResponse.json({ success: true });
 }

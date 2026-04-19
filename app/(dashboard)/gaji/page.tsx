@@ -99,6 +99,16 @@ export default function GajiPage() {
     fetchData();
   }
 
+  async function calculateSessions() {
+    if (!form.pengajarId) return alert("Pilih pengajar terlebih dahulu");
+    const p = new URLSearchParams({ pengajarId: form.pengajarId, bulan: form.bulan, tahun: form.tahun });
+    const res = await fetch(`/api/gaji/calculate?${p}`);
+    const d = await res.json();
+    if (d.count !== undefined) {
+      setForm(f => ({ ...f, jumlahSesi: String(d.count) }));
+    }
+  }
+
   const totalBelumBayar = data.filter(d=>d.statusBayar==="BELUM_BAYAR").reduce((a,b)=>a+b.totalGaji,0);
   const totalLunas = data.filter(d=>d.statusBayar==="LUNAS").reduce((a,b)=>a+b.totalGaji,0);
 
@@ -291,7 +301,12 @@ export default function GajiPage() {
                 <div className="form-grid-3">
                   <div className="form-group">
                     <label className="form-label required">Jumlah Sesi</label>
-                    <input id="inp-jumlah-sesi" type="number" className="form-control" placeholder="0" value={form.jumlahSesi} onChange={e=>setForm(f=>({...f,jumlahSesi:e.target.value}))} required min={0} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input id="inp-jumlah-sesi" type="number" className="form-control" placeholder="0" value={form.jumlahSesi} onChange={e=>setForm(f=>({...f,jumlahSesi:e.target.value}))} required min={0} />
+                      <button type="button" className="btn btn-secondary btn-icon" onClick={calculateSessions} title="Hitung Otomatis dari Absensi" style={{ height: 44, width: 44 }}>
+                        <RefreshCw size={16} />
+                      </button>
+                    </div>
                   </div>
                   <div className="form-group">
                     <label className="form-label required">Tarif / Sesi (Rp)</label>

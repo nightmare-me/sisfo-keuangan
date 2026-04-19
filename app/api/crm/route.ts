@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { recordLog } from "@/lib/audit";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -57,36 +60,45 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, status, csId, keterangan } = body;
+  const { id, status, csId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId } = body;
 
   const data: any = {};
   if (status) data.status = status;
   if (csId !== undefined) data.csId = csId;
   if (keterangan !== undefined) data.keterangan = keterangan;
+  if (nama) data.nama = nama;
+  if (whatsapp) data.whatsapp = whatsapp;
+  if (programId !== undefined) data.programId = programId === "" ? null : programId;
+  
+  if (incrementFollowUp) data.followUpCount = { increment: 1 };
+  if (setFollowUp !== undefined) data.followUpCount = setFollowUp;
 
   // Auto-assign: Jika status berubah dari NEW dan csId masih kosong,
   // assign ke user yang mengubahnya (jika user adalah CS)
-  if (status && status !== "NEW" && role === "CS") {
-    const lead = await prisma.lead.findUnique({ where: { id } });
-    if (lead && !lead.csId) {
-      data.csId = (session.user as any).id;
-    }
+  try {
+    const update = await prisma.lead.update({
+      where: { id },
+      data,
+      include: { program: true }
+    });
+
+    await recordLog(
+      (session.user as any).id,
+      "Ubah Status Lead",
+      update.nama,
+      `Status diubah ke ${status || 'tetap'}.`
+    );
+
+    return NextResponse.json({ 
+      success: true, 
+      result: update 
+    });
+  } catch (error: any) {
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message
+    }, { status: 500 });
   }
-
-  const update = await prisma.lead.update({
-    where: { id },
-    data,
-    include: { program: true }
-  });
-
-  await recordLog(
-    (session.user as any).id,
-    "Ubah Status Lead",
-    update.nama,
-    `Status diubah ke ${status || 'tetap'}. Program: ${update.program?.nama || '—'}`
-  );
-
-  return NextResponse.json(update);
 }
 
 export async function DELETE(request: NextRequest) {

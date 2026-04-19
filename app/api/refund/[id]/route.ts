@@ -18,7 +18,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { status, catatan } = body; // APPROVED | REJECTED
 
     if (!status || !["APPROVED", "REJECTED"].includes(status)) {
-       return NextResponse.json({ error: "Satus tidak valid" }, { status: 400 });
+       return NextResponse.json({ error: "Status tidak valid" }, { status: 400 });
     }
 
     // 1. Cek data refund
@@ -59,12 +59,24 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           });
         }
 
-        // Cari Lead siswa tersebut (berdasarkan whatsapp) dan tandai sebagai CANCELLED
-        if (refund.siswa?.telepon) {
-          await tx.lead.updateMany({
-            where: { whatsapp: refund.siswa.telepon, status: "PAID" },
-            data: { status: "CANCELLED" }
-          });
+        // Cari Lead siswa tersebut (berdasarkan nama & nomor WA) dan tandai sebagai REFUNDED
+        try {
+          if (refund.siswa?.nama || refund.siswa?.telepon) {
+            const wa = refund.siswa.telepon || "";
+            const waAlt = wa.startsWith('62') ? '0' + wa.substring(2) : (wa.startsWith('0') ? '62' + wa.substring(1) : wa);
+            
+            await tx.lead.updateMany({
+              where: { 
+                OR: [
+                  { whatsapp: { in: [wa, waAlt] } },
+                  { nama: { contains: refund.siswa.nama, mode: 'insensitive' } }
+                ]
+              },
+              data: { status: "REFUNDED" }
+            });
+          }
+        } catch (e) {
+          console.warn("Gagal update status lead, tapi refund tetap dilanjutkan:", e);
         }
       }
 

@@ -279,6 +279,7 @@ model Lead {
   whatsapp         String
   email            String?
   preferensiJadwal String?
+  followUpCount    Int        @default(0)
   programId        String?
   status           LeadStatus @default(NEW)
   kodeUnik         Int?
@@ -456,6 +457,7 @@ enum LeadStatus {
   PENDING
   PAID
   CANCELLED
+  REFUNDED
 }
 
 enum StatusKelas {

@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
 
     const totalLeads = myLeads.length;
     const paidLeads = myLeads.filter(l => l.status === "PAID").length;
+    const refundedLeads = myLeads.filter(l => l.status === "REFUNDED").length;
     const cr = totalLeads > 0 ? (paidLeads / totalLeads) : 0;
     const omset = myPemasukan.reduce((sum, p) => sum + p.hargaFinal, 0);
 
@@ -77,6 +78,7 @@ export async function GET(request: NextRequest) {
       name: session.user?.name || "User",
       totalLeads,
       paidLeads,
+      refundedLeads,
       cr: (cr * 100).toFixed(1) + "%",
       omset,
       fee: totalFee
@@ -88,7 +90,8 @@ export async function GET(request: NextRequest) {
       name: "ERROR: " + error.message, 
       omset: 0, 
       fee: 0, 
-      cr: "0%" 
+      cr: "0%",
+      refundedLeads: 0
     }]);
   }
 }

@@ -18,7 +18,10 @@ import {
   UserPlus,
   Trash2,
   Upload,
-  FileSpreadsheet
+  FileSpreadsheet,
+  TrendingUp,
+  Edit,
+  RotateCcw
 } from "lucide-react";
 
 const COLUMNS = [
@@ -26,6 +29,7 @@ const COLUMNS = [
   { id: "FOLLOW_UP", title: "Follow Up", color: "#fbbf24", icon: <MessageCircle size={18} /> },
   { id: "PENDING", title: "Menunggu Bayar", color: "#f97316", icon: <Clock size={18} /> },
   { id: "PAID", title: "Lunas (Selesai)", color: "#10b981", icon: <CheckCircle2 size={18} /> },
+  { id: "REFUNDED", title: "Refunded", color: "#ef4444", icon: <RotateCcw size={18} /> },
 ];
 
 export default function CRMPage() {
@@ -58,6 +62,9 @@ export default function CRMPage() {
   const [showChatModal, setShowChatModal] = useState(false);
   const [selectedChatLead, setSelectedChatLead] = useState<any>(null);
 
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedEditLead, setSelectedEditLead] = useState<any>(null);
+
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
   const [submittingLead, setSubmittingLead] = useState(false);
   const [newLeadForm, setNewLeadForm] = useState({
@@ -69,7 +76,7 @@ export default function CRMPage() {
   const [programs, setPrograms] = useState<any[]>([]);
 
   function fetchData() {
-    fetch("/api/crm")
+    fetch(`/api/crm?v=${Date.now()}`)
       .then(r => r.json())
       .then(d => { setLeads(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -97,6 +104,9 @@ export default function CRMPage() {
 
   async function ubahStatus(id: string, status: string) {
     if (isReadOnly) return;
+    // Optimistic
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+    
     await fetch("/api/crm", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -104,6 +114,36 @@ export default function CRMPage() {
     });
     fetchData();
   }
+
+  const handleEditSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEditLead) return;
+
+    // Optimistic Update 🚀
+    const updatedLead = { ...selectedEditLead };
+    setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
+    
+    setShowEditModal(false);
+
+    try {
+      const res = await fetch("/api/crm", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: updatedLead.id,
+          nama: updatedLead.nama,
+          whatsapp: updatedLead.whatsapp,
+          programId: updatedLead.programId,
+          keterangan: updatedLead.keterangan,
+          status: updatedLead.status
+        })
+      });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      fetchData(); // Sync back on error
+    }
+  };
 
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
@@ -194,226 +234,288 @@ export default function CRMPage() {
   if (!canView) return <div className="p-12 text-center text-muted">Bapak/Ibu tidak memiliki izin untuk melihat modul ini.</div>;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', flexShrink: 0, borderBottom: '1px solid var(--ghost-border)', background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)' }}>
-        <div>
-          <h1 className="display-title" style={{ margin: 0 }}>CRM Board</h1>
-          <p className="text-secondary" style={{ margin: '4px 0 0 0' }}>Kelola alur pendaftaran calon siswa</p>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-           {selectedIds.length > 0 && (
-             <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
-               <Trash2 size={16} /> Hapus ({selectedIds.length})
-             </button>
-           )}
-           {role === "ADMIN" && (
-            <button 
-              className="btn btn-secondary" 
-              style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }}
-              onClick={async () => {
-                const conf = prompt("⚠️ PERINGATAN KERAS: Tindakan ini tidak bisa dibatalkan.\n\nSeluruh data lead di semua kolom akan DIHAPUS PERMANEN.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-                if (conf === "HAPUS") {
-                  setLoading(true);
-                  const res = await fetch("/api/crm?all=true", { method: "DELETE" });
-                  if (res.ok) fetchData();
-                  else alert("Gagal menghapus data.");
-                }
-              }}
-            >
-              <Trash2 size={16} /> Hapus Semua Lead
-            </button>
-          )}
-          {!isReadOnly && (
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowImportModal(true)}>
-                <FileSpreadsheet size={16} /> Import CSV
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', paddingBottom: 0 }}>
+      {/* Header & New KPI Cards */}
+      <div style={{ padding: '24px 32px 16px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+          <div>
+            <h1 className="headline-lg" style={{ margin: 0, fontSize: '2rem' }}>CRM & Leads</h1>
+            <p className="body-md" style={{ color: 'var(--text-muted)' }}>Monitor pendaftaran dan konversi calon siswa secara real-time</p>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {selectedIds.length > 0 && (
+              <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
+                <Trash2 size={16} /> Hapus ({selectedIds.length})
               </button>
-              <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowNewLeadModal(true)}>
-                <Plus size={16} /> Lead Baru
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Executive Summary Strip */}
-      {!isReadOnly && (
-        <div style={{ display: 'flex', gap: 12, padding: '12px 24px', flexShrink: 0, borderBottom: '1px solid var(--ghost-border)', overflowX: 'auto' }}>
-          {/* User Performance Card (Always First) */}
-          {(() => {
-            const myId = (session?.user as any)?.id;
-            const myName = session?.user?.name;
-            const myStat = csStats.find(s => s.csId === myId || s.name === myName) || { cr: '0%', fee: 0, omset: 0 };
-            return (
-              <div style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)', borderRadius: 'var(--radius-lg)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 16, border: '1px solid var(--primary)' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>Performa Anda</div>
-                <div style={{ display: 'flex', gap: 16 }}>
-                  <div>
-                    <div style={{ fontSize: 10, opacity: 0.8 }}>Closing Rate</div>
-                    <div style={{ fontSize: 14, fontWeight: 800 }}>{myStat.cr}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10, opacity: 0.8 }}>Fee Estimasi</div>
-                    <div style={{ fontSize: 14, fontWeight: 800 }}>{formatCurrency(myStat.fee)}</div>
-                  </div>
-                </div>
+            )}
+            {!isReadOnly && (
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowImportModal(true)}>
+                  <FileSpreadsheet size={16} /> Input Bulk
+                </button>
+                <button id="btn-tambah-lead" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowNewLeadModal(true)}>
+                  <Plus size={16} /> Input Lead Baru
+                </button>
               </div>
-            );
-          })()}
-
-          {/* Admin Performance Overview (Shows All CS CR) */}
-          {isSuper && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <div style={{ background: 'var(--surface-container-high)', borderRadius: 'var(--radius-lg)', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--secondary)' }}>CR TIM CS</span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {csStats.map(s => (
-                    <div key={s.csId} style={{ background: 'var(--surface)', padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
-                      {s.name.split(' ')[0]}: <span style={{ color: 'var(--primary)' }}>{s.cr}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {[
-            { label: 'Total Prospek', value: leads.length, unit: 'siswa', color: 'var(--on-surface)' },
-            { label: 'Menunggu Bayar', value: leads.filter(l => l.status === 'PENDING').length, color: 'var(--warning)' },
-            { 
-              label: isSuper ? 'Total Omset' : 'Omset Saya', 
-              value: formatCurrency(isSuper 
-                ? csStats.reduce((a, b) => a + b.omset, 0) 
-                : (csStats.find(s => s.csId === (session?.user as any)?.id)?.omset || 0)
-              ), 
-              color: 'var(--success)' 
-            },
-          ].map((stat, i) => (
-            <div key={i} style={{ background: 'var(--surface-container-low)', borderRadius: 'var(--radius-lg)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--secondary)', fontWeight: 600, whiteSpace: 'nowrap' }}>{stat.label}</span>
-              <span style={{ fontSize: '1rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: stat.color }}>{stat.value}{stat.unit ? ` ${stat.unit}` : ''}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', padding: '12px 16px 12px' }}>
-        {/* MAIN KANBAN BOARD */}
-        <div style={{ flex: 1, overflowX: "auto", overflowY: "hidden", display: 'flex' }}>
-          <div style={{ display: "flex", gap: 12, flex: 1, minWidth: "min-content" }}>
-            {COLUMNS.map(col => {
-              const colLeads = leads.filter(l => l.status === col.id);
-              return (
-                <div key={col.id} style={{ flex: '1 1 200px', minWidth: 200, display: "flex", flexDirection: "column", background: 'var(--surface-container-low)', padding: '14px 12px', borderRadius: 'var(--radius-xl)' }}>
-                  
-                  {/* Column Header */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between', 
-                    borderBottom: `2px solid ${col.color}`,
-                    paddingBottom: 10,
-                    marginBottom: 12
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ color: col.color }}>{col.icon}</div>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--on-surface)' }}>
-                        {col.title}
-                      </span>
-                    </div>
-                    <span className="badge" style={{ background: 'var(--surface)', color: 'var(--secondary)' }}>{colLeads.length}</span>
-                  </div>
-                  
-                  {/* Cards Container */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", paddingRight: 4 }}>
-                    {loading ? (
-                      [1, 2].map(i => <div key={i} className="skeleton" style={{ height: 160, borderRadius: 'var(--radius-xl)' }} />)
-                    ) : colLeads.map(lead => (
-                      <div key={lead.id} className="card" style={{ padding: '14px 16px', cursor: 'default', margin: 0, boxShadow: 'var(--shadow-sm)', transition: 'box-shadow var(--transition)', position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: 12, right: 32 }}>
-                          <input type="checkbox" checked={selectedIds.includes(lead.id)} onChange={() => toggleSelect(lead.id)} style={{ width: 14, height: 14, cursor: 'pointer' }} />
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.05rem', color: "var(--on-surface)", maxWidth: '85%', lineHeight: 1.2 }}>
-                            {lead.nama}
-                          </div>
-                          <MoreVertical size={16} color="var(--secondary)" style={{ cursor: 'pointer' }} />
-                        </div>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.95rem' }}>
-                             <MessageCircle size={16} color="var(--success)" />
-                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
-                               <a href={`https://wa.me/${lead.whatsapp}`} target="_blank" rel="noreferrer" style={{ color: "var(--secondary)", textDecoration: "none", fontWeight: 600 }}>{lead.whatsapp}</a>
-                               <button 
-                                 className="btn btn-secondary btn-icon" 
-                                 style={{ width: 24, height: 24, padding: 0 }} 
-                                 onClick={() => { setSelectedChatLead(lead); setShowChatModal(true); }}
-                                 title="Quick Chat Templates"
-                               >
-                                 <MessageCircle size={12} />
-                               </button>
-                             </div>
-                          </div>
-
-                          {lead.program && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', background: "var(--surface)", padding: "6px 12px", borderRadius: 'var(--radius-full)', width: 'fit-content' }}>
-                              <BookOpen size={14} color="var(--primary)" />
-                              <span style={{ fontWeight: 700, color: "var(--on-surface)" }}>{lead.program.nama}</span>
-                            </div>
-                          )}
-
-                          {lead.nominalTagihan && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-                              <Wallet size={16} color="var(--primary)" />
-                              <span style={{ fontSize: '1rem', fontWeight: 800, color: "var(--primary)" }}>{formatCurrency(lead.nominalTagihan)}</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Action & Date Footer */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--ghost-border)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: "var(--secondary)", fontWeight: 700 }}>
-                             <Clock size={12} />
-                             {formatDate(lead.createdAt, "dd MMM")}
-                          </div>
-
-                          {!isReadOnly && (
-                            <div style={{ display: 'flex', gap: 8 }}>
-                               {col.id === "NEW" && (
-                                 <button className="btn btn-secondary btn-icon" onClick={() => ubahStatus(lead.id, "FOLLOW_UP")} title="Follow Up">
-                                   <ArrowRight size={14} />
-                                 </button>
-                               )}
-                               {col.id === "FOLLOW_UP" && (
-                                 <button className="btn btn-secondary btn-icon" onClick={() => ubahStatus(lead.id, "PENDING")} title="Tunggu Bayar">
-                                    <Clock size={14} />
-                                 </button>
-                               )}
-                               {col.id === "PENDING" && (
-                                 <button className="btn btn-primary btn-sm" style={{ padding: '8px 16px', borderRadius: 'var(--radius-full)' }} onClick={() => handleLunasClick(lead)}>
-                                   Lunas
-                                 </button>
-                               )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {!loading && colLeads.length === 0 && (
-                      <div className="empty-state" style={{ padding: '40px 20px', border: '1px dashed var(--ghost-border)', borderRadius: 'var(--radius-xl)' }}>
-                         <Users size={32} className="empty-state-icon" />
-                         <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>Kosong</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            )}
           </div>
         </div>
 
+        {/* Dashboard Cards (Sesuai Gambar) */}
+        <div className="kpi-grid" style={{ marginBottom: 12 }}>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--primary)" }}><Users size={24} /></div>
+            <div className="kpi-label">Total Order / Lead</div>
+            <div className="kpi-value">{leads.length}</div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)" }}><CheckCircle2 size={24} /></div>
+            <div className="kpi-label">Total Terbayar</div>
+            <div className="kpi-value">{leads.filter(l => l.status === 'PAID').length}</div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--warning)" }}><TrendingUp size={24} /></div>
+            <div className="kpi-label">Rasio Rasio Bayar</div>
+            <div className="kpi-value">{leads.length > 0 ? ((leads.filter(l => l.status === 'PAID').length / leads.length) * 100).toFixed(0) : 0}%</div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--danger)" }}><Clock size={24} /></div>
+            <div className="kpi-label">Menunggu Bayar</div>
+            <div className="kpi-value">{leads.filter(l => l.status === 'PENDING').length}</div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "#ef4444", "--kpi-bg": "rgba(239, 68, 68, 0.1)" } as any}>
+            <div className="kpi-icon" style={{ color: "#ef4444" }}><RotateCcw size={24} /></div>
+            <div className="kpi-label">Refunded</div>
+            <div className="kpi-value">{leads.filter(l => l.status === 'REFUNDED').length}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content (Table Style) */}
+      <div style={{ flex: 1, overflow: 'hidden', padding: '0 32px 32px', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+          {/* Table Toolbar */}
+          <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--ghost-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)' }}>
+             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ position: 'relative' }}>
+                  <Users size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input type="text" className="form-control form-control-sm" placeholder="Cari nama atau WA..." style={{ paddingLeft: 36, width: 240 }} />
+                </div>
+                
+                {/* Estimasi Fee & CR untuk CS Login */}
+                {!isSuper && (() => {
+                  const myId = (session?.user as any)?.id;
+                  const myStat = csStats.find(s => s.csId === myId) || { cr: '0%', fee: 0 };
+                  return (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                       <div style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)', padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8, boxShadow: 'var(--shadow-sm)' }}>
+                          <Wallet size={14} /> Fee Anda: {formatCurrency(myStat.fee)}
+                       </div>
+                       <div style={{ background: 'var(--surface-container-highest)', color: 'var(--on-surface)', padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 800, border: '1px solid var(--ghost-border)' }}>
+                          CR: {myStat.cr}
+                       </div>
+                    </div>
+                  );
+                })()}
+             </div>
+             
+             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <span className="text-secondary" style={{ fontSize: 13 }}>Tampil <span style={{ fontWeight: 800 }}>{leads.length}</span> Data</span>
+                {isSuper && (
+                  <div style={{ background: 'var(--surface)', padding: '6px 14px', borderRadius: 10, fontSize: 11, border: '1px solid var(--ghost-border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                     <TrendingUp size={14} color="var(--primary)" />
+                     <span style={{ fontWeight: 700 }}>CR TIM:</span> {csStats.map(s => `${s.name.split(' ')[0]}: ${s.cr}`).join(' | ')}
+                  </div>
+                )}
+             </div>
+          </div>
+
+          {/* Table Component */}
+          <div className="table-wrapper" style={{ flex: 1, overflowY: 'auto' }}>
+            <table style={{ minWidth: 1000 }}>
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                <tr>
+                  <th style={{ width: 40 }}><input type="checkbox" onChange={(e) => setSelectedIds(e.target.checked ? leads.map(l => l.id) : [])} checked={selectedIds.length === leads.length && leads.length > 0} /></th>
+                  <th>NAMA SISWA</th>
+                  <th>PROGRAM DIMINATI</th>
+                  <th>STATUS</th>
+                  <th>FOLLOW UP</th>
+                  <th>PEMBAYARAN</th>
+                  <th>DITUGASKAN</th>
+                  <th>TANGGAL</th>
+                  <th style={{ textAlign: 'right' }}>NOMINAL</th>
+                  <th style={{ width: 80, textAlign: 'center' }}>AKSI</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array(5).fill(0).map((_, i) => (
+                    <tr key={i}><td colSpan={10}><div className="skeleton" style={{ height: 24 }} /></td></tr>
+                  ))
+                ) : leads.map(lead => (
+                  <tr key={lead.id} className="table-row-hover">
+                    <td><input type="checkbox" checked={selectedIds.includes(lead.id)} onChange={() => toggleSelect(lead.id)} /></td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: 'var(--on-surface)' }}>{lead.nama}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <MessageCircle size={10} /> {lead.whatsapp}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <BookOpen size={14} color="var(--primary)" />
+                        <span style={{ fontWeight: 600, fontSize: 13 }}>{lead.program?.nama || 'N/A'}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`badge ${
+                        lead.status === 'PAID' ? 'badge-success' : 
+                        lead.status === 'REFUNDED' ? 'badge-danger' :
+                        lead.status === 'PENDING' ? 'badge-warning' : 
+                        lead.status === 'FOLLOW_UP' ? 'badge-info' : 
+                        'badge-muted'
+                      }`}>
+                        {
+                          lead.status === 'PAID' ? 'Selesai' : 
+                          lead.status === 'REFUNDED' ? 'Refunded' :
+                          lead.status === 'PENDING' ? 'Menunggu' : 
+                          lead.status === 'FOLLOW_UP' ? 'Follow Up' : 
+                          'Baru'
+                        }
+                      </span>
+                    </td>
+                    <td>
+                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                          {[
+                            { label: 'W', color: '#10b981', val: 1, title: 'Kirim Perkenalan', msg: `Halo *${lead.nama}*, perkenalkan kami dari Speaking Partner. Ada yang bisa kami bantu?` },
+                            { label: '1', color: '#f59e0b', val: 2, title: 'Follow-up 1', msg: `Halo *${lead.nama}*, hanya mengingatkan kembali terkait program yang kemarin ditanyakan. Apakah sudah sempat dicek?` },
+                            { label: '2', color: '#6366f1', val: 3, title: 'Follow-up 2', msg: `Halo *${lead.nama}*, kami masih menanti kabar baiknya ya. Jika ada kendala, jangan sungkan tanya kami.` },
+                            { label: '3', color: '#f97316', val: 4, title: 'Follow-up 3', msg: `Kesempatan terakhir nih *${lead.nama}* untuk amankan kursinya sebelum penuh!` },
+                            { label: '4', color: '#ef4444', val: 5, title: 'Follow-up 4', msg: `Halo *${lead.nama}*, sepertinya Anda masih sibuk ya. Kami ijin tutup tiket konsultasinya ya, sampai jumpa di lain waktu!` },
+                          ].map((b, i) => {
+                            const count = lead.followUpCount || 0;
+                            const isLit = count >= b.val;
+                            return (
+                              <button 
+                                key={i} 
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  window.open(`https://wa.me/${lead.whatsapp}?text=${encodeURIComponent(b.msg)}`, "_blank");
+                                  
+                                  // Optimistic Set Level 🎯
+                                  setLeads(prev => prev.map(l => 
+                                    l.id === lead.id 
+                                      ? { ...l, followUpCount: b.val, status: l.status === "NEW" ? "FOLLOW_UP" : l.status } 
+                                      : l
+                                  ));
+
+                                  try {
+                                    await fetch("/api/crm", {
+                                      method: "PUT",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ 
+                                        id: lead.id, 
+                                        setFollowUp: b.val, // Ganti increment jadi set
+                                        status: lead.status === "NEW" ? "FOLLOW_UP" : undefined
+                                      }),
+                                    });
+                                  } catch (err) {
+                                    fetchData();
+                                  }
+                                }}
+                                title={b.title}
+                                style={{ 
+                                  width: 26, height: 26, 
+                                  borderRadius: 'var(--radius-full)', 
+                                  border: isLit ? `2px solid ${b.color}` : '1px solid var(--ghost-border)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: 10, fontWeight: 900,
+                                  background: isLit ? b.color : 'var(--surface-container-low)',
+                                  color: isLit ? 'white' : 'var(--text-muted)',
+                                  cursor: 'pointer',
+                                  transition: 'all 200ms ease',
+                                  transform: isLit ? 'scale(1.15)' : 'scale(1)',
+                                  boxShadow: isLit ? `0 4px 12px ${b.color}55` : 'none',
+                                  zIndex: isLit ? 2 : 1
+                                }}
+                              >
+                                {b.label}
+                              </button>
+                            );
+                          })}
+                       </div>
+                    </td>
+                    <td>
+                       <span className={`badge ${lead.status === 'PAID' ? 'badge-success' : 'badge-danger'}`} style={{ opacity: 0.8 }}>
+                         {lead.status === 'PAID' ? 'PAID' : 'UNPAID'}
+                       </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 24, height: 24, borderRadius: 'var(--radius-full)', background: 'var(--primary-bg)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800 }}>
+                          {(lead.cs?.name || 'A')[0]}
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{lead.cs?.name || 'Admin'}</span>
+                      </div>
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(lead.createdAt)}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)' }}>
+                      {formatCurrency(lead.nominalTagihan || 0)}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center' }}>
+                         {!isReadOnly && (
+                           <div style={{ display: 'flex', gap: 6 }}>
+                             {lead.status === "NEW" && (
+                               <button className="btn btn-secondary btn-icon" style={{ width: 32, height: 32, padding: 0, color: 'var(--primary)' }} onClick={() => ubahStatus(lead.id, "FOLLOW_UP")} title="Pindahkan ke Follow Up">
+                                 <ArrowRight size={14} />
+                               </button>
+                             )}
+                             {lead.status === "FOLLOW_UP" && (
+                               <button className="btn btn-secondary btn-icon" style={{ width: 32, height: 32, padding: 0, color: 'var(--warning)' }} onClick={() => ubahStatus(lead.id, "PENDING")} title="Pindahkan ke Menunggu Bayar">
+                                 <Clock size={14} />
+                               </button>
+                             )}
+                             {lead.status === "PENDING" && (
+                               <button className="btn btn-primary btn-sm" style={{ padding: '6px 12px', fontSize: 11 }} onClick={() => handleLunasClick(lead)}>Lunas</button>
+                             )}
+                           </div>
+                         )}
+
+                         <div style={{ display: 'flex', gap: 4 }}>
+                            <button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0 }} onClick={() => { setSelectedEditLead(lead); setShowEditModal(true); }} title="Edit Lead">
+                               <Edit size={14} />
+                            </button>
+                            {canDelete && (
+                               <button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0, color: 'var(--danger)' }} onClick={() => {
+                                 if(confirm('Hapus lead ini?')) { 
+                                    setLoading(true);
+                                    fetch("/api/crm", {
+                                      method: "DELETE",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ ids: [lead.id] })
+                                    }).then(() => fetchData());
+                                 }
+                               }}><Trash2 size={14} /></button>
+                            )}
+                         </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {!loading && leads.length === 0 && (
+                  <tr>
+                    <td colSpan={9} style={{ padding: 48, textAlign: 'center' }}>
+                      <Users size={48} color="var(--ghost-border)" style={{ marginBottom: 12 }} />
+                      <div style={{ fontWeight: 700, color: 'var(--text-muted)' }}>Belum ada data prospect</div>
+                      <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Mulai tambahkan atau import lead baru.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* NEW LEAD NATIVE MODAL */}
@@ -541,12 +643,21 @@ export default function CRMPage() {
                     <div key={t.id} className="card" style={{ padding: 16, margin: 0, cursor: 'default' }}>
                       <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: 'var(--primary)', display: 'flex', justifyContent: 'space-between' }}>
                         {t.label}
-                        <button className="btn btn-primary btn-sm" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => {
+                        <button className="btn btn-primary btn-sm" style={{ padding: '4px 10px', fontSize: 11 }} onClick={async () => {
                           window.open(`https://wa.me/${selectedChatLead.whatsapp}?text=${encodeURIComponent(message)}`, "_blank");
-                          // AUTO MOVE LOGIC
-                          if (selectedChatLead.status === "NEW") {
-                            ubahStatus(selectedChatLead.id, "FOLLOW_UP");
-                          }
+                          
+                          // INCREMENT FOLLOW UP LOGIC 📊
+                          await fetch("/api/crm", {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ 
+                              id: selectedChatLead.id, 
+                              incrementFollowUp: true,
+                              status: selectedChatLead.status === "NEW" ? "FOLLOW_UP" : undefined
+                            }),
+                          });
+
+                          fetchData();
                           setShowChatModal(false);
                         }}>Kirim 🚀</button>
                       </div>
@@ -659,6 +770,82 @@ export default function CRMPage() {
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowImportModal(false)}>Tutup</button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* EDIT LEAD MODAL */}
+      {showEditModal && selectedEditLead && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2 className="modal-title">Edit Data Siswa</h2>
+              <button className="modal-close" onClick={() => setShowEditModal(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleEditSave}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Nama Siswa</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={selectedEditLead.nama}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, nama: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">WhatsApp</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={selectedEditLead.whatsapp}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, whatsapp: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Program</label>
+                  <select 
+                    className="form-control"
+                    value={selectedEditLead.programId || ""}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, programId: e.target.value })}
+                  >
+                    <option value="">Pilih Program</option>
+                    {programs.map(p => <option key={p.id} value={p.id}>{p.nama}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Status CRM</label>
+                  <select 
+                    className="form-control"
+                    value={selectedEditLead.status || ""}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, status: e.target.value })}
+                  >
+                    <option value="NEW">Baru</option>
+                    <option value="FOLLOW_UP">Follow Up</option>
+                    <option value="PENDING">Menunggu Bayar</option>
+                    <option value="PAID">Lunas (Selesai)</option>
+                    <option value="REFUNDED">Refunded</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Keterangan / Catatan</label>
+                  <textarea 
+                    className="form-control" 
+                    rows={3}
+                    value={selectedEditLead.keterangan || ""}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, keterangan: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Batal</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

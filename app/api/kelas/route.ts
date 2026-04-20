@@ -10,11 +10,25 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("search");
   const status = searchParams.get("status");
   const tipe = searchParams.get("tipe");
+  const bulan = searchParams.get("bulan");       // 1-12
+  const programId = searchParams.get("programId");
 
   const where: any = {};
   if (search) where.namaKelas = { contains: search, mode: "insensitive" };
   if (status) where.status = status;
   if (tipe && tipe !== "all") where.program = { tipe };
+  if (programId) where.programId = programId;
+
+  // Filter berdasarkan bulan tanggalMulai
+  if (bulan) {
+    const m = parseInt(bulan);
+    if (m >= 1 && m <= 12) {
+      const year = new Date().getFullYear();
+      const start = new Date(year, m - 1, 1);
+      const end   = new Date(year, m, 1);
+      where.tanggalMulai = { gte: start, lt: end };
+    }
+  }
 
   const data = await prisma.kelas.findMany({
     where,

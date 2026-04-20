@@ -53,6 +53,8 @@ export default function KelasPage() {
   const [siswaEligible, setSiswaEligible] = useState<any[]>([]); 
   const [filterStatus, setFilterStatus] = useState("");
   const [filterTipe, setFilterTipe] = useState("");
+  const [filterBulan, setFilterBulan] = useState("");
+  const [filterProgram, setFilterProgram] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [editKelas, setEditKelas] = useState<any>(null);
@@ -75,11 +77,13 @@ export default function KelasPage() {
     const p = new URLSearchParams();
     if (filterStatus) p.set("status", filterStatus);
     if (filterTipe) p.set("tipe", filterTipe);
+    if (filterBulan) p.set("bulan", filterBulan);
+    if (filterProgram) p.set("programId", filterProgram);
     setLoading(true);
     fetch(`/api/kelas?${p}`).then(r => r.json()).then(d => { setData(d ?? []); setLoading(false); });
   }
 
-  useEffect(() => { fetchData(); }, [filterStatus, filterTipe]);
+  useEffect(() => { fetchData(); }, [filterStatus, filterTipe, filterBulan, filterProgram]);
   useEffect(() => {
     fetch("/api/program").then(r => r.json()).then(d => setPrograms(d ?? [])).catch(() => {});
     fetch("/api/users?role=PENGAJAR").then(r => r.json()).then(d => setPengajarList(d ?? [])).catch(() => {});
@@ -270,18 +274,28 @@ export default function KelasPage() {
 
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64, paddingRight: 8 }}>
           {/* Filter Section */}
-          <div className="card" style={{ padding: '16px 20px', marginBottom: 32 }}>
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-              <Filter size={16} style={{ color: "var(--primary)" }} />
-              <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ flex: 1, minWidth: 120, padding: '6px 10px' }}>
+          <div className="card" style={{ padding: '16px 20px', marginBottom: 24 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+              <Filter size={16} style={{ color: "var(--primary)", flexShrink: 0 }} />
+              <select className="form-control" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ flex: 1, minWidth: 110, padding: '6px 10px' }}>
                 <option value="">Semua Status</option>
                 {STATUS_KELAS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-              <select className="form-control" value={filterTipe} onChange={e => setFilterTipe(e.target.value)} style={{ flex: 1, minWidth: 120, padding: '6px 10px' }}>
+              <select className="form-control" value={filterTipe} onChange={e => setFilterTipe(e.target.value)} style={{ flex: 1, minWidth: 110, padding: '6px 10px' }}>
                 <option value="">Semua Tipe</option>
                 {TIPE.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <button className="btn btn-secondary btn-sm" onClick={() => { setFilterStatus(""); setFilterTipe(""); }} style={{ borderRadius: 'var(--radius-full)' }}>
+              <select className="form-control" value={filterBulan} onChange={e => setFilterBulan(e.target.value)} style={{ flex: 1, minWidth: 130, padding: '6px 10px' }}>
+                <option value="">Semua Bulan</option>
+                {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((b, i) => (
+                  <option key={i+1} value={String(i+1)}>{b}</option>
+                ))}
+              </select>
+              <select className="form-control" value={filterProgram} onChange={e => setFilterProgram(e.target.value)} style={{ flex: 1, minWidth: 140, padding: '6px 10px' }}>
+                <option value="">Semua Program</option>
+                {programs.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
+              </select>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setFilterStatus(""); setFilterTipe(""); setFilterBulan(""); setFilterProgram(""); }} style={{ borderRadius: 'var(--radius-full)', flexShrink: 0 }}>
                 <RefreshCw size={14} />
               </button>
             </div>
@@ -289,69 +303,91 @@ export default function KelasPage() {
 
           {/* Grid Cards */}
           {loading ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 16 }}>
-              {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 180, borderRadius: 16 }} />)}
+            <div style={{ display: "grid", gridTemplateColumns: selectedKelas ? "1fr" : "repeat(auto-fill,minmax(320px,1fr))", gap: 14 }}>
+              {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 160, borderRadius: 16 }} />)}
             </div>
           ) : data.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon"><BookOpen size={48} /></div>
-              <h3 className="title-lg">Belum ada kelas</h3>
-              <p>Mulai dengan membuat kelas baru di periode ini</p>
+              <h3 className="title-lg">Tidak ada kelas ditemukan</h3>
+              <p>Coba ubah filter atau buat kelas baru</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: selectedKelas ? "1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: selectedKelas ? "1fr" : "repeat(auto-fill,minmax(320px,1fr))", gap: 14 }}>
               {data.map(kelas => {
                 const isSelected = selectedKelas?.id === kelas.id;
-                const pct = Math.min(100, ((kelas._count?.pendaftaran ?? 0) / kelas.kapasitas) * 100);
-                const full = (kelas._count?.pendaftaran ?? 0) >= kelas.kapasitas;
+                const enrolled = kelas._count?.pendaftaran ?? 0;
+                const pct = Math.min(100, (enrolled / kelas.kapasitas) * 100);
+                const full = enrolled >= kelas.kapasitas;
+                const tanggalMulai = kelas.tanggalMulai
+                  ? new Date(kelas.tanggalMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                  : null;
+                const jadwalStr = kelas.hari ? `${kelas.hari}${kelas.jam ? `, ${kelas.jam}` : ''}` : kelas.jadwal || null;
                 return (
                   <div
                     key={kelas.id}
                     className={`card ${isSelected ? 'active' : ''}`}
-                    style={{ cursor: "pointer", padding: '20px', border: isSelected ? "2px solid var(--primary)" : "1px solid var(--ghost-border)", transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", position: "relative", transform: isSelected ? 'scale(1.02)' : 'none', boxShadow: isSelected ? 'var(--shadow-lg)' : 'none', background: isSelected ? 'white' : 'transparent' }}
+                    style={{
+                      cursor: "pointer",
+                      padding: '20px 24px 0',
+                      border: isSelected ? "2px solid var(--primary)" : "1px solid var(--ghost-border)",
+                      transition: "all 0.25s ease",
+                      boxShadow: isSelected ? 'var(--shadow-lg)' : 'none',
+                      background: isSelected ? 'white' : 'transparent',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0,
+                    }}
                     onClick={() => { if (isSelected) { setSelectedKelas(null); } else { loadDetail(kelas); } }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: 16, color: "var(--on-surface)", marginBottom: 4 }}>{kelas.namaKelas}</div>
-                        <div style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>{kelas.program?.nama ?? "—"}</div>
+                    {/* Baris 1: Nama Kelas | Tipe + Status */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                      <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--on-surface)', lineHeight: 1.3, paddingRight: 12, flex: 1 }}>
+                        {kelas.namaKelas}
                       </div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                        <span className={`badge ${TIPE_BADGE[kelas.program?.tipe] ?? "badge-muted"}`} style={{ fontSize: 10, padding: '4px 8px' }}>{kelas.program?.tipe ?? "—"}</span>
-                        <span className={`badge ${STATUS_BADGE[kelas.status] ?? "badge-muted"}`} style={{ fontSize: 10, padding: '4px 8px' }}>{kelas.status}</span>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 14, color: "var(--text-secondary)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <User size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                        <span style={{ fontWeight: 600, color: "var(--on-surface)", fontSize: 13 }}>{kelas.pengajar?.name ?? "Belum ada pengajar"}</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <Clock size={14} style={{ color: 'var(--secondary)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 13 }}>{kelas.hari ? `${kelas.hari}, ${kelas.jam}` : kelas.jadwal || "Jadwal belum set"}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <Users size={14} style={{ color: 'var(--info)' }} />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: full ? "var(--danger)" : "var(--on-surface)" }}>
-                            {kelas._count?.pendaftaran ?? 0} / {kelas.kapasitas}
-                          </span>
-                        </div>
-                        {full && <span className="badge badge-danger" style={{ fontSize: 9 }}>PENUH</span>}
+                      <div style={{ display: 'flex', gap: 5, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <span className={`badge ${TIPE_BADGE[kelas.program?.tipe] ?? 'badge-muted'}`} style={{ fontSize: 10 }}>{kelas.program?.tipe ?? '—'}</span>
+                        <span className={`badge ${STATUS_BADGE[kelas.status] ?? 'badge-muted'}`} style={{ fontSize: 10 }}>{kelas.status}</span>
                       </div>
                     </div>
 
-                    {/* Progress bar kapasitas */}
-                    <div style={{ marginTop: 16, height: 6, background: "var(--surface-container-low)", borderRadius: 100, overflow: "hidden" }}>
-                      <div style={{ height: "100%", borderRadius: 100, background: full ? "var(--danger)" : "var(--primary)", width: `${pct}%`, transition: "width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)" }} />
+                    {/* Baris 2: Nama Program | Tanggal & Jam */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <div style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>
+                        {kelas.program?.nama ?? '—'}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'right' }}>
+                        {[tanggalMulai, jadwalStr].filter(Boolean).join(' · ') || '—'}
+                      </div>
                     </div>
 
-                    {!isSelected && (
-                      <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
-                        <ChevronRight size={18} style={{ color: 'var(--ghost-border)' }} />
+                    {/* Baris 3: Pengajar | Kuota */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <User size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: kelas.pengajar ? 'var(--on-surface)' : 'var(--text-muted)' }}>
+                          {kelas.pengajar?.name ?? 'Belum ada pengajar'}
+                        </span>
                       </div>
-                    )}
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 22, fontWeight: 900, color: full ? 'var(--danger)' : 'var(--on-surface)', lineHeight: 1 }}>
+                          {enrolled}
+                        </span>
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>/{kelas.kapasitas}</span>
+                        {full && <div style={{ fontSize: 9, color: 'var(--danger)', fontWeight: 800, letterSpacing: '0.05em' }}>PENUH</div>}
+                      </div>
+                    </div>
+
+                    {/* Status Bar */}
+                    <div style={{ height: 5, background: 'var(--surface-container-low)', margin: '0 -24px' }}>
+                      <div style={{
+                        height: '100%',
+                        background: full ? 'var(--danger)' : pct > 70 ? 'var(--warning)' : 'var(--primary)',
+                        width: `${pct}%`,
+                        transition: 'width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                      }} />
+                    </div>
                   </div>
                 );
               })}
@@ -359,6 +395,7 @@ export default function KelasPage() {
           )}
         </div>
       </div>
+
 
       {/* ── Panel Kanan: Detail + Daftar Siswa ── */}
       {selectedKelas && (

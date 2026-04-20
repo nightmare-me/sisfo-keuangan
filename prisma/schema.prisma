@@ -287,6 +287,8 @@ model Lead {
   nominalTagihan   Float?
   csId             String?
   keterangan       String?
+  tanggalLead      DateTime?
+  tanggalClosing   DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   cs               User?      @relation("CSLeads", fields: [csId], references: [id])

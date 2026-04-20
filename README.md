@@ -2,9 +2,21 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🚀 Fitur Baru: Academic Intelligence & Operational Upgrade (v2.2)
+## 🚀 Fitur Baru: CRM Date Intelligence & Class Dashboard Upgrade (v2.3)
 
-### 1. Modul Manajemen Pengajar (Akademik Mandiri) 🎓 (BARU!)
+### 1. CRM: Lead Conversion Tracking & Analytics 📈 (BARU!)
+*   **Dual-Date Tracking**: Ditambahkan kolom **TGL LEAD** (kapan prospek masuk) dan **TGL CLOSING** (kapan prospek bayar/lunas).
+*   **Auto-Closing Logic**: Tanggal closing otomatis terisi saat status diubah ke `PAID`, namun tetap bisa diedit manual untuk akurasi data.
+*   **Timezone Local (WIB)**: Perbaikan logika penanggalan yang kini menggunakan waktu lokal (WIB), mencegah tanggal "berubah ke hari kemarin" saat input di dini hari.
+*   **Import Bulk with Dates**: Pendukung kolom `tanggal` pada impor CSV agar data history lead lama bisa dimasukkan dengan tepat.
+*   **KPI Dashboard Update**: Counter Rasio Bayar, Menunggu Bayar, dan Refunded kini terupdate secara otomatis dan akurat.
+
+### 2. Manajemen Kelas: Filter & Redesign Dashboard 🎨 (BARU!)
+*   **Filter Berbasis Bulan & Program**: Dashboard kelas kini dilengkapi filter bulan (berdasarkan tanggal mulai) dan program untuk memudahkan pencarian kelas aktif.
+*   **UI Kartu Kelas Baru**: Tata letak kartu kelas yang lebih informatif (3 baris: Info Nama, Program & Jadwal, Pengajar & Kuota).
+*   **Status Bar Visual**: Progress bar kuota kelas dipindahkan ke dalam kartu dengan indikator warna (biru/kuning/merah) untuk visibilitas kapasitas yang lebih baik.
+
+### 3. Fitur Academic Intelligence (v2.2 Recap) 🎓
 *   **Akses Independen**: Tim Akademik dapat mendaftarkan pengajar baru tanpa bergantung pada Admin.
 *   **Form Onboarding Lengkap**: Satu form untuk buat akun login + profil karyawan (NIK, spesialisasi, data bank) secara bersamaan via database transaction.
 *   **Import Massal CSV**: Upload ratusan pengajar sekaligus via file CSV. Sistem otomatis skip duplikat email dan memberi password default jika kolom password kosong.

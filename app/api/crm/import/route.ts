@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
             programId: targetProgram?.id,
             preferensiJadwal: item.preferensi || null,
             csId: role === "CS" ? userId : undefined,
-            status: "NEW"
+            status: "NEW",
+            tanggalLead: item.tanggal ? new Date(item.tanggal) : new Date(),
           }
         });
         

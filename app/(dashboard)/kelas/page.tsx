@@ -380,9 +380,10 @@ export default function KelasPage() {
                     </div>
 
                     {/* Status Bar */}
-                    <div style={{ height: 5, background: 'var(--surface-container-low)', margin: '0 -24px' }}>
+                    <div style={{ height: 6, background: 'var(--surface-container-low)', borderRadius: 100, overflow: 'hidden', marginBottom: 18 }}>
                       <div style={{
                         height: '100%',
+                        borderRadius: 100,
                         background: full ? 'var(--danger)' : pct > 70 ? 'var(--warning)' : 'var(--primary)',
                         width: `${pct}%`,
                         transition: 'width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'

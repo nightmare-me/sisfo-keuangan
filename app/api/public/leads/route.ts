@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
         nominalTagihan,
         status: finalCsId ? "FOLLOW_UP" : "NEW",
         csId: finalCsId,
+        tanggalLead: new Date(),
       },
     });
 

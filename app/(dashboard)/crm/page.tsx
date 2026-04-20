@@ -78,6 +78,7 @@ export default function CRMPage() {
     programId: "",
     preferensiJadwal: "",
     isRO: false,
+    tanggalLead: new Date().toLocaleDateString('sv'),
   });
   const [programs, setPrograms] = useState<any[]>([]);
 
@@ -132,6 +133,17 @@ export default function CRMPage() {
     setShowEditModal(false);
 
     try {
+      const formatToDateString = (val: any) => {
+        if (!val) return null;
+        if (val instanceof Date) {
+          // Format ke local YYYY-MM-DD
+          const d = val;
+          return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+        }
+        if (typeof val === 'string') return val.slice(0, 10);
+        return null;
+      };
+
       const res = await fetch("/api/crm", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -142,13 +154,15 @@ export default function CRMPage() {
           programId: updatedLead.programId,
           keterangan: updatedLead.keterangan,
           status: updatedLead.status,
-          isRO: updatedLead.isRO
+          isRO: updatedLead.isRO,
+          tanggalLead: formatToDateString(updatedLead.tanggalLead),
+          tanggalClosing: formatToDateString(updatedLead.tanggalClosing),
         })
       });
       fetchData();
     } catch (err) {
       console.error(err);
-      fetchData(); // Sync back on error
+      fetchData();
     }
   };
 
@@ -197,7 +211,7 @@ export default function CRMPage() {
 
     if (res.ok) {
       setShowNewLeadModal(false);
-      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false });
+      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false, tanggalLead: new Date().toLocaleDateString('sv') });
       fetchData();
     } else {
       alert("Gagal menyimpan lead baru.");
@@ -211,6 +225,7 @@ export default function CRMPage() {
     setConvertForm({
       ...convertForm,
       hargaFinal: lead.nominalTagihan ? lead.nominalTagihan.toString() : "",
+      tanggalLunas: new Date().toLocaleDateString('sv')
     });
     setShowConvertModal(true);
   }
@@ -235,7 +250,7 @@ export default function CRMPage() {
       fetchData();
     } else {
       const err = await res.json();
-      alert("❌ Gagal convert: " + err.error);
+      alert("❌ Gagal convert: " + (err.details || err.error || "Unknown error"));
     }
   }
 
@@ -363,7 +378,8 @@ export default function CRMPage() {
                   <th>FOLLOW UP</th>
                   <th>PEMBAYARAN</th>
                   <th>DITUGASKAN</th>
-                  <th>TANGGAL</th>
+                  <th>TGL LEAD</th>
+                  <th>TGL CLOSING</th>
                   <th style={{ textAlign: 'right' }}>NOMINAL</th>
                   <th style={{ width: 80, textAlign: 'center' }}>AKSI</th>
                 </tr>
@@ -481,7 +497,15 @@ export default function CRMPage() {
                         <span style={{ fontSize: 13, fontWeight: 500 }}>{lead.cs?.name || 'Admin'}</span>
                       </div>
                     </td>
-                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(lead.createdAt)}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      {formatDate(lead.tanggalLead ?? lead.createdAt)}
+                    </td>
+                    <td style={{ fontSize: 12 }}>
+                      {lead.tanggalClosing
+                        ? <span style={{ color: 'var(--success)', fontWeight: 700 }}>{formatDate(lead.tanggalClosing)}</span>
+                        : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      }
+                    </td>
                     <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--primary)' }}>
                       {formatCurrency(lead.nominalTagihan || 0)}
                     </td>
@@ -584,6 +608,11 @@ export default function CRMPage() {
                    <div className="form-group">
                       <label className="form-label">Preferensi Jadwal (Opsional)</label>
                       <input type="text" className="form-control" placeholder="Cth: Malam hari jam 19.00" value={newLeadForm.preferensiJadwal} onChange={(e) => setNewLeadForm({ ...newLeadForm, preferensiJadwal: e.target.value })} />
+                   </div>
+                   <div className="form-group">
+                      <label className="form-label required">Tanggal Lead Masuk</label>
+                      <input type="date" className="form-control" value={newLeadForm.tanggalLead} onChange={(e) => setNewLeadForm({ ...newLeadForm, tanggalLead: e.target.value })} required />
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Default hari ini. Ubah jika lead masuk di hari sebelumnya.</div>
                    </div>
                 </div>
                 <div className="modal-footer" style={{ borderTop: '1px solid var(--border-default)', paddingTop: 24 }}>
@@ -722,15 +751,15 @@ export default function CRMPage() {
                   Gunakan format CSV berikut untuk mengimpor data masal calon siswa.
                 </p>
                 <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
-                  nama,whatsapp,program,preferensi
+                  nama,whatsapp,program,preferensi,tanggal
                 </div>
                 <button 
                   className="btn btn-sm" 
                   style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
                   onClick={() => {
-                    const csvContent = "nama,whatsapp,program,preferensi\n" +
-                                     "Ahmad Fauzi,081234567890,REGULAR 1 BULAN,Malam hari\n" +
-                                     "Linda Sari,089988776655,IELTS PREPARATION,Pagi hari";
+                    const csvContent = "nama,whatsapp,program,preferensi,tanggal\n" +
+                                     "Ahmad Fauzi,081234567890,REGULAR 1 BULAN,Malam hari,2024-03-20\n" +
+                                     "Linda Sari,089988776655,IELTS PREPARATION,Pagi hari,2024-03-21";
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
@@ -880,6 +909,29 @@ export default function CRMPage() {
                     value={selectedEditLead.keterangan || ""}
                     onChange={(e) => setSelectedEditLead({ ...selectedEditLead, keterangan: e.target.value })}
                   />
+                </div>
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label">📅 Tanggal Lead Masuk</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={selectedEditLead.tanggalLead ? selectedEditLead.tanggalLead.slice(0, 10) : ""}
+                      onChange={(e) => setSelectedEditLead({ ...selectedEditLead, tanggalLead: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">🏆 Tanggal Closing</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={selectedEditLead.tanggalClosing ? selectedEditLead.tanggalClosing.slice(0, 10) : ""}
+                      onChange={(e) => setSelectedEditLead({ ...selectedEditLead, tanggalClosing: e.target.value })}
+                    />
+                    {selectedEditLead.tanggalClosing && (
+                      <div style={{ fontSize: 11, color: 'var(--success)', marginTop: 4 }}>✓ Auto-terisi saat status berubah ke PAID</div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="modal-footer">

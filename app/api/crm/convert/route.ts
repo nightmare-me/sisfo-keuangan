@@ -24,7 +24,10 @@ export async function POST(request: NextRequest) {
       // 1. Ubah status lead jadi PAID
       await prisma.lead.update({
         where: { id: leadId },
-        data: { status: "PAID" },
+        data: { 
+          status: "PAID",
+          tanggalClosing: tanggalLunas ? new Date(tanggalLunas) : new Date()
+        },
       });
 
       // 2. Cek Siswa (RO Check)
@@ -89,6 +92,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: tx });
 
   } catch (error: any) {
-    return NextResponse.json({ error: "Gagal memproses konversi", details: error.message }, { status: 500 });
+    console.error("CONVERT_LEAD_ERROR:", error);
+    return NextResponse.json({ 
+      error: "Gagal memproses konversi", 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    }, { status: 500 });
   }
 }

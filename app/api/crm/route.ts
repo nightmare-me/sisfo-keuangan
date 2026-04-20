@@ -60,7 +60,7 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, status, csId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId, isRO } = body;
+  const { id, status, csId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId, isRO, tanggalLead, tanggalClosing } = body;
 
   const data: any = {};
   if (status) data.status = status;
@@ -70,16 +70,30 @@ export async function PUT(request: NextRequest) {
   if (whatsapp) data.whatsapp = whatsapp;
   if (isRO !== undefined) data.isRO = isRO;
   if (programId !== undefined) data.programId = programId === "" ? null : programId;
+  if (tanggalLead !== undefined) data.tanggalLead = tanggalLead ? new Date(tanggalLead) : null;
+  if (tanggalClosing !== undefined) data.tanggalClosing = tanggalClosing ? new Date(tanggalClosing) : null;
   
   if (incrementFollowUp) data.followUpCount = { increment: 1 };
   if (setFollowUp !== undefined) data.followUpCount = setFollowUp;
 
-  // Auto-assign: Jika status berubah dari NEW dan csId masih kosong,
-  // assign ke user yang mengubahnya (jika user adalah CS)
+  // Auto-assign CS jika belum diassign
   if (status && status !== "NEW" && role === "CS") {
     const lead = await prisma.lead.findUnique({ where: { id } });
     if (lead && !lead.csId) {
       data.csId = (session.user as any).id;
+    }
+    // Auto-set tanggalClosing saat status berubah ke PAID (jika belum diset manual)
+    if (status === "PAID" && tanggalClosing === undefined) {
+      const lead = await prisma.lead.findUnique({ where: { id } });
+      if (lead && !lead.tanggalClosing) {
+        data.tanggalClosing = new Date();
+      }
+    }
+  } else if (status === "PAID" && tanggalClosing === undefined) {
+    // Admin juga auto-set jika belum ada
+    const lead = await prisma.lead.findUnique({ where: { id } });
+    if (lead && !lead.tanggalClosing) {
+      data.tanggalClosing = new Date();
     }
   } else if (setFollowUp && role === "CS") {
     // Juga auto-assign jika CS klik gelembung follow-up

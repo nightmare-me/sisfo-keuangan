@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
             jumlah: parseFloat(item.jumlah),
             metodeBayar: ["CASH", "TRANSFER"].includes(item.metode?.toUpperCase()) ? item.metode.toUpperCase() : "CASH",
             keterangan: item.keterangan || "Mass imported",
-            userId: userId
+            dibuatOleh: userId
           }
         });
 

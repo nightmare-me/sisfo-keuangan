@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -130,7 +132,12 @@ export async function GET(request: NextRequest) {
     // 10. Breakdown sumber (RO, TOEFL, Live, Regular)
     const rawBreakdown = await prisma.pemasukan.findMany({
       where: { tanggal: dateFilter },
-      select: { isRO: true, hargaFinal: true, programId: true, program: { select: { nama: true } } }
+      select: {
+        isRO: true,
+        hargaFinal: true,
+        programId: true,
+        program: { select: { nama: true, isProfitSharing: true } },
+      }
     });
 
     const sourceBreakdown = {

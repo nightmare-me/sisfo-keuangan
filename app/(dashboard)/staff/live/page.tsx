@@ -20,6 +20,7 @@ export default function StaffLivePage() {
   const { data: session } = useSession();
   const [talents, setTalents] = useState<any[]>([]);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [performance, setPerformance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
@@ -38,7 +39,6 @@ export default function StaffLivePage() {
     fetch("/api/users")
       .then(r => r.json())
       .then(d => {
-        // Handle both direct array or wrapped data object
         const users = Array.isArray(d) ? d : (d.data || []);
         setTalents(users.filter((u: any) => u.role !== "PENGAJAR"));
       })
@@ -54,11 +54,13 @@ export default function StaffLivePage() {
     fetch(`/api/staff/live?date=${date}`)
       .then(r => r.json())
       .then(d => {
-        setSessions(Array.isArray(d) ? d : []);
+        setSessions(d.sessions || []);
+        setPerformance(d.performance || []);
         setLoading(false);
       })
       .catch(() => {
         setSessions([]);
+        setPerformance([]);
         setLoading(false);
       });
   }
@@ -86,143 +88,265 @@ export default function StaffLivePage() {
   }
 
   return (
-    <div className="page-container">
-      <header style={{ marginBottom: 32 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--primary)", marginBottom: 8 }}>
-           <Clock size={16} />
-           <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Activity Tracking</span>
+    <div className="page-container" style={{ paddingTop: 40, paddingBottom: 60 }}>
+      {/* HEADER MINIMALIS */}
+      <div style={{ marginBottom: 40, borderLeft: '4px solid var(--primary)', paddingLeft: 20 }}>
+        <h1 style={{ fontSize: 32, fontWeight: 800, color: 'var(--on-surface)', marginBottom: 4 }}>Input Jam Live Staf</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Manajemen aktivitas live harian dan performa talent secara real-time.</p>
+      </div>
+
+      {/* 1. KOTAK ATAS: DAFTAR TALENT LIVE HARIAN */}
+      <section className="card" style={{ 
+        marginBottom: 32, 
+        padding: 32, 
+        borderRadius: 32,
+        background: 'var(--surface-container-lowest)',
+        border: '1px solid var(--ghost-border)',
+        boxShadow: 'var(--shadow-lg)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+           <h3 style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0, fontSize: 20, fontWeight: 700 }}>
+             <div style={{ padding: 10, background: 'var(--primary-container)', borderRadius: 12, color: 'var(--primary)' }}>
+               <History size={20} />
+             </div>
+             Daftar Talent Live Harian
+           </h3>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface-container-low)', padding: 8, borderRadius: 16 }}>
+              <button className="btn btn-secondary btn-icon" style={{ borderRadius: 12 }} onClick={() => setDate(subDays(new Date(date), 1).toISOString().slice(0, 10))}>
+                <ChevronLeft size={16} />
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, padding: '0 8px', fontSize: 14 }}>
+                <Calendar size={16} className="text-primary" />
+                {formatDate(date, "eeee, dd MMMM yyyy")}
+              </div>
+              <button className="btn btn-secondary btn-icon" style={{ borderRadius: 12 }} onClick={() => setDate(addDays(new Date(date), 1).toISOString().slice(0, 10))}>
+                <ChevronRight size={16} />
+              </button>
+              <div style={{ width: 1, height: 20, background: 'var(--ghost-border)', margin: '0 4px' }} />
+              <button className="btn btn-secondary btn-sm" style={{ borderRadius: 10 }} onClick={() => setDate(new Date().toISOString().slice(0, 10))}>Hari Ini</button>
+           </div>
         </div>
-        <h1 className="headline-lg">Input Jam Live Staf</h1>
-        <p className="text-muted">Pencatatan durasi live harian untuk perhitungan gaji variabel.</p>
-      </header>
 
-      <div className="grid" style={{ gridTemplateColumns: '1fr 350px', gap: 24, alignItems: 'start' }}>
+        <div className="table-wrapper" style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid var(--ghost-border)' }}>
+          <table style={{ margin: 0 }}>
+            <thead>
+              <tr style={{ background: 'var(--surface-container-low)' }}>
+                <th style={{ padding: '16px 24px' }}>STAF / TALENT</th>
+                <th style={{ padding: '16px 24px' }}>DURASI (JAM)</th>
+                <th style={{ padding: '16px 24px' }}>KETERANGAN</th>
+                <th style={{ textAlign: 'right', padding: '16px 24px' }}>AKSI</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={4} style={{ textAlign: 'center', padding: 60 }}>
+                  <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
+                  <div style={{ color: 'var(--text-muted)' }}>Memuat data...</div>
+                </td></tr>
+              ) : sessions.length === 0 ? (
+                <tr><td colSpan={4} style={{ textAlign: 'center', padding: 60 }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: 15 }}>Belum ada catatan live untuk tanggal ini.</div>
+                </td></tr>
+              ) : sessions.map(s => (
+                <tr key={s.id} className="table-row-hover">
+                  <td style={{ padding: '20px 24px' }}>
+                    <div style={{ fontWeight: 800, fontSize: 15 }}>{s.user.name}</div>
+                    <div className="badge" style={{ marginTop: 4, background: 'var(--secondary-container)', color: 'var(--on-secondary-container)' }}>{s.user.role}</div>
+                  </td>
+                  <td style={{ padding: '20px 24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ background: 'var(--primary-container)', color: 'var(--primary)', width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900 }}>
+                        {s.durasi}
+                      </div>
+                      <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Jam Live</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '20px 24px', fontSize: 14, color: 'var(--text-muted)', maxWidth: 300 }}>{s.keterangan || "—"}</td>
+                  <td style={{ textAlign: 'right', padding: '20px 24px' }}>
+                    <button className="btn btn-secondary btn-icon" style={{ color: 'var(--danger)', borderRadius: 10 }} onClick={() => handleDelete(s.id)}>
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* BAGIAN BAWAH: DUA KOLOM */}
+      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: 32, alignItems: 'stretch' }}>
         
-        {/* Main Content: List for Selected Date */}
-        <section>
-          <div className="card glass" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <button className="btn btn-secondary btn-icon" onClick={() => setDate(subDays(new Date(date), 1).toISOString().slice(0, 10))}>
-                    <ChevronLeft size={16} />
-                  </button>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
-                    <Calendar size={18} className="text-primary" />
-                    {formatDate(date, "eeee, dd MMMM yyyy")}
-                  </div>
-                  <button className="btn btn-secondary btn-icon" onClick={() => setDate(addDays(new Date(date), 1).toISOString().slice(0, 10))}>
-                    <ChevronRight size={16} />
-                  </button>
-               </div>
-               <button className="btn btn-secondary btn-sm" onClick={() => setDate(new Date().toISOString().slice(0, 10))}>Hari Ini</button>
+        {/* 2. KOTAK KIRI: TAMBAH RECORD */}
+        <aside className="card" style={{ 
+          padding: 32, 
+          borderRadius: 32,
+          background: 'var(--surface-container-lowest)',
+          border: '1px solid var(--ghost-border)',
+          boxShadow: 'var(--shadow-lg)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, margin: 0, fontSize: 20, fontWeight: 700 }}>
+             <div style={{ padding: 10, background: 'var(--primary-container)', borderRadius: 12, color: 'var(--primary)' }}>
+               <Plus size={20} />
+             </div>
+             Tambah Record
+          </h3>
+          
+          <form onSubmit={handleAdd} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label className="form-label" style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Pilih Staf</label>
+              <select 
+                className="form-control hover-lift" 
+                style={{ padding: '12px 16px', borderRadius: 12, height: 50 }}
+                value={form.userId} 
+                onChange={e => setForm(f => ({ ...f, userId: e.target.value }))}
+                required
+              >
+                <option value="">Pilih Karyawan</option>
+                {talents.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
             </div>
 
-            <div className="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>STAF / TALENT</th>
-                    <th>DURASI (JAM)</th>
-                    <th>KETERANGAN</th>
-                    <th style={{ textAlign: 'right' }}>AKSI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan={4} style={{ textAlign: 'center', padding: 40 }}>Memuat data...</td></tr>
-                  ) : sessions.length === 0 ? (
-                    <tr><td colSpan={4} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>Belum ada catatan live untuk tanggal ini.</td></tr>
-                  ) : sessions.map(s => (
-                    <tr key={s.id}>
-                      <td>
-                        <div style={{ fontWeight: 700 }}>{s.user.name}</div>
-                        <div className="badge">{s.user.role}</div>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary)' }}>{s.durasi}</span>
-                          <span className="text-muted">jam</span>
-                        </div>
-                      </td>
-                      <td className="text-muted" style={{ fontSize: 13 }}>{s.keterangan || "—"}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-secondary btn-icon" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(s.id)}>
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label className="form-label" style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Durasi (Jam)</label>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  type="number" 
+                  step="0.5" 
+                  className="form-control hover-lift" 
+                  style={{ padding: '12px 16px', borderRadius: 12, height: 50 }}
+                  value={form.durasi} 
+                  onChange={e => setForm(f => ({ ...f, durasi: e.target.value }))}
+                  required
+                />
+                <span style={{ position: 'absolute', right: 16, top: 14, fontSize: 12, fontWeight: 800, color: 'var(--primary)' }}>JAM</span>
+              </div>
             </div>
+
+            <div className="form-group" style={{ marginBottom: 24 }}>
+              <label className="form-label" style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Keterangan</label>
+              <textarea 
+                className="form-control hover-lift" 
+                style={{ padding: '12px 16px', borderRadius: 12 }}
+                rows={3}
+                value={form.keterangan}
+                onChange={e => setForm(f => ({ ...f, keterangan: e.target.value }))}
+                placeholder="Opsional..."
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              disabled={saving || !isAdmin}
+              style={{ 
+                height: 54, 
+                borderRadius: 16, 
+                fontSize: 15, 
+                fontWeight: 700,
+                boxShadow: '0 8px 20px rgba(var(--primary-rgb), 0.3)',
+                marginTop: 'auto'
+              }}
+            >
+              {saving ? "Menyimpan..." : "Simpan Aktivitas"}
+            </button>
+            
+            {!isAdmin && (
+              <div style={{ 
+                padding: 12, 
+                background: 'rgba(var(--danger-rgb), 0.1)', 
+                color: 'var(--danger)', 
+                borderRadius: 12, 
+                fontSize: 11, 
+                marginTop: 16, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 8 
+              }}>
+                <Clock size={14} /> Hanya Admin yang dapat menginput jam live harian.
+              </div>
+            )}
+          </form>
+        </aside>
+
+        {/* 3. KOTAK KANAN: OMSET YANG DIHASILKAN TALENT */}
+        <section className="card" style={{ 
+          padding: 32, 
+          borderRadius: 32,
+          background: 'var(--surface-container-lowest)',
+          border: '1px solid var(--ghost-border)',
+          boxShadow: 'var(--shadow-lg)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0, fontSize: 20, fontWeight: 700 }}>
+               <div style={{ padding: 10, background: 'var(--success-container)', borderRadius: 12, color: 'var(--success)' }}>
+                 <Save size={20} />
+               </div>
+               Omset yang Dihasilkan Talent
+            </h3>
+            <div className="badge" style={{ padding: '6px 12px', fontSize: 13, background: 'var(--primary-container)', color: 'var(--on-primary-container)', borderRadius: 10 }}>
+              {performance.length} Talent Bertugas
+            </div>
+          </div>
+
+          <div className="table-wrapper" style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid var(--ghost-border)' }}>
+            <table style={{ margin: 0 }}>
+              <thead>
+                <tr style={{ background: 'var(--surface-container-low)' }}>
+                  <th style={{ padding: '16px 24px' }}>TALENT</th>
+                  <th style={{ textAlign: 'center', padding: '16px 24px' }}>CLOSING</th>
+                  <th style={{ textAlign: 'right', padding: '16px 24px' }}>TOTAL OMSET</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={3} style={{ textAlign: 'center', padding: 60 }}>Menghitung omset...</td></tr>
+                ) : performance.length === 0 ? (
+                  <tr><td colSpan={3} style={{ textAlign: 'center', padding: 60 }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: 15 }}>Tidak ada data omset pada tanggal ini.</div>
+                  </td></tr>
+                ) : performance.map((p: any) => (
+                  <tr key={p.id} className="table-row-hover">
+                    <td style={{ padding: '20px 24px' }}>
+                      <div style={{ fontWeight: 800, fontSize: 15 }}>{p.name}</div>
+                    </td>
+                    <td style={{ textAlign: 'center', padding: '20px 24px' }}>
+                      <div style={{ 
+                        background: 'var(--surface-container-high)', 
+                        display: 'inline-flex', 
+                        padding: '4px 12px', 
+                        borderRadius: 10, 
+                        fontWeight: 800,
+                        fontSize: 15
+                      }}>{p.count}</div>
+                    </td>
+                    <td style={{ textAlign: 'right', padding: '20px 24px' }}>
+                      <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--success)' }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, marginRight: 4, opacity: 0.7 }}>Rp</span>
+                        {p.total.toLocaleString("id-ID")}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              {performance.length > 0 && (
+                 <tfoot>
+                   <tr style={{ background: 'var(--surface-container-low)' }}>
+                     <td colSpan={2} style={{ padding: '24px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Grand Total Performa Hari Ini</td>
+                     <td style={{ textAlign: 'right', padding: '24px' }}>
+                       <div style={{ fontSize: 24, fontWeight: 950, color: 'var(--primary)' }}>
+                         <span style={{ fontSize: 14, fontWeight: 700, marginRight: 6 }}>Rp</span>
+                         {performance.reduce((acc: number, curr: any) => acc + curr.total, 0).toLocaleString("id-ID")}
+                       </div>
+                     </td>
+                   </tr>
+                 </tfoot>
+              )}
+            </table>
           </div>
         </section>
-
-        {/* Sidebar: Add New Input */}
-        <aside>
-          <div className="card glass sticky" style={{ top: 24 }}>
-            <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Plus size={18} className="text-primary" />
-              Tambah Record
-            </h3>
-            
-            <form onSubmit={handleAdd}>
-              <div className="form-group">
-                <label className="form-label">Pilih Staf</label>
-                <select 
-                  className="form-control" 
-                  value={form.userId} 
-                  onChange={e => setForm(f => ({ ...f, userId: e.target.value }))}
-                  required
-                >
-                  <option value="">Pilih Karyawan</option>
-                  {talents.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Durasi (Jam)</label>
-                <div style={{ position: 'relative' }}>
-                  <input 
-                    type="number" 
-                    step="0.5" 
-                    className="form-control" 
-                    value={form.durasi} 
-                    onChange={e => setForm(f => ({ ...f, durasi: e.target.value }))}
-                    required
-                  />
-                  <span style={{ position: 'absolute', right: 12, top: 12, fontSize: 12, color: 'var(--text-muted)' }}>JAM</span>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Keterangan</label>
-                <textarea 
-                  className="form-control" 
-                  rows={2}
-                  value={form.keterangan}
-                  onChange={e => setForm(f => ({ ...f, keterangan: e.target.value }))}
-                  placeholder="Opsional..."
-                />
-              </div>
-
-              <button 
-                type="submit" 
-                className="btn btn-primary w-full" 
-                disabled={saving || !isAdmin}
-                style={{ marginTop: 8 }}
-              >
-                {saving ? "Menyimpan..." : "Simpan Aktivitas"}
-              </button>
-              
-              {!isAdmin && (
-                <p style={{ fontSize: 11, color: 'var(--danger)', marginTop: 8, textAlign: 'center' }}>
-                  Hanya Admin yang dapat menginput jam live harian.
-                </p>
-              )}
-            </form>
-          </div>
-        </aside>
 
       </div>
     </div>

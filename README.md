@@ -2,25 +2,29 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🚀 Fitur Baru: Automasi & Intelijen Bisnis (Final Session)
+## 🚀 Fitur Baru: Automasi & Intelijen Bisnis (v2.1)
 
-### 1. Sistem Antrian Berputar (Round Robin) 🔄
-*   **Segmentasi Tim Otomatis**: Lead dibagi otomatis berdasarkan jenis produk (Live, TOEFL, RO, Regular).
-*   **4 Pintu Registrasi**: Jalur pendaftaran khusus via URL parameter (`?team=RO`, `?team=TOEFL`, dll) untuk filtrasi produk dan CS yang presisi.
+### 1. Modul Intelijen Jam Live Staf 🎙️ (BARU!)
+*   **Layout Overhaul (Sketsa Gambar 2)**: Antarmuka yang didesain ulang total untuk efisiensi input. 
+    *   **Atas**: Tabel riwayat talent live harian (Full-Width).
+    *   **Bawah-Kiri**: Form input aktivitas yang ringkas.
+    *   **Bawah-Kanan**: Statistik performa talent secara real-time.
+*   **Sistem Akumulasi Pintar (Auto-Upsert)**: Jika talent diinput lebih dari sekali di hari yang sama, sistem otomatis **menjumlahkan durasi** dan menggabungkan keterangan, menjaga tabel tetap bersih (Single Row per Daily Talent).
+*   **Real-time Revenue Matching**: Menarik data omset dan jumlah closing dari tabel Pemasukan secara otomatis berdasarkan `talentId` pada hari yang dipilih.
 
 ### 2. CRM Dashboard & KPI 📊
-*   **Bagikan Link**: Tombol akses cepat di dashboard untuk menyalin link pendaftaran setiap jalur tim.
 *   **Status Lengkap**: Mendukung siklus `PAID`, `REFUNDED`, dan `CANCELLED` dengan sinkronisasi database otomatis.
 *   **Indikator RO**: Marker khusus untuk siswa lama (Repeat Order) di semua tampilan.
+*   **Round Robin Engine**: Pembagian lead otomatis berdasarkan segmentasi tim (Live, TOEFL, RO, Regular).
 
-### 3. Pengeluaran Dinamis & UI Responsif 💸
-*   **Kelola Kategori**: Bapak bisa menambah, mengedit, atau menghapus kategori pengeluaran secara mandiri langsung dari dashboard.
-*   **Fluid Typography**: Kartu metrik otomatis menyesuaikan ukuran font (Responsive Container) sehingga nominal besar (puluhan/ratusan juta) tetap terlihat rapi tanpa merusak layout.
-*   **Smart Breakdown**: Grafik laporan pengeluaran otomatis menyesuaikan dengan kategori yang Bapak buat.
+### 3. Pengeluaran Dinamis & UI Premium 💸
+*   **Kelola Kategori**: Bapak bisa manajemen kategori pengeluaran secara mandiri langsung dari dashboard.
+*   **Fluid Typography**: Kartu metrik menggunakan *Container Queries* sehingga nominal besar (puluhan/ratusan juta) otomatis menyesuaikan ukuran font agar tetap rapi.
+*   **Premium Aesthetics**: Implementasi bayangan ambient, border halus, dan mode *Glassmorphism* untuk kesan visual yang mewah.
 
-### 4. Smart Payroll Engine 💰
-*   **Detection Fallback**: Bonus TOEFL (Elite/Master) dideteksi otomatis dari nama produk jika kategori fee di database kosong.
-*   **Safety Integration**: Sistem gajian tahan banting terhadap data yang tidak lengkap atau null.
+### 4. Smart Payroll & Database Engine 💰
+*   **Corrected DB Adapter**: Implementasi PostgreSQL Pool pada Prisma Adapter demi stabilitas koneksi tingkat tinggi.
+*   **Detection Fallback**: Bonus TOEFL dideteksi otomatis berdasarkan metadata produk.
 
 ---
-*Created with ❤️ by Antigravity for Speaking Partner Efficiency. Semua sistem beroperasi normal 100%. Selamat Beristirahat, Pak Muis!*
+*Created with ❤️ by Antigravity for Speaking Partner Premium Operations. Semua sistem stabil dan siap pakai! Selamat beristirahat sejenak, Pak Muis!*

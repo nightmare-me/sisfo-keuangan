@@ -1,11 +1,14 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import pkg from 'pg';
-const { Pool } = pkg;
 
-const connectionString = "postgresql://postgres:123456@localhost:5432/sisfo_speaking_partner?schema=public";
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {

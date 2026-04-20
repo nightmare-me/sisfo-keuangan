@@ -19,7 +19,10 @@ export async function POST(request: NextRequest) {
     // Pre-load lookup data
     const allPrograms = await prisma.program.findMany();
     const allSiswa = await prisma.siswa.findMany();
-    const allCS = await prisma.user.findMany({ where: { roleSlug: "cs" } });
+    const allCS = await prisma.user.findMany({
+      where: { role: { slug: "cs" } },
+      select: { id: true, name: true },
+    });
 
     let successCount = 0;
     
@@ -72,7 +75,8 @@ export async function POST(request: NextRequest) {
               pemasukanId: pemasukan.id,
               noInvoice: generateInvoiceNumber(),
               total: hargaFinal,
-              status: "PAID"
+              totalFinal: hargaFinal,
+              statusBayar: "LUNAS"
             }
           });
         });

@@ -1,14 +1,31 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+require("dotenv/config");
+
+const { PrismaClient } = require("@prisma/client");
+const { PrismaPg } = require("@prisma/adapter-pg");
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
 
 async function main() {
-  const halla = await prisma.user.findFirst({ where: { name: { contains: "Halla", mode: "insensitive" } } });
+  const halla = await prisma.user.findFirst({
+    where: { name: { contains: "Halla", mode: "insensitive" } },
+    include: { role: true },
+  });
   if (!halla) {
-    const all = await prisma.user.findMany({ select: { name: true, role: true } });
+    const all = await prisma.user.findMany({
+      select: { name: true, role: { select: { slug: true } } },
+    });
     console.log("Halla not found. All users:", all);
     return;
   }
-  console.log(`Halla ID: ${halla.id}, Role: ${halla.role}`);
+  console.log(`Halla ID: ${halla.id}, Role: ${halla.role?.slug ?? "no-role"}`);
 
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);

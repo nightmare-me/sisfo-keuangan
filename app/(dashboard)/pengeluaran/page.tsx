@@ -133,6 +133,9 @@ export default function PengeluaranPage() {
   }
 
   const maxKategori = Math.max(...byKategori.map(k=>k._sum.jumlah??0), 1);
+  const importCategoryNames = Array.isArray(kategoriList)
+    ? kategoriList.map((kategori) => kategori.nama)
+    : [];
 
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
@@ -371,7 +374,7 @@ export default function PengeluaranPage() {
                 
                 <div style={{ padding: 12, background: 'var(--warning-bg)', borderRadius: 8, fontSize: 11 }}>
                   <p style={{ fontWeight: 700, marginBottom: 4, color: 'var(--on-warning-container)' }}>⚠️ Kategori Valid (Pilih salah satu):</p>
-                  <p>{KATEGORI.join(", ")}</p>
+                  <p>{importCategoryNames.length > 0 ? importCategoryNames.join(", ") : "Belum ada kategori tersedia."}</p>
                 </div>
 
                 <button 

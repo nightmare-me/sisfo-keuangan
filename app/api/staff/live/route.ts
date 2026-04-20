@@ -15,18 +15,41 @@ export async function GET(request: NextRequest) {
     const dayStart = startOfDay(targetDate);
     const dayEnd = endOfDay(targetDate);
 
-    const sessions = await prisma.liveSession.findMany({
-      where: {
-        tanggal: { gte: dayStart, lte: dayEnd }
-      },
-      include: {
-        user: { 
-          include: { role: true }
+    const [sessions, omsetRaw] = await Promise.all([
+      prisma.liveSession.findMany({
+        where: { tanggal: { gte: dayStart, lte: dayEnd } },
+        include: {
+          user: { include: { role: true } }
         }
-      }
-    });
+      }),
+      prisma.pemasukan.findMany({
+        where: { 
+          tanggal: { gte: dayStart, lte: dayEnd },
+          talentId: { not: null }
+        },
+        include: {
+          talent: { select: { id: true, name: true } }
+        }
+      })
+    ]);
 
-    const formatted = sessions.map((s: any) => ({
+    // Grouping omset per talent
+    const talentStats = omsetRaw.reduce((acc: any, curr: any) => {
+      const tid = curr.talentId;
+      if (!acc[tid]) {
+        acc[tid] = { 
+          id: tid, 
+          name: curr.talent?.name || "Unknown", 
+          total: 0,
+          count: 0
+        };
+      }
+      acc[tid].total += curr.hargaFinal;
+      acc[tid].count += 1;
+      return acc;
+    }, {});
+
+    const formattedSessions = sessions.map((s: any) => ({
       ...s,
       user: {
         ...s.user,
@@ -34,7 +57,10 @@ export async function GET(request: NextRequest) {
       }
     }));
 
-    return NextResponse.json(formatted || []);
+    return NextResponse.json({
+      sessions: formattedSessions || [],
+      performance: Object.values(talentStats)
+    });
   } catch (err: any) {
     console.error("LIVE_SESSIONS_GET_ERROR:", err);
     return NextResponse.json({ error: err.message, details: "Gagal mengambil data live session" }, { status: 500 });
@@ -51,11 +77,35 @@ export async function POST(request: NextRequest) {
 
     const { userId, date, durasi, keterangan } = await request.json();
     const targetDate = date ? new Date(date) : new Date();
+    const dayStart = startOfDay(targetDate);
+    const dayEnd = endOfDay(targetDate);
+
+    // Cari apakah sudah ada record untuk user ini di hari yang sama
+    const existing = await prisma.liveSession.findFirst({
+        where: {
+            userId,
+            tanggal: { gte: dayStart, lte: dayEnd }
+        }
+    });
+
+    if (existing) {
+        // Gabungkan durasi dan keterangan
+        const updated = await prisma.liveSession.update({
+            where: { id: existing.id },
+            data: {
+                durasi: { increment: parseFloat(durasi) },
+                keterangan: existing.keterangan 
+                    ? (keterangan ? `${existing.keterangan}, ${keterangan}` : existing.keterangan)
+                    : (keterangan || null)
+            }
+        });
+        return NextResponse.json(updated, { status: 200 });
+    }
 
     const newSession = await prisma.liveSession.create({
       data: {
         userId,
-        tanggal: targetDate,
+        tanggal: dayStart, // Simpan di awal hari agar pengecekan konsisten
         durasi: parseFloat(durasi),
         keterangan
       }

@@ -1,12 +1,41 @@
+import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
+
+async function ensureRoles() {
+  const roles = await Promise.all(
+    ["admin", "cs", "pengajar", "finance"].map((slug) =>
+      prisma.role.upsert({
+        where: { slug },
+        update: {},
+        create: {
+          name: slug.toUpperCase(),
+          slug,
+          description: `Auto-generated role for ${slug}`,
+        },
+      })
+    )
+  );
+
+  return Object.fromEntries(roles.map((role) => [role.slug, role])) as Record<string, { id: string }>;
+}
 
 async function main() {
-  console.log("🌱 Seeding database Speaking Partner by Kampung Inggris...");
+  console.log("Seeding database Speaking Partner by Kampung Inggris...");
 
-  // 1. Admin User
+  const roleMap = await ensureRoles();
+
   const adminPassword = await bcrypt.hash("admin123", 12);
   const admin = await prisma.user.upsert({
     where: { email: "admin@speakingpartner.id" },
@@ -15,49 +44,70 @@ async function main() {
       name: "Administrator",
       email: "admin@speakingpartner.id",
       password: adminPassword,
-      role: "ADMIN",
+      roleId: roleMap.admin.id,
     },
   });
-  console.log("✅ Admin:", admin.email);
+  console.log("Admin:", admin.email);
 
-  // 2. CS Users
   const csPassword = await bcrypt.hash("cs123456", 12);
   const cs1 = await prisma.user.upsert({
     where: { email: "rizky@speakingpartner.id" },
     update: {},
-    create: { name: "Rizky Pratama", email: "rizky@speakingpartner.id", password: csPassword, role: "CS" },
+    create: {
+      name: "Rizky Pratama",
+      email: "rizky@speakingpartner.id",
+      password: csPassword,
+      roleId: roleMap.cs.id,
+    },
   });
   const cs2 = await prisma.user.upsert({
     where: { email: "sari@speakingpartner.id" },
     update: {},
-    create: { name: "Sari Dewi", email: "sari@speakingpartner.id", password: csPassword, role: "CS" },
+    create: {
+      name: "Sari Dewi",
+      email: "sari@speakingpartner.id",
+      password: csPassword,
+      roleId: roleMap.cs.id,
+    },
   });
-  console.log("✅ CS users:", cs1.name, ",", cs2.name);
+  console.log("CS users:", cs1.name, ",", cs2.name);
 
-  // 3. Pengajar
   const pgPassword = await bcrypt.hash("pengajar123", 12);
   const pg1 = await prisma.user.upsert({
     where: { email: "budi@speakingpartner.id" },
     update: {},
-    create: { name: "Budi Santoso", email: "budi@speakingpartner.id", password: pgPassword, role: "PENGAJAR" },
+    create: {
+      name: "Budi Santoso",
+      email: "budi@speakingpartner.id",
+      password: pgPassword,
+      roleId: roleMap.pengajar.id,
+    },
   });
   const pg2 = await prisma.user.upsert({
     where: { email: "nina@speakingpartner.id" },
     update: {},
-    create: { name: "Nina Rahayu", email: "nina@speakingpartner.id", password: pgPassword, role: "PENGAJAR" },
+    create: {
+      name: "Nina Rahayu",
+      email: "nina@speakingpartner.id",
+      password: pgPassword,
+      roleId: roleMap.pengajar.id,
+    },
   });
-  console.log("✅ Pengajar:", pg1.name, ",", pg2.name);
+  console.log("Pengajar:", pg1.name, ",", pg2.name);
 
-  // 4. Kasir
   const kasirPw = await bcrypt.hash("kasir123", 12);
   const kasir = await prisma.user.upsert({
     where: { email: "kasir@speakingpartner.id" },
     update: {},
-    create: { name: "Dina Kasir", email: "kasir@speakingpartner.id", password: kasirPw, role: "FINANCE" },
+    create: {
+      name: "Dina Kasir",
+      email: "kasir@speakingpartner.id",
+      password: kasirPw,
+      roleId: roleMap.finance.id,
+    },
   });
-  console.log("✅ Kasir:", kasir.email);
+  console.log("Kasir:", kasir.email);
 
-  // 5. Program Kursus
   const programs = await Promise.all([
     prisma.program.upsert({
       where: { id: "prog-speaking-regular" },
@@ -85,9 +135,8 @@ async function main() {
       create: { id: "prog-toefl", nama: "TOEFL Preparation", deskripsi: "Persiapan ujian TOEFL/IELTS", tipe: "REGULAR", harga: 2500000, durasiBuilan: 2 },
     }),
   ]);
-  console.log("✅ Programs:", programs.map(p => p.nama).join(", "));
+  console.log("Programs:", programs.map((program) => program.nama).join(", "));
 
-  // 6. Tarif Pengajar
   await prisma.tarifPengajar.upsert({
     where: { id: "tarif-regular" },
     update: {},
@@ -103,9 +152,8 @@ async function main() {
     update: {},
     create: { id: "tarif-semi", tipeKelas: "SEMI_PRIVATE", tarif: 100000, keterangan: "Tarif kelas semi-private" },
   });
-  console.log("✅ Tarif pengajar selesai");
+  console.log("Tarif pengajar selesai");
 
-  // 7. Inventaris contoh
   await prisma.inventaris.createMany({
     skipDuplicates: true,
     data: [
@@ -117,19 +165,24 @@ async function main() {
       { nama: "Kertas A4", kategori: "ATK", jumlah: 5, satuan: "rim", hargaBeli: 50000, kondisi: "BAIK", stokMinimum: 3 },
     ],
   });
-  console.log("✅ Inventaris contoh ditambahkan");
+  console.log("Inventaris contoh ditambahkan");
 
-  console.log("\n🎉 Seed selesai!");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("\nSeed selesai!");
+  console.log("=============================================");
   console.log("AKUN LOGIN:");
-  console.log("  Admin    → admin@speakingpartner.id  / admin123");
-  console.log("  Kasir    → kasir@speakingpartner.id  / kasir123");
-  console.log("  CS       → rizky@speakingpartner.id  / cs123456");
-  console.log("  CS       → sari@speakingpartner.id   / cs123456");
-  console.log("  Pengajar → budi@speakingpartner.id   / pengajar123");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("  Admin    -> admin@speakingpartner.id  / admin123");
+  console.log("  Kasir    -> kasir@speakingpartner.id  / kasir123");
+  console.log("  CS       -> rizky@speakingpartner.id  / cs123456");
+  console.log("  CS       -> sari@speakingpartner.id   / cs123456");
+  console.log("  Pengajar -> budi@speakingpartner.id   / pengajar123");
+  console.log("=============================================");
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
-  .finally(async () => { await prisma.$disconnect(); });
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

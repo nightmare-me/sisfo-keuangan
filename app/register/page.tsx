@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { formatCurrency } from "@/lib/utils";
 import { 
   CheckCircle2, 
@@ -214,5 +215,13 @@ function RegisterContent() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="register-container"><div className="register-card">Memuat halaman pendaftaran...</div></div>}>
+      <RegisterContent />
+    </Suspense>
   );
 }

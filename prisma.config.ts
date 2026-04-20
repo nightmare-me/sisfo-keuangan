@@ -2,7 +2,11 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const connectionString = process.env.DATABASE_URL ?? "postgresql://postgres:123456@localhost:5432/sisfo_speaking_partner?schema=public";
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

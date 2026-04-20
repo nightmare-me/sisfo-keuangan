@@ -197,7 +197,7 @@ export default function CRMPage() {
 
     if (res.ok) {
       setShowNewLeadModal(false);
-      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "" });
+      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false });
       fetchData();
     } else {
       alert("Gagal menyimpan lead baru.");

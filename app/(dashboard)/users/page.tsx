@@ -276,7 +276,7 @@ export default function UsersPage() {
           <p className="body-lg" style={{ margin: 0 }}>Otorisasi akun dan pengaturan hak akses tim Speaking Partner</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          {selfRole === "admin" && (
+          {selfRole?.toUpperCase() === "ADMIN" && (
             <>
               <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>
                 <Download size={16} /> Template

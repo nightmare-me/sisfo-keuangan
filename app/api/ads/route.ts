@@ -22,6 +22,11 @@ export async function GET(request: NextRequest) {
     wherePerf.platform = platform;
   }
 
+  // EXCLUDE OLD SYNC RECORDS to prevent double counting
+  where.NOT = {
+    keterangan: { contains: "Sync Otomatis" }
+  };
+
   // Fetch from both tables
   const [spentData, perfData, summarySpent, summaryPerf, byPlatformSpent, byPlatformPerf] = await Promise.all([
     prisma.spentAds.findMany({

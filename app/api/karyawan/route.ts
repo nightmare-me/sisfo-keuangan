@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = (session?.user as any)?.role?.toUpperCase();
   if (!session || !(["ADMIN", "FINANCE"].includes(role))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = (session?.user as any)?.role?.toUpperCase();
   if (!session || !(["ADMIN", "FINANCE"].includes(role))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = (session?.user as any)?.role?.toUpperCase();
   if (!session || !(["ADMIN", "FINANCE"].includes(role))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

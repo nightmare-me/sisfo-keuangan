@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if ((session.user as any).role !== 'ADMIN') {
+    if ((session.user as any).role?.toUpperCase() !== 'ADMIN') {
         return NextResponse.json({ error: "Forbidden: Admin Only" }, { status: 403 });
     }
 
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
     try {
       const session = await auth();
-      if (!session || (session.user as any).role !== 'ADMIN') {
+      if (!session || (session.user as any).role?.toUpperCase() !== 'ADMIN') {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
   

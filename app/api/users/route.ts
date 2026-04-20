@@ -16,11 +16,11 @@ export async function GET(request: NextRequest) {
   // Pengecekan akses: Hanya admin atau role dengan permission user:manage yang boleh lihat semua
   const hasUserManage = (session.user as any).permissions?.includes('user:manage');
 
-  if (!hasUserManage && sessionRoleSlug !== 'admin') {
+  if (!hasUserManage && sessionRoleSlug?.toLowerCase() !== 'admin') {
     // Non-privileged: hanya boleh cari user tertentu (biasanya untuk filter CS)
     if (filterRoleSlug) {
       const users = await prisma.user.findMany({
-        where: { role: { slug: filterRoleSlug }, aktif: true },
+        where: { role: { slug: filterRoleSlug.toLowerCase() }, aktif: true },
         include: { role: true },
         orderBy: { name: "asc" },
       });
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Admin/Privileged: semua user (atau filter role)
-  const where: any = filterRoleSlug ? { role: { slug: filterRoleSlug } } : {};
+  const where: any = filterRoleSlug ? { role: { slug: filterRoleSlug.toLowerCase() } } : {};
 
   const users = await prisma.user.findMany({
     where,
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  const sessionRoleSlug = (session?.user as any)?.role;
+  const sessionRoleSlug = (session?.user as any)?.roleSlug || (session?.user as any)?.role?.toLowerCase();
   const isPrivileged = sessionRoleSlug === 'admin' || (session?.user as any).permissions?.includes('user:manage');
 
   if (!session || !isPrivileged) {
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   const session = await auth();
-  const isPrivileged = (session?.user as any)?.role === 'admin' || (session?.user as any).permissions?.includes('user:manage');
+  const isPrivileged = (session?.user as any)?.role?.toUpperCase() === 'ADMIN' || (session?.user as any).permissions?.includes('user:manage');
 
   if (!session || !isPrivileged) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -154,7 +154,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "admin") {
+  if (!session || (session.user as any).role?.toUpperCase() !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { searchParams } = new URL(request.url);

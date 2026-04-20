@@ -39,7 +39,7 @@ async function main() {
   const adminPassword = await bcrypt.hash("admin123", 12);
   const admin = await prisma.user.upsert({
     where: { email: "admin@speakingpartner.id" },
-    update: {},
+    update: { roleId: roleMap.admin.id },
     create: {
       name: "Administrator",
       email: "admin@speakingpartner.id",
@@ -52,7 +52,7 @@ async function main() {
   const csPassword = await bcrypt.hash("cs123456", 12);
   const cs1 = await prisma.user.upsert({
     where: { email: "rizky@speakingpartner.id" },
-    update: {},
+    update: { roleId: roleMap.cs.id },
     create: {
       name: "Rizky Pratama",
       email: "rizky@speakingpartner.id",
@@ -62,7 +62,7 @@ async function main() {
   });
   const cs2 = await prisma.user.upsert({
     where: { email: "sari@speakingpartner.id" },
-    update: {},
+    update: { roleId: roleMap.cs.id },
     create: {
       name: "Sari Dewi",
       email: "sari@speakingpartner.id",
@@ -75,7 +75,7 @@ async function main() {
   const pgPassword = await bcrypt.hash("pengajar123", 12);
   const pg1 = await prisma.user.upsert({
     where: { email: "budi@speakingpartner.id" },
-    update: {},
+    update: { roleId: roleMap.pengajar.id },
     create: {
       name: "Budi Santoso",
       email: "budi@speakingpartner.id",
@@ -85,7 +85,7 @@ async function main() {
   });
   const pg2 = await prisma.user.upsert({
     where: { email: "nina@speakingpartner.id" },
-    update: {},
+    update: { roleId: roleMap.pengajar.id },
     create: {
       name: "Nina Rahayu",
       email: "nina@speakingpartner.id",
@@ -98,7 +98,7 @@ async function main() {
   const kasirPw = await bcrypt.hash("kasir123", 12);
   const kasir = await prisma.user.upsert({
     where: { email: "kasir@speakingpartner.id" },
-    update: {},
+    update: { roleId: roleMap.finance.id },
     create: {
       name: "Dina Kasir",
       email: "kasir@speakingpartner.id",

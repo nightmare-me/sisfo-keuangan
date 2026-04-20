@@ -69,47 +69,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // 2. SINKRONISASI KE SPENT ADS (Total Harian)
-    const dayStart = startOfDay(targetDate);
-    const dayEnd = endOfDay(targetDate);
-
-    const totalSpentAgg = await prisma.adPerformance.aggregate({
-      where: {
-        date: { gte: dayStart, lte: dayEnd },
-        platform: targetPlatform
-      },
-      _sum: { spent: true }
-    });
-
-    const totalJumlah = totalSpentAgg._sum.spent || 0;
-
-    const existingSpent = await prisma.spentAds.findFirst({
-      where: {
-        tanggal: { gte: dayStart, lte: dayEnd },
-        platform: targetPlatform
-      }
-    });
-
-    if (existingSpent) {
-      await prisma.spentAds.update({
-        where: { id: existingSpent.id },
-        data: { 
-          jumlah: totalJumlah,
-          keterangan: `Sync Otomatis: Total dari ${targetPlatform} Advertisers`
-        }
-      });
-    } else {
-      await prisma.spentAds.create({
-        data: {
-          tanggal: targetDate,
-          platform: targetPlatform,
-          jumlah: totalJumlah,
-          keterangan: `Sync Otomatis: Total dari ${targetPlatform} Advertisers`,
-          dibuatOleh: userId
-        }
-      });
-    }
-
     return NextResponse.json(performance);
   } catch (err: any) {
     console.error("ADS_PERFORMANCE_POST_ERROR:", err);

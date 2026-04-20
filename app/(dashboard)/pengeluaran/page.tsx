@@ -14,6 +14,7 @@ import {
   Wallet,
   CreditCard,
   Trash2,
+  Edit2,
   PieChart,
   Upload,
   FileSpreadsheet
@@ -40,12 +41,25 @@ export default function PengeluaranPage() {
   const [showCatModal, setShowCatModal] = useState(false);
   const [newCat, setNewCat] = useState({ nama: "", color: "#ef4444" });
   const [form, setForm] = useState({
-    jumlah: "",
-    kategori: "LAINNYA",
-    metodeBayar: "CASH",
-    keterangan: "",
     tanggal: new Date().toISOString().slice(0, 10),
   });
+
+  function openEdit(item: any) {
+    setEditId(item.id);
+    setForm({
+      jumlah: item.jumlah.toString(),
+      kategori: item.kategori,
+      metodeBayar: item.metodeBayar,
+      keterangan: item.keterangan || "",
+      tanggal: new Date(item.tanggal).toISOString().slice(0, 10),
+    });
+    setShowModal(true);
+  }
+
+  function resetForm() {
+    setEditId(null);
+    setForm({ jumlah:"", kategori:"LAINNYA", metodeBayar:"CASH", keterangan:"", tanggal: new Date().toISOString().slice(0,10) });
+  }
 
   function fetchData() {
     const p = new URLSearchParams();
@@ -78,10 +92,17 @@ export default function PengeluaranPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
-    await fetch("/api/pengeluaran",{ method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({...form, jumlah: parseFloat(form.jumlah)}) });
+    const method = editId ? "PUT" : "POST";
+    const body = { ...form, jumlah: parseFloat(form.jumlah) };
+    if (editId) (body as any).id = editId;
+
+    await fetch("/api/pengeluaran",{ 
+      method, 
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body) 
+    });
     setSaving(false); setShowModal(false);
-    setForm({ jumlah:"", kategori:"LAINNYA", metodeBayar:"CASH", keterangan:"", tanggal: new Date().toISOString().slice(0,10) });
+    resetForm();
     fetchData();
   }
 
@@ -163,7 +184,7 @@ export default function PengeluaranPage() {
           <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowImportModal(true)}>
             <FileSpreadsheet size={16} /> Import CSV
           </button>
-          <button id="btn-tambah-pengeluaran" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowModal(true)}>
+          <button id="btn-tambah-pengeluaran" className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>{ resetForm(); setShowModal(true); }}>
             <Plus size={18} /> Tambah Pengeluaran
           </button>
         </div>
@@ -294,9 +315,14 @@ export default function PengeluaranPage() {
                   <td style={{ fontSize:14, color:"var(--text-muted)" }}>{item.user?.name??"—"}</td>
                   <td className="text-right" style={{ fontWeight:800, color:"var(--danger)", fontSize: 16 }}>{formatCurrency(item.jumlah)}</td>
                   <td className="text-center">
-                    <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
-                      <Trash2 size={16} />
-                    </button>
+                    <div style={{ display: 'flex', gap:6, justifyContent: 'center' }}>
+                      <button className="btn btn-secondary btn-icon" onClick={()=>openEdit(item)} style={{ color:"var(--primary)" }}>
+                        <Edit2 size={16} />
+                      </button>
+                      <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -309,8 +335,8 @@ export default function PengeluaranPage() {
         <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) setShowModal(false); }}>
           <div className="modal">
             <div className="modal-header">
-              <div className="modal-title">Tambah Pengeluaran</div>
-              <button className="modal-close" onClick={()=>setShowModal(false)}>✕</button>
+              <div className="modal-title">{editId ? "Edit Pengeluaran" : "Tambah Pengeluaran"}</div>
+              <button className="modal-close" onClick={()=>{ setShowModal(false); resetForm(); }}>✕</button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
@@ -345,8 +371,10 @@ export default function PengeluaranPage() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={()=>setShowModal(false)}>Batal</button>
-                <button id="btn-simpan-pengeluaran" type="submit" className="btn btn-primary" disabled={saving}>{saving?"Menyimpan...":"💸 Simpan"}</button>
+                <button type="button" className="btn btn-secondary" onClick={()=>{ setShowModal(false); resetForm(); }}>Batal</button>
+                <button id="btn-simpan-pengeluaran" type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? "Menyimpan..." : (editId ? "💾 Simpan Perubahan" : "💸 Simpan")}
+                </button>
               </div>
             </form>
           </div>

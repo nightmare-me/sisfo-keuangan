@@ -81,6 +81,32 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(pengeluaran, { status: 201 });
 }
 
+export async function PUT(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json();
+  const { id, jumlah, kategori, metodeBayar, keterangan, tanggal } = body;
+
+  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+  if (!jumlah || jumlah <= 0) {
+    return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
+  }
+
+  const pengeluaran = await prisma.pengeluaran.update({
+    where: { id },
+    data: {
+      tanggal: tanggal ? new Date(tanggal) : undefined,
+      jumlah,
+      kategori,
+      metodeBayar,
+      keterangan,
+    },
+  });
+
+  return NextResponse.json(pengeluaran);
+}
+
 export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -273,36 +273,41 @@ export default function CRMPage() {
         </div>
 
         {/* Dashboard Cards (Sesuai Gambar) */}
-        <div className="kpi-grid" style={{ marginBottom: 12 }}>
-          <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)" } as any}>
-            <div className="kpi-icon" style={{ color: "var(--primary)" }}><Users size={24} /></div>
-            <div className="kpi-label">Total Order / Lead</div>
-            <div className="kpi-value">{leads.length}</div>
+        <div className="kpi-grid" style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(6, 1fr)", 
+          gap: 12, 
+          marginBottom: 12 
+        }}>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)", padding: 16 } as any}>
+            <div className="kpi-icon" style={{ color: "var(--primary)", marginBottom: 8, width: 40, height: 40 }}><Users size={20} /></div>
+            <div className="kpi-label" style={{ fontSize: 10 }}>Total Order / Lead</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.length}</div>
           </div>
-          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
-            <div className="kpi-icon" style={{ color: "var(--success)" }}><CheckCircle2 size={24} /></div>
-            <div className="kpi-label">Total Terbayar</div>
-            <div className="kpi-value">{leads.filter(l => l.status === 'PAID').length}</div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)", padding: 16 } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)", marginBottom: 8, width: 40, height: 40 }}><CheckCircle2 size={20} /></div>
+            <div className="kpi-label" style={{ fontSize: 10 }}>Total Terbayar</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'PAID').length}</div>
           </div>
-          <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)" } as any}>
-            <div className="kpi-icon" style={{ color: "var(--warning)" }}><TrendingUp size={24} /></div>
-            <div className="kpi-label">Rasio Rasio Bayar</div>
-            <div className="kpi-value">{leads.length > 0 ? ((leads.filter(l => l.status === 'PAID').length / leads.length) * 100).toFixed(0) : 0}%</div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)", padding: 16 } as any}>
+            <div className="kpi-icon" style={{ color: "var(--warning)", marginBottom: 8, width: 40, height: 40 }}><TrendingUp size={20} /></div>
+            <div className="kpi-label" style={{ fontSize: 10 }}>Rasio Bayar</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.length > 0 ? ((leads.filter(l => l.status === 'PAID').length / leads.length) * 100).toFixed(0) : 0}%</div>
           </div>
-          <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)" } as any}>
-            <div className="kpi-icon" style={{ color: "var(--danger)" }}><Clock size={24} /></div>
-            <div className="kpi-label">Menunggu Bayar</div>
-            <div className="kpi-value">{leads.filter(l => l.status === 'PENDING').length}</div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)", padding: 16 } as any}>
+            <div className="kpi-icon" style={{ color: "var(--danger)", marginBottom: 8, width: 40, height: 40 }}><Clock size={20} /></div>
+            <div className="kpi-label" style={{ fontSize: 10 }}>Menunggu Bayar</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'PENDING').length}</div>
           </div>
-          <div className="kpi-card" style={{ "--kpi-color": "#ef4444", "--kpi-bg": "rgba(239, 68, 68, 0.1)" } as any}>
-            <div className="kpi-icon" style={{ color: "#ef4444" }}><RotateCcw size={24} /></div>
-            <div className="kpi-label">Refunded</div>
-            <div className="kpi-value">{leads.filter(l => l.status === 'REFUNDED').length}</div>
+          <div className="kpi-card" style={{ "--kpi-color": "#ef4444", "--kpi-bg": "rgba(239, 68, 68, 0.1)", padding: 16 } as any}>
+            <div className="kpi-icon" style={{ color: "#ef4444", marginBottom: 8, width: 40, height: 40 }}><RotateCcw size={20} /></div>
+            <div className="kpi-label" style={{ fontSize: 10 }}>Refunded</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'REFUNDED').length}</div>
           </div>
-          <div className="kpi-card" style={{ "--kpi-color": "#64748b", "--kpi-bg": "rgba(100, 116, 139, 0.1)" } as any}>
-            <div className="kpi-icon" style={{ color: "#64748b" }}><Trash2 size={24} /></div>
-            <div className="kpi-label">Cancelled</div>
-            <div className="kpi-value">{leads.filter(l => l.status === 'CANCELLED').length}</div>
+          <div className="kpi-card" style={{ "--kpi-color": "#64748b", "--kpi-bg": "rgba(100, 116, 139, 0.1)", padding: 16 } as any}>
+            <div className="kpi-icon" style={{ color: "#64748b", marginBottom: 8, width: 40, height: 40 }}><Trash2 size={20} /></div>
+            <div className="kpi-label" style={{ fontSize: 10 }}>Cancelled</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'CANCELLED').length}</div>
           </div>
         </div>
       </div>

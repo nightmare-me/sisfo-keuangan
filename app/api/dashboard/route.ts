@@ -101,6 +101,37 @@ export async function GET(request: NextRequest) {
 
     const labaIni = totalPemasukanIni - totalExIni - totalAdsIni;
 
+    // Breakdown Pemasukan per Program
+    const pemasukanPerProgramRaw = await prisma.pemasukan.groupBy({
+      by: ['programId'],
+      where: { tanggal: { gte: startDate, lte: endDate } },
+      _sum: { hargaFinal: true },
+      _count: { _all: true }
+    });
+
+    const programs = await prisma.program.findMany({
+      where: { id: { in: pemasukanPerProgramRaw.map(p => p.programId).filter((id): id is string => id !== null) } },
+      select: { id: true, nama: true }
+    });
+
+    const pemasukanPerProgram = pemasukanPerProgramRaw.map(p => ({
+      programName: programs.find(pr => pr.id === p.programId)?.nama || "Lainnya",
+      total: p._sum.hargaFinal ?? 0,
+      count: p._count._all
+    })).sort((a, b) => b.total - a.total);
+
+    // Breakdown Pengeluaran per Kategori
+    const pengeluaranPerKategoriRaw = await prisma.pengeluaran.groupBy({
+      by: ['kategori'],
+      where: { tanggal: { gte: startDate, lte: endDate } },
+      _sum: { jumlah: true }
+    });
+
+    const pengeluaranPerKategori = pengeluaranPerKategoriRaw.map(p => ({
+      kategori: p.kategori,
+      total: p._sum.jumlah ?? 0
+    })).sort((a, b) => b.total - a.total);
+
     return NextResponse.json({
       kpi: { 
         pemasukanHariIni: totalPemasukanIni, 
@@ -113,7 +144,9 @@ export async function GET(request: NextRequest) {
         siswAktif 
       },
       trendData,
-      transaksiTerkini
+      transaksiTerkini,
+      pemasukanPerProgram,
+      pengeluaranPerKategori
     });
   } catch (err: any) {
     console.error("DASHBOARD_API_ERROR:", err);

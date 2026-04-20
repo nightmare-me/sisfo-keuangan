@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     include: {
       program: true,
       pengajar: { select: { id: true, name: true } },
-      _count: { select: { pendaftaran: true } },
+      _count: { select: { pendaftaran: { where: { aktif: true } } } },
     },
   });
 
@@ -38,6 +38,24 @@ export async function POST(request: NextRequest) {
 
   if (!namaKelas || !programId) {
     return NextResponse.json({ error: "Nama kelas dan program diperlukan" }, { status: 400 });
+  }
+
+  // Validasi: Cek konflik jadwal pengajar
+  if (pengajarId && hari && jam) {
+    const conflict = await prisma.kelas.findFirst({
+      where: {
+        pengajarId,
+        hari,
+        jam,
+        status: { not: "SELESAI" } // Kelas yang sudah selesai tidak dihitung
+      }
+    });
+    if (conflict) {
+      return NextResponse.json(
+        { error: `Konflik Jadwal! ${conflict.namaKelas} sudah dijadwalkan pada ${hari}, ${jam} untuk pengajar ini.` },
+        { status: 409 }
+      );
+    }
   }
 
   const kelas = await prisma.kelas.create({

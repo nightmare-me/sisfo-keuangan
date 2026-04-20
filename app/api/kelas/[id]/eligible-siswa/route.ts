@@ -13,19 +13,30 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
   if (!kelas) return NextResponse.json({ error: "Kelas tidak ditemukan" }, { status: 404 });
 
-  // Cari murid yang memiliki Pemasukan/Invoice lunas untuk program ini, 
-  // DAN status aktif, DAN belum ada di Pendaftaran kelas manapun (atau minimal tidak terdaftar di program yang sama)
-  // Untuk kesederhanaan fitur Akademik ini: Tampilkan siswa yang punya "LUNAS" di program ini. 
-  // Pengguna Akademik yang akan menyaring visual jika anak ini sudah masuk kelas.
-
+  // Tampilkan siswa yang memenuhi syarat:
+  // 1. Status AKTIF
+  // 2. Punya Invoice LUNAS untuk program ini
+  // 3. BELUM terdaftar AKTIF di kelas LAIN dengan program yang SAMA
+  //    → Siswa yang pernah keluar dari kelas INI boleh muncul kembali (re-enroll)
+  //    → Siswa aktif di kelas program lain tetap bisa muncul (multi-program)
   const eligibleSiswaList = await prisma.siswa.findMany({
     where: {
       status: "AKTIF",
+      // Syarat 2: Sudah bayar program ini
       pemasukan: {
         some: {
           programId: kelas.programId,
-          invoice: {
-            statusBayar: "LUNAS"
+          invoice: { statusBayar: "LUNAS" }
+        }
+      },
+      // Syarat 3: Tidak boleh sudah AKTIF di kelas LAIN dengan program SAMA
+      // (Kelas ini sendiri dikecualikan → boleh re-enroll jika pernah dikeluarkan)
+      NOT: {
+        pendaftaran: {
+          some: {
+            aktif: true,
+            kelasId: { not: params.id },
+            kelas: { programId: kelas.programId }
           }
         }
       }
@@ -34,11 +45,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       id: true,
       noSiswa: true,
       nama: true,
-      pendaftaran: {
-        where: { aktif: true },
-        select: { kelasId: true, kelas: { select: { programId: true, namaKelas: true } } }
-      }
-    }
+      telepon: true,
+    },
+    orderBy: { nama: "asc" }
   });
 
   return NextResponse.json(eligibleSiswaList);

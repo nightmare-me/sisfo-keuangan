@@ -31,6 +31,29 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   const body = await request.json();
   const { namaKelas, programId, pengajarId, jadwal, hari, jam, kapasitas, durasi, tanggalMulai, tanggalSelesai, status, linkGrup } = body;
 
+  // Validasi: Cek konflik jadwal pengajar (jika pengajar/hari/jam berubah)
+  const checkPengajarId = pengajarId !== undefined ? pengajarId : undefined;
+  const checkHari = hari !== undefined ? hari : undefined;
+  const checkJam = jam !== undefined ? jam : undefined;
+
+  if (checkPengajarId && checkHari && checkJam) {
+    const conflict = await prisma.kelas.findFirst({
+      where: {
+        pengajarId: checkPengajarId,
+        hari: checkHari,
+        jam: checkJam,
+        id: { not: params.id }, // Kecualikan kelas yang sedang diedit
+        status: { not: "SELESAI" }
+      }
+    });
+    if (conflict) {
+      return NextResponse.json(
+        { error: `Konflik Jadwal! ${conflict.namaKelas} sudah dijadwalkan pada ${checkHari}, ${checkJam} untuk pengajar ini.` },
+        { status: 409 }
+      );
+    }
+  }
+
   const kelas = await prisma.kelas.update({
     where: { id: params.id },
     data: {
@@ -49,7 +72,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       ...(body.materiLink !== undefined && { materiLink: body.materiLink || null }),
       ...(status && { status }),
     },
-    include: { program: true, pengajar: { select: { id: true, name: true } }, _count: { select: { pendaftaran: true } } },
+    include: {
+      program: true,
+      pengajar: { select: { id: true, name: true } },
+      _count: { select: { pendaftaran: { where: { aktif: true } } } }
+    },
   });
 
   return NextResponse.json(kelas);

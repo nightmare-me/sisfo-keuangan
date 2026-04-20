@@ -70,6 +70,62 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(pendaftaran, { status: 201 });
 }
 
+// PATCH /api/pendaftaran/batch  → daftarkan banyak siswa sekaligus
+export async function PATCH(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { siswaIds, kelasId } = await request.json();
+
+  if (!Array.isArray(siswaIds) || !kelasId || siswaIds.length === 0) {
+    return NextResponse.json({ error: "siswaIds (array) dan kelasId wajib diisi" }, { status: 400 });
+  }
+
+  // Cek kapasitas sisa
+  const kelas = await prisma.kelas.findUnique({
+    where: { id: kelasId },
+    include: { _count: { select: { pendaftaran: { where: { aktif: true } } } } },
+  });
+  if (!kelas) return NextResponse.json({ error: "Kelas tidak ditemukan" }, { status: 404 });
+
+  const sisaSeat = kelas.kapasitas - kelas._count.pendaftaran;
+  if (siswaIds.length > sisaSeat) {
+    return NextResponse.json({
+      error: `Kapasitas tidak cukup. Sisa kursi: ${sisaSeat}, siswa dipilih: ${siswaIds.length}`
+    }, { status: 400 });
+  }
+
+  let successCount = 0;
+  let skipCount = 0;
+
+  for (const siswaId of siswaIds) {
+    try {
+      const existing = await prisma.pendaftaran.findUnique({
+        where: { siswaId_kelasId: { siswaId, kelasId } }
+      });
+
+      if (existing) {
+        if (!existing.aktif) {
+          await prisma.pendaftaran.update({ where: { id: existing.id }, data: { aktif: true } });
+          successCount++;
+        } else {
+          skipCount++; // Sudah aktif, skip
+        }
+      } else {
+        await prisma.pendaftaran.create({ data: { siswaId, kelasId } });
+        successCount++;
+      }
+    } catch {
+      skipCount++;
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: `${successCount} siswa berhasil didaftarkan, ${skipCount} dilewati.`
+  });
+}
+
 // DELETE /api/pendaftaran?id=xxx  → keluarkan siswa dari kelas
 export async function DELETE(request: NextRequest) {
   const session = await auth();

@@ -64,7 +64,7 @@ export default function KelasPage() {
   const [pendaftaranList, setPendaftaranList] = useState<any[]>([]);
 
   const [showTambahSiswa, setShowTambahSiswa] = useState(false);
-  const [selectedSiswaId, setSelectedSiswaId] = useState("");
+  const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [addingSiswa, setAddingSiswa] = useState(false);
   const [searchSiswa, setSearchSiswa] = useState("");
 
@@ -136,14 +136,29 @@ export default function KelasPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
     const payload = { ...form, kapasitas: parseInt(form.kapasitas) };
-    if (editKelas) {
-      await fetch(`/api/kelas/${editKelas.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (selectedKelas?.id === editKelas.id) await loadDetail(editKelas);
-    } else {
-      await fetch("/api/kelas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    let res: Response;
+    try {
+      if (editKelas) {
+        res = await fetch(`/api/kelas/${editKelas.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      } else {
+        res = await fetch("/api/kelas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert("⚠️ " + (err.error || "Gagal menyimpan kelas."));
+        setSaving(false);
+        return; // Modal tetap terbuka
+      }
+
+      if (editKelas && selectedKelas?.id === editKelas.id) await loadDetail(editKelas);
+      setShowModal(false); setEditKelas(null);
+      fetchData();
+    } catch (err: any) {
+      alert("⚠️ Koneksi bermasalah: " + err.message);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false); setShowModal(false); setEditKelas(null);
-    fetchData();
   }
 
   // ── Update status kelas ──
@@ -174,19 +189,20 @@ export default function KelasPage() {
     }
   }
 
-  // ── Daftarkan siswa ──
-  async function handleTambahSiswa() {
-    if (!selectedSiswaId) return;
+  // ── Daftarkan siswa (Batch) ──
+  async function handleBatchDaftarSiswa() {
+    if (selectedSiswaIds.length === 0) return;
     setAddingSiswa(true);
     const res = await fetch("/api/pendaftaran", {
-      method: "POST",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ siswaId: selectedSiswaId, kelasId: selectedKelas.id }),
+      body: JSON.stringify({ siswaIds: selectedSiswaIds, kelasId: selectedKelas.id }),
     });
     const result = await res.json();
     setAddingSiswa(false);
     if (!res.ok) { alert("Gagal: " + result.error); return; }
-    setSelectedSiswaId(""); setShowTambahSiswa(false); setSearchSiswa("");
+    alert(result.message);
+    setSelectedSiswaIds([]); setShowTambahSiswa(false); setSearchSiswa("");
     await loadDetail(selectedKelas);
     fetchData();
   }
@@ -205,6 +221,22 @@ export default function KelasPage() {
     !siswaInKelas.has(s.id) &&
     (searchSiswa === "" || s.nama.toLowerCase().includes(searchSiswa.toLowerCase()) || s.noSiswa.toLowerCase().includes(searchSiswa.toLowerCase()))
   );
+  const sisaSeat = selectedKelas ? selectedKelas.kapasitas - pendaftaranList.length : 0;
+  const isAllSelected = siswaAvailable.length > 0 && siswaAvailable.every(s => selectedSiswaIds.includes(s.id));
+
+  function toggleSiswa(id: string) {
+    setSelectedSiswaIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
+
+  function toggleSelectAll() {
+    if (isAllSelected) {
+      setSelectedSiswaIds([]);
+    } else {
+      // Hanya pilih sampai kapasitas tersisa
+      const toSelect = siswaAvailable.slice(0, sisaSeat).map(s => s.id);
+      setSelectedSiswaIds(toSelect);
+    }
+  }
 
   if (!canView) return <div className="p-12 text-center text-muted">Bapak/Ibu tidak memiliki izin untuk melihat modul ini.</div>;
 
@@ -428,59 +460,107 @@ export default function KelasPage() {
             )}
 
             {/* Header daftar siswa */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>
                 👥 Daftar Siswa ({pendaftaranList.length}/{selectedKelas.kapasitas})
+                {sisaSeat > 0 && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)', marginLeft: 8 }}>· {sisaSeat} kursi tersisa</span>}
               </div>
               {canEdit && !showTambahSiswa && (
                 <button
-                  onClick={() => setShowTambahSiswa(true)}
+                  onClick={() => { setShowTambahSiswa(true); setSelectedSiswaIds([]); }}
                   disabled={isFull}
-                  style={{
-                    background: isFull ? "var(--bg-elevated)" : "var(--brand-primary)",
-                    color: isFull ? "var(--text-muted)" : "white",
-                    border: "none", borderRadius: 8, padding: "6px 14px",
-                    cursor: isFull ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600
-                  }}
+                  className={isFull ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'}
+                  style={{ borderRadius: 'var(--radius-full)' }}
                 >
                   {isFull ? "🔒 Kelas Penuh" : "+ Daftarkan Siswa"}
                 </button>
               )}
             </div>
 
-            {/* Form tambah siswa */}
+            {/* Panel Multi-Checklist Siswa */}
             {showTambahSiswa && (
-              <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 14 }}>Daftarkan Siswa ke Kelas Ini</div>
+              <div style={{ background: 'var(--surface-container-lowest)', border: '1px solid var(--ghost-border)', borderRadius: 20, padding: 24, marginBottom: 20 }}>
+                {/* Header Panel */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 15 }}>📋 Pilih Siswa untuk Didaftarkan</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Sisa kursi: <strong style={{ color: 'var(--primary)' }}>{sisaSeat}</strong> · Dipilih: <strong style={{ color: selectedSiswaIds.length > sisaSeat ? 'var(--danger)' : 'var(--success)' }}>{selectedSiswaIds.length}</strong></div>
+                  </div>
+                  <button onClick={() => { setShowTambahSiswa(false); setSelectedSiswaIds([]); setSearchSiswa(''); }} className="btn btn-secondary btn-sm" style={{ borderRadius: '50%', padding: '4px 10px' }}>✕</button>
+                </div>
+
+                {/* Searchbox */}
                 <input
                   type="text"
                   className="form-control"
                   placeholder="🔍 Cari nama atau nomor siswa..."
                   value={searchSiswa}
                   onChange={e => setSearchSiswa(e.target.value)}
-                  style={{ marginBottom: 8 }}
+                  style={{ marginBottom: 12 }}
+                  autoFocus
                 />
-                <select
-                  className="form-control"
-                  value={selectedSiswaId}
-                  onChange={e => setSelectedSiswaId(e.target.value)}
-                  style={{ marginBottom: 10 }}
-                  size={Math.min(6, siswaAvailable.length + 1)}
-                >
-                  <option value="">-- Pilih siswa --</option>
-                  {siswaAvailable.map((s: any) => (
-                    <option key={s.id} value={s.id}>[{s.noSiswa}] {s.nama}</option>
-                  ))}
-                </select>
-                {siswaAvailable.length === 0 && searchSiswa && (
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>Tidak ada siswa cocok dengan pencarian</div>
+
+                {/* Select All Toggle */}
+                {siswaAvailable.length > 0 && (
+                  <div
+                    onClick={toggleSelectAll}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 10, background: isAllSelected ? 'var(--primary-bg)' : 'var(--surface-container-low)', marginBottom: 8, cursor: 'pointer', border: `1px solid ${isAllSelected ? 'var(--primary)' : 'var(--ghost-border)'}`, transition: 'all 0.2s' }}
+                  >
+                    <input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} style={{ width: 16, height: 16, accentColor: 'var(--primary)' }} />
+                    <span style={{ fontWeight: 700, fontSize: 13, color: isAllSelected ? 'var(--primary)' : 'inherit' }}>
+                      {isAllSelected ? 'Batalkan Semua' : `Pilih Semua (${Math.min(siswaAvailable.length, sisaSeat)})`}
+                    </span>
+                    {siswaAvailable.length > sisaSeat && (
+                      <span style={{ fontSize: 11, color: 'var(--warning)', marginLeft: 'auto' }}>⚠️ Dibatasi kapasitas</span>
+                    )}
+                  </div>
                 )}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn btn-primary btn-sm" onClick={handleTambahSiswa} disabled={!selectedSiswaId || addingSiswa}>
-                    {addingSiswa ? "Mendaftarkan..." : "✅ Daftarkan"}
-                  </button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => { setShowTambahSiswa(false); setSelectedSiswaId(""); setSearchSiswa(""); }}>
+
+                {/* Checklist Area */}
+                <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid var(--ghost-border)', borderRadius: 12, background: 'white' }}>
+                  {siswaAvailable.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+                      {searchSiswa ? 'Tidak ada siswa cocok dengan pencarian.' : 'Semua siswa eligible sudah terdaftar di kelas ini.'}
+                    </div>
+                  ) : (
+                    siswaAvailable.map((s: any, idx: number) => {
+                      const isChecked = selectedSiswaIds.includes(s.id);
+                      const isDisabled = !isChecked && selectedSiswaIds.length >= sisaSeat;
+                      return (
+                        <label
+                          key={s.id}
+                          style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', cursor: isDisabled ? 'not-allowed' : 'pointer', borderBottom: idx < siswaAvailable.length - 1 ? '1px solid var(--ghost-border)' : 'none', background: isChecked ? 'var(--primary-bg)' : 'transparent', transition: 'background 0.15s', opacity: isDisabled ? 0.4 : 1 }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            disabled={isDisabled}
+                            onChange={() => toggleSiswa(s.id)}
+                            style={{ width: 16, height: 16, accentColor: 'var(--primary)', flexShrink: 0 }}
+                          />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: isChecked ? 'var(--primary)' : 'inherit', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.nama}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{s.noSiswa} {s.telepon ? `· ${s.telepon}` : ''}</div>
+                          </div>
+                          {isChecked && <div style={{ marginLeft: 'auto', color: 'var(--primary)', fontSize: 16, flexShrink: 0 }}>✓</div>}
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" onClick={() => { setShowTambahSiswa(false); setSelectedSiswaIds([]); setSearchSiswa(''); }}>
                     Batal
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleBatchDaftarSiswa}
+                    disabled={selectedSiswaIds.length === 0 || addingSiswa}
+                    style={{ minWidth: 180 }}
+                  >
+                    {addingSiswa ? '⏳ Mendaftarkan...' : `✅ Daftarkan ${selectedSiswaIds.length > 0 ? `${selectedSiswaIds.length} Siswa` : '...'}`}
                   </button>
                 </div>
               </div>
@@ -541,7 +621,7 @@ export default function KelasPage() {
 
       {/* ── Modal Tambah/Edit Kelas ── */}
       {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowModal(false); setEditKelas(null); } }}>
+        <div className="modal-overlay">
           <div className="modal modal-lg">
             <div className="modal-header">
               <div className="modal-title">{editKelas ? "✏️ Edit Kelas" : "📚 Tambah Kelas Baru"}</div>

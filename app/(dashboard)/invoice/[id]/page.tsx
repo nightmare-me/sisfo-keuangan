@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Printer, ArrowLeft, Layout } from "lucide-react";
+import Link from 'next/link';
 
 export default function InvoicePage() {
   const params = useParams();
@@ -69,17 +70,17 @@ export default function InvoicePage() {
   return (
     <div className="invoice-outer-container">
        <div className="no-print" style={{ maxWidth: '800px', margin: '0 auto 20px auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => router.back()}>
-             <ArrowLeft size={16} /> Kembali
-          </button>
+          <Link href="/leads" className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+             <ArrowLeft size={16} /> Kembali ke Leads
+          </Link>
           <div style={{ display: 'flex', gap: 12 }}>
              <button className="btn btn-secondary btn-sm" onClick={() => setUseCustomHeaderImage(!useCustomHeaderImage)}>
-                <Layout size={16} /> {useCustomHeaderImage ? "Pakai Kop Teks" : "Pakai Kop Gambar"}
+                <Layout size={16} /> {useCustomHeaderImage ? "Beralih ke Teks" : "Beralih ke Gambar"}
              </button>
              <button className={`btn btn-sm ${isEditingHeader ? 'btn-success' : 'btn-secondary'}`} onClick={() => setIsEditingHeader(!isEditingHeader)}>
-                {isEditingHeader ? "Edit Detail Kop" : "Edit Detail Kop"}
+                {isEditingHeader ? "Selesai Edit" : "Edit Detail Kop"}
              </button>
-             <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
+             <button className="btn btn-primary btn-sm" onClick={() => window.print()} style={{ background: '#FFC107', border: 'none', color: '#000', fontWeight: 600 }}>
                 <Printer size={16} /> Cetak Invoice
              </button>
           </div>
@@ -89,10 +90,10 @@ export default function InvoicePage() {
           {useCustomHeaderImage ? (
              <div className="custom-header-image-container">
                 {headerInfo.fullHeaderImageUrl ? (
-                   <img src={getDirectLogoUrl(headerInfo.fullHeaderImageUrl)} alt="Kop Surat" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                   <img src={getDirectLogoUrl(headerInfo.fullHeaderImageUrl)} alt="Kop Surat" style={{ width: '100%', display: 'block' }} />
                 ) : (
-                   <div style={{ height: 160, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #000' }}>
-                      Tempel Link Gambar Kop di Menu Edit
+                   <div style={{ height: 160, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '2px solid #000' }}>
+                      Pilih Gambar Kop di Menu Edit
                    </div>
                 )}
                 {isEditingHeader && (
@@ -105,13 +106,6 @@ export default function InvoicePage() {
              <div className="invoice-header">
                 <div className="header-yellow-box">
                    <div className="invoice-logo-container">
-                      <div className="invoice-logo">
-                         {headerInfo.logoUrl ? (
-                            <img src={getDirectLogoUrl(headerInfo.logoUrl)} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                         ) : (
-                            <div className="logo-bubble"></div>
-                         )}
-                      </div>
                       <div className="invoice-brand">
                          <div className="main-name">{headerInfo.name}</div>
                          <div className="tagline">{headerInfo.tagline}</div>
@@ -142,30 +136,31 @@ export default function InvoicePage() {
              <div className="recipient-row"><span>No. Siswa</span><strong>{siswaNumber}</strong></div>
           </div>
 
-          <div className="table-container">
-            <table className="invoice-table">
-               <thead>
-                  <tr>
-                     <th style={{ width: '55%' }}>KETERANGAN</th>
-                     <th style={{ width: '10%' }} className="text-center">JML</th>
-                     <th style={{ width: '17%' }} className="text-right">HARGA</th>
-                     <th style={{ width: '18%' }} className="text-right">TOTAL</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  <tr>
-                     <td>
-                        <div className="item-name">{lead.program?.nama?.toUpperCase()}</div>
-                        <div className="item-desc">{lead.program?.tipe} Class - Speaking Partner</div>
-                     </td>
-                     <td className="text-center">1</td>
-                     <td className="text-right">{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</td>
-                     <td className="text-right">{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</td>
-                  </tr>
-                  <tr className="empty-row"><td></td><td></td><td></td><td></td></tr>
-                  <tr className="empty-row"><td></td><td></td><td></td><td></td></tr>
-               </tbody>
-            </table>
+          {/* REBUILT TABLE USING DIVS & FLEX FOR ABSOLUTE STABILITY */}
+          <div className="flex-table-container">
+             <div className="flex-table-header">
+                <div style={{ flex: '5.5' }}>KETERANGAN</div>
+                <div style={{ flex: '1', textAlign: 'center' }}>JML</div>
+                <div style={{ flex: '1.7', textAlign: 'right' }}>HARGA</div>
+                <div style={{ flex: '1.8', textAlign: 'right' }}>TOTAL</div>
+             </div>
+             <div className="flex-table-row main">
+                <div style={{ flex: '5.5' }}>
+                   <div className="item-name">{lead.program?.nama?.toUpperCase()}</div>
+                   <div className="item-desc">{lead.program?.tipe} Class - Speaking Partner</div>
+                </div>
+                <div style={{ flex: '1', textAlign: 'center' }}>1</div>
+                <div style={{ flex: '1.7', textAlign: 'right' }}>{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</div>
+                <div style={{ flex: '1.8', textAlign: 'right' }}>{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</div>
+             </div>
+             {[1, 2, 3].map(i => (
+                <div key={i} className="flex-table-row empty">
+                   <div style={{ flex: '5.5' }}></div>
+                   <div style={{ flex: '1' }}></div>
+                   <div style={{ flex: '1.7' }}></div>
+                   <div style={{ flex: '1.8' }}></div>
+                </div>
+             ))}
           </div>
 
           <div className="summary-grid">
@@ -196,18 +191,16 @@ export default function InvoicePage() {
        </div>
 
        <style jsx>{`
-          .invoice-outer-container { padding: 40px 20px; background: #f8fafc; min-height: 100vh; font-family: sans-serif; }
+          .invoice-outer-container { padding: 40px 20px; background: #94a3b8; min-height: 100vh; font-family: sans-serif; }
           .invoice-paper { 
              width: 100%; max-width: 18cm; min-height: 27cm; margin: 0 auto; background: white; 
-             box-shadow: 0 10px 40px rgba(0,0,0,0.1); display: flex; flex-direction: column; color: #000; box-sizing: border-box;
+             display: flex; flex-direction: column; color: #000; box-sizing: border-box; overflow: hidden;
           }
           
-          .invoice-header { display: flex; height: 160px; }
+          .invoice-header { display: flex; height: 160px; overflow: hidden; }
           .header-yellow-box { background: #facd00; flex: 4; display: flex; align-items: center; padding-left: 5%; clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%); z-index: 2; }
           .header-dark-box { background: #1e293b; flex: 6; display: flex; align-items: center; justify-content: flex-end; padding-right: 5%; margin-left: -10%; }
-          .invoice-logo { width: 50px; height: 50px; border-radius: 50%; background: #1e293b; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-          .logo-bubble { width: 80%; height: 80%; background: #facd00; transform: rotate(15deg); clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); }
-          .invoice-brand { margin-left: 10px; color: #1e293b; }
+          .invoice-brand { color: #1e293b; }
           .main-name { font-size: 16px; font-weight: bold; }
           .tagline { font-size: 8px; }
           .company-details { color: white; text-align: right; font-size: 9px; line-height: 1.5; }
@@ -222,14 +215,20 @@ export default function InvoicePage() {
           .recipient-row span { width: 70px; }
           .recipient-row strong { border-bottom: 1px solid #ddd; flex: 1; max-width: 250px; }
 
-          .table-container { padding: 0 5%; }
-          .invoice-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; table-layout: fixed; }
-          .invoice-table th { background: #facd00; padding: 8px; font-size: 10px; border: 1.5px solid #000; text-align: left; }
-          .invoice-table td { padding: 8px; font-size: 10px; border-left: 1.5px solid #000; border-right: 1.5px solid #000; word-break: break-all; }
+          /* FLEX TABLE - THE ULTIMATE OVERFLOW FIX */
+          .flex-table-container { padding: 0 5%; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; border: 1.5px solid #000; margin: 0 5%; width: 90%; }
+          .flex-table-header { display: flex; background: #facd00; border-bottom: 1.5px solid #000; font-size: 10px; font-weight: bold; }
+          .flex-table-header > div { padding: 8px; border-right: 1.5px solid #000; }
+          .flex-table-header > div:last-child { border-right: none; }
+          
+          .flex-table-row { display: flex; border-bottom: none; font-size: 10px; min-height: 30px; }
+          .flex-table-row > div { padding: 8px; border-right: 1.5px solid #000; }
+          .flex-table-row > div:last-child { border-right: none; }
+          .flex-table-row.empty { height: 35px; }
+          .flex-table-row:last-child { border-bottom: none; }
+          
           .item-name { font-weight: bold; }
           .item-desc { font-size: 8px; color: #666; }
-          .empty-row td { height: 30px; }
-          .invoice-table tbody tr:last-child td { border-bottom: 1.5px solid #000; }
 
           .summary-grid { display: flex; padding: 20px 5%; gap: 20px; }
           .summary-left { flex: 1; font-size: 10px; }
@@ -248,15 +247,13 @@ export default function InvoicePage() {
           .space { height: 60px; }
           .name { font-weight: bold; text-decoration: underline; }
 
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-
           @media print {
              .no-print { display: none !important; }
-             body { background: white !important; -webkit-print-color-adjust: exact; }
+             body { background: white !important; }
              .invoice-outer-container { padding: 0 !important; }
              .invoice-paper { box-shadow: none !important; max-width: none !important; width: 100% !important; margin: 0 !important; border: none !important; }
-             @page { size: A4; margin: 1cm; }
+             .flex-table-container { margin: 0 5% !important; width: 90% !important; }
+             @page { size: A4 portrait; margin: 1cm; }
           }
        `}</style>
     </div>

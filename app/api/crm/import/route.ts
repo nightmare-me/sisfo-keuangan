@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
         // Try to find program by name
         const programName = item.program?.toLowerCase().trim();
-        const targetProgram = allPrograms.find(p => 
+        const targetProgram = allPrograms.find((p: any) => 
           p.nama.toLowerCase().includes(programName) || 
           programName.includes(p.nama.toLowerCase())
         );

@@ -32,12 +32,12 @@ export async function POST(request: NextRequest) {
 
         // Matching Student
         const sName = item.nama_siswa.toLowerCase().trim();
-        const targetSiswa = allSiswa.find(s => s.nama.toLowerCase() === sName);
+        const targetSiswa = allSiswa.find((s: any) => s.nama.toLowerCase() === sName);
         if (!targetSiswa) continue;
 
         // Matching Program
         const pName = item.program?.toLowerCase().trim();
-        const targetProgram = allPrograms.find(p => 
+        const targetProgram = allPrograms.find((p: any) => 
           p.nama.toLowerCase().includes(pName) || 
           pName?.includes(p.nama.toLowerCase())
         );

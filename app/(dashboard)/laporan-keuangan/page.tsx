@@ -73,6 +73,7 @@ export default function LaporanPage() {
       ["BREAKDOWN SUMBER PEMASUKAN"],
       ["Regular (Murid Baru)", data.ringkasan.sourceBreakdown?.REGULAR || 0],
       ["Repeat Order (RO)", data.ringkasan.sourceBreakdown?.RO || 0],
+      ["Sosmed (Viral)", data.ringkasan.sourceBreakdown?.SOSMED || 0],
       ["Produk Live", data.ringkasan.sourceBreakdown?.LIVE || 0],
       ["Produk TOEFL (Shared)", data.ringkasan.sourceBreakdown?.TOEFL || 0],
     ];
@@ -129,6 +130,7 @@ export default function LaporanPage() {
         [],
         ["SUMBER: REGULAR", formatCurrency(d.ringkasan.sourceBreakdown?.REGULAR || 0)],
         ["SUMBER: REPEAT ORDER", formatCurrency(d.ringkasan.sourceBreakdown?.RO || 0)],
+        ["SUMBER: SOSMED/VIRAL", formatCurrency(d.ringkasan.sourceBreakdown?.SOSMED || 0)],
         ["SUMBER: PRODUK LIVE", formatCurrency(d.ringkasan.sourceBreakdown?.LIVE || 0)],
         ["SUMBER: PRODUK TOEFL", formatCurrency(d.ringkasan.sourceBreakdown?.TOEFL || 0)],
       ],
@@ -263,12 +265,13 @@ export default function LaporanPage() {
                 <Layers size={18} style={{ color: "var(--primary)" }} />
                 <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Breakdown Sumber Pemasukan</h3>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16 }}>
                 {[
                   { label: "Regular (Murid Baru)", key: "REGULAR", color: "#6366f1", icon: "🌱" },
                   { label: "Repeat Order (RO)", key: "RO", color: "#10b981", icon: "🔁" },
+                  { label: "Sosmed / Viral", key: "SOSMED", color: "#ec4899", icon: "📱" },
                   { label: "Produk Live", key: "LIVE", color: "#f59e0b", icon: "📹" },
-                  { label: "Produk TOEFL", key: "TOEFL", color: "#ec4899", icon: "📝" }
+                  { label: "Produk TOEFL", key: "TOEFL", color: "#3b82f6", icon: "📝" }
                 ].map(s => {
                   const val = data.ringkasan.sourceBreakdown?.[s.key] || 0;
                   const total = data.ringkasan.totalPemasukan || 1;

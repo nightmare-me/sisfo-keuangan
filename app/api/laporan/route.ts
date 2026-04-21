@@ -130,12 +130,9 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 10. Breakdown sumber (RO, TOEFL, Live, Regular)
-    const rawBreakdown = await prisma.pemasukan.findMany({
-      where: { tanggal: dateFilter },
-      select: {
-        isRO: true,
         hargaFinal: true,
         programId: true,
+        cs: { select: { teamType: true } },
         program: { select: { nama: true, isProfitSharing: true } },
       }
     });
@@ -144,15 +141,19 @@ export async function GET(request: NextRequest) {
       RO: 0,
       TOEFL: 0,
       LIVE: 0,
+      SOSMED: 0,
       REGULAR: 0
     };
 
     rawBreakdown.forEach(p => {
       const nama = p.program?.nama?.toUpperCase() || "";
       const isSharing = p.program?.isProfitSharing || false;
+      const teamType = p.cs?.teamType;
       
       if (p.isRO) {
         sourceBreakdown.RO += p.hargaFinal;
+      } else if (teamType === "CS_SOSMED") {
+        sourceBreakdown.SOSMED += p.hargaFinal;
       } else if (isSharing) {
         sourceBreakdown.TOEFL += p.hargaFinal;
       } else if (nama.includes("LIVE")) {

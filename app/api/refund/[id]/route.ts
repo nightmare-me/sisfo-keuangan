@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (!refund) return NextResponse.json({ error: "Data refund tidak ditemukan" }, { status: 404 });
 
     // 2. Proses dalam transaksi
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const updatedRefund = await tx.refund.update({
         where: { id },
         data: {

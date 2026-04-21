@@ -2,7 +2,7 @@
  * Payroll & Fee Calculation Engine
  */
 
-export type CSCategory = 'CS_REGULAR' | 'CS_LIVE' | 'CS_TOEFL' | 'CS_RO';
+export type CSCategory = 'CS_REGULAR' | 'CS_LIVE' | 'CS_TOEFL' | 'CS_RO' | 'CS_SOSMED';
 export type AdvCategory = 'ADV_REGULAR' | 'ADV_PART_TIME' | 'ADV_PROJECT';
 
 /**
@@ -23,7 +23,7 @@ export function calculateCSFee(
   }
 
   // 2. CADANGAN: Pakai rumus hardcoded (untuk back-compatibility)
-  if (csCategory === 'CS_REGULAR') {
+  if (csCategory === 'CS_REGULAR' || csCategory === 'CS_SOSMED') {
     // Regular Rules
     if (!isRO) {
       if (productType === '49K_DISKON') return 2000;

@@ -463,6 +463,7 @@ export default function UsersPage() {
                               <select className="form-control" value={form.teamType} onChange={e => setForm(f => ({ ...f, teamType: e.target.value }))}>
                                 <option value="">Pilih Kategori...</option>
                                 <option value="CS_REGULAR">CS Regular</option>
+                                <option value="CS_SOSMED">CS Sosmed</option>
                                 <option value="CS_LIVE">CS Live</option>
                                 <option value="CS_TOEFL">CS Test TOEFL</option>
                                 <option value="CS_RO">CS Repeat Order (RO)</option>

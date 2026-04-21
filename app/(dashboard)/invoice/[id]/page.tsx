@@ -20,8 +20,19 @@ export default function InvoicePage() {
     email: "speakingpartnerku@gmail.com",
     telp: "0877 6263 0406",
     website: "WWW.SPEAKINGPARTNER.ID",
-    logoUrl: "" // Custom logo URL
+    logoUrl: ""
   });
+
+  // GDrive Helper: Convert view link to direct download link
+  const getDirectLogoUrl = (url: string) => {
+    if (url.includes('drive.google.com')) {
+      const idMatch = url.match(/\/d\/(.+?)\/(view|edit)/) || url.match(/id=(.+?)(&|$)/);
+      if (idMatch && idMatch[1]) {
+        return `https://drive.google.com/uc?id=${idMatch[1]}&export=download`;
+      }
+    }
+    return url;
+  };
 
   useEffect(() => {
     fetch(`/api/leads/${params.id}/invoice`)
@@ -32,7 +43,6 @@ export default function InvoicePage() {
   if (loading) return <div style={{ padding: 40, textAlign: 'center' }}>Memuat data invoice...</div>;
   if (!lead) return <div style={{ padding: 40, textAlign: 'center' }}>Data tidak ditemukan</div>;
 
-  // Simple deterministic hash based on ID
   const idHash = lead.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
   const dateObj = new Date(lead.tanggalLead || lead.createdAt);
   const yearStr = dateObj.getFullYear();
@@ -50,7 +60,7 @@ export default function InvoicePage() {
           </button>
           <div style={{ display: 'flex', gap: 12 }}>
              <button className={`btn btn-sm ${isEditingHeader ? 'btn-success' : 'btn-secondary'}`} onClick={() => setIsEditingHeader(!isEditingHeader)}>
-                {isEditingHeader ? "Selesai Edit" : "Edit Kop & Logo"}
+                {isEditingHeader ? "Selesai Edit" : "Edit Kop & Logo GDrive"}
              </button>
              <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
                 <Printer size={16} /> Cetak Invoice
@@ -66,7 +76,7 @@ export default function InvoicePage() {
                 <div className="invoice-logo-container">
                    <div className="invoice-logo">
                       {headerInfo.logoUrl ? (
-                         <img src={headerInfo.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
+                         <img src={getDirectLogoUrl(headerInfo.logoUrl)} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
                       ) : (
                          <div className="logo-bubble">
                             <div className="wave-icon"></div>
@@ -77,7 +87,7 @@ export default function InvoicePage() {
                       {isEditingHeader ? (
                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             <input className="header-input" value={headerInfo.name} onChange={e => setHeaderInfo({...headerInfo, name: e.target.value})} style={{ fontSize: 22, fontWeight: 900 }} />
-                            <input className="header-input" value={headerInfo.logoUrl} placeholder="URL Logo (Opsional)" onChange={e => setHeaderInfo({...headerInfo, logoUrl: e.target.value})} style={{ fontSize: 10 }} />
+                            <input className="header-input" value={headerInfo.logoUrl} placeholder="Paste Link GDrive di sini" onChange={e => setHeaderInfo({...headerInfo, logoUrl: e.target.value})} style={{ fontSize: 10 }} />
                          </div>
                       ) : (
                          <div className="main-name">{headerInfo.name}</div>
@@ -142,8 +152,8 @@ export default function InvoicePage() {
              </div>
           </div>
 
-          {/* Table */}
-          <div style={{ padding: '0 40px', width: '100%', boxSizing: 'border-box' }}>
+          {/* Table Container */}
+          <div className="table-print-container">
             <table className="invoice-table">
                <thead>
                   <tr>
@@ -232,7 +242,6 @@ export default function InvoicePage() {
              flex-direction: column;
              color: #1e293b;
              box-sizing: border-box;
-             overflow: hidden;
           }
           
           /* Header Layout */
@@ -341,7 +350,7 @@ export default function InvoicePage() {
           .meta-row-clean {
              display: flex;
              justify-content: flex-end;
-             gap: 20px;
+             gap: 10px;
              margin-bottom: 4px;
           }
           .meta-label {
@@ -353,7 +362,7 @@ export default function InvoicePage() {
              font-size: 12px;
              text-align: right;
              font-weight: 700;
-             min-width: 140px;
+             width: 160px;
           }
           
           /* Recipient */
@@ -377,6 +386,11 @@ export default function InvoicePage() {
           }
           
           /* Table Style Fixed */
+          .table-print-container {
+             padding: 0 40px;
+             width: 100%;
+             box-sizing: border-box;
+          }
           .invoice-table {
              width: 100%;
              border-collapse: collapse;

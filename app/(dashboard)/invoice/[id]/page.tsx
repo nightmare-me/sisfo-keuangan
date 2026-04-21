@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, Layout } from "lucide-react";
 
 export default function InvoicePage() {
   const params = useParams();
@@ -11,8 +11,8 @@ export default function InvoicePage() {
   const [lead, setLead] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditingHeader, setIsEditingHeader] = useState(false);
+  const [useCustomHeaderImage, setUseCustomHeaderImage] = useState(false);
   
-  // Header editable state
   const [headerInfo, setHeaderInfo] = useState({
     name: "SPEAKING PARTNER",
     tagline: "Teman Terhebat Belajar Bahasa Inggris",
@@ -20,14 +20,13 @@ export default function InvoicePage() {
     email: "speakingpartnerku@gmail.com",
     telp: "0877 6263 0406",
     website: "WWW.SPEAKINGPARTNER.ID",
-    logoUrl: ""
+    logoUrl: "",
+    fullHeaderImageUrl: "" 
   });
 
-  // GDrive Helper: Convert view link to direct download link
   const getDirectLogoUrl = (url: string) => {
     if (!url) return "";
     if (url.includes('drive.google.com')) {
-      // Regex for /d/ID/ or ?id=ID
       const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
       if (idMatch && idMatch[1]) {
         return `https://drive.google.com/uc?id=${idMatch[1]}&export=download`;
@@ -55,14 +54,16 @@ export default function InvoicePage() {
 
   return (
     <div className="invoice-outer-container">
-       {/* UI Tools (Hidden on print) */}
        <div className="no-print" style={{ maxWidth: '850px', margin: '0 auto 20px auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button className="btn btn-secondary btn-sm" onClick={() => router.back()}>
              <ArrowLeft size={16} /> Kembali
           </button>
           <div style={{ display: 'flex', gap: 12 }}>
+             <button className="btn btn-secondary btn-sm" onClick={() => setUseCustomHeaderImage(!useCustomHeaderImage)}>
+                <Layout size={16} /> {useCustomHeaderImage ? "Pakai Kop Teks" : "Pakai Kop Gambar"}
+             </button>
              <button className={`btn btn-sm ${isEditingHeader ? 'btn-success' : 'btn-secondary'}`} onClick={() => setIsEditingHeader(!isEditingHeader)}>
-                {isEditingHeader ? "Selesai Edit" : "Edit Kop & Logo GDrive"}
+                {isEditingHeader ? "Selesai Edit" : "Edit Detail Kop"}
              </button>
              <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
                 <Printer size={16} /> Cetak Invoice
@@ -70,61 +71,75 @@ export default function InvoicePage() {
           </div>
        </div>
 
-       {/* The Real Invoice Template */}
        <div className="invoice-paper">
-          {/* Header Section */}
-          <div className="invoice-header">
-             <div className="header-yellow-box">
-                <div className="invoice-logo-container">
-                   <div className="invoice-logo">
-                      {headerInfo.logoUrl ? (
-                         <img src={getDirectLogoUrl(headerInfo.logoUrl)} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
-                      ) : (
-                         <div className="logo-bubble">
-                            <div className="wave-icon"></div>
-                         </div>
-                      )}
+          {useCustomHeaderImage ? (
+             <div className="custom-header-image-container">
+                {headerInfo.fullHeaderImageUrl ? (
+                   <img src={getDirectLogoUrl(headerInfo.fullHeaderImageUrl)} alt="Kop Surat" style={{ width: '100%', height: 'auto', display: 'block' }} />
+                ) : (
+                   <div style={{ height: 180, background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '2px solid #000' }}>
+                      Tempel Link Gambar Kop Surat (Gdrive Support) di Menu Edit
                    </div>
-                   <div className="invoice-brand">
-                      {isEditingHeader ? (
-                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <input className="header-input" value={headerInfo.name} onChange={e => setHeaderInfo({...headerInfo, name: e.target.value})} style={{ fontSize: 20, fontWeight: 900 }} />
-                            <input className="header-input" value={headerInfo.logoUrl} placeholder="Paste Link GDrive di sini" onChange={e => setHeaderInfo({...headerInfo, logoUrl: e.target.value})} style={{ fontSize: 9 }} />
-                         </div>
-                      ) : (
-                         <div className="main-name" style={{ fontSize: '20px' }}>{headerInfo.name}</div>
-                      )}
-                      
-                      {isEditingHeader ? (
-                         <input className="header-input" value={headerInfo.tagline} onChange={e => setHeaderInfo({...headerInfo, tagline: e.target.value})} style={{ fontSize: 10, width: '100%' }} />
-                      ) : (
-                         <div className="tagline">{headerInfo.tagline}</div>
-                      )}
+                )}
+                {isEditingHeader && (
+                   <div style={{ padding: 15, background: '#FFF7ED', borderBottom: '1px solid #FF8000' }}>
+                      <input className="header-input" value={headerInfo.fullHeaderImageUrl} placeholder="Paste Link Gambar Kop Surat di sini..." onChange={e => setHeaderInfo({...headerInfo, fullHeaderImageUrl: e.target.value})} />
                    </div>
-                </div>
+                )}
              </div>
-             <div className="header-dark-box">
-                <div className="company-details">
-                   {isEditingHeader ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 250 }}>
-                         <input className="header-input dark" value={headerInfo.address} onChange={e => setHeaderInfo({...headerInfo, address: e.target.value})} />
-                         <input className="header-input dark" value={headerInfo.email} onChange={e => setHeaderInfo({...headerInfo, email: e.target.value})} />
-                         <input className="header-input dark" value={headerInfo.telp} onChange={e => setHeaderInfo({...headerInfo, telp: e.target.value})} />
-                         <input className="header-input dark" value={headerInfo.website} onChange={e => setHeaderInfo({...headerInfo, website: e.target.value})} style={{ color: '#ffcc00' }} />
+          ) : (
+             <div className="invoice-header">
+                <div className="header-yellow-box">
+                   <div className="invoice-logo-container">
+                      <div className="invoice-logo">
+                         {headerInfo.logoUrl ? (
+                            <img src={getDirectLogoUrl(headerInfo.logoUrl)} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
+                         ) : (
+                            <div className="logo-bubble">
+                               <div className="wave-icon"></div>
+                            </div>
+                         )}
                       </div>
-                   ) : (
-                      <>
-                         <p>{headerInfo.address}</p>
-                         <p>Email: {headerInfo.email}</p>
-                         <p>Telp: {headerInfo.telp}</p>
-                         <div className="website">{headerInfo.website}</div>
-                      </>
-                   )}
+                      <div className="invoice-brand">
+                         {isEditingHeader ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                               <input className="header-input" value={headerInfo.name} onChange={e => setHeaderInfo({...headerInfo, name: e.target.value})} style={{ fontSize: 20, fontWeight: 900 }} />
+                               <input className="header-input" value={headerInfo.logoUrl} placeholder="Link Logo GDrive" onChange={e => setHeaderInfo({...headerInfo, logoUrl: e.target.value})} style={{ fontSize: 9 }} />
+                            </div>
+                         ) : (
+                            <div className="main-name" style={{ fontSize: '20px' }}>{headerInfo.name}</div>
+                         )}
+                         
+                         {isEditingHeader ? (
+                            <input className="header-input" value={headerInfo.tagline} onChange={e => setHeaderInfo({...headerInfo, tagline: e.target.value})} style={{ fontSize: 10, width: '100%' }} />
+                         ) : (
+                            <div className="tagline">{headerInfo.tagline}</div>
+                         )}
+                      </div>
+                   </div>
+                </div>
+                <div className="header-dark-box">
+                   <div className="company-details">
+                      {isEditingHeader ? (
+                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 250 }}>
+                            <input className="header-input dark" value={headerInfo.address} onChange={e => setHeaderInfo({...headerInfo, address: e.target.value})} />
+                            <input className="header-input dark" value={headerInfo.email} onChange={e => setHeaderInfo({...headerInfo, email: e.target.value})} />
+                            <input className="header-input dark" value={headerInfo.telp} onChange={e => setHeaderInfo({...headerInfo, telp: e.target.value})} />
+                            <input className="header-input dark" value={headerInfo.website} onChange={e => setHeaderInfo({...headerInfo, website: e.target.value})} style={{ color: '#ffcc00' }} />
+                         </div>
+                      ) : (
+                         <>
+                            <p>{headerInfo.address}</p>
+                            <p>Email: {headerInfo.email}</p>
+                            <p>Telp: {headerInfo.telp}</p>
+                            <div className="website">{headerInfo.website}</div>
+                         </>
+                      )}
+                   </div>
                 </div>
              </div>
-          </div>
+          )}
 
-          {/* Meta Info */}
           <div className="invoice-meta">
              <div className="meta-right-clean">
                 <div className="meta-row-clean">
@@ -138,7 +153,6 @@ export default function InvoicePage() {
              </div>
           </div>
 
-          {/* Recipient */}
           <div className="invoice-recipient">
              <div className="recipient-row">
                 <span className="recipient-label">Kepada :</span>
@@ -154,15 +168,14 @@ export default function InvoicePage() {
              </div>
           </div>
 
-          {/* Table Container */}
           <div className="table-print-container">
             <table className="invoice-table">
                <thead>
                   <tr>
-                     <th style={{ width: '40%' }}>KETERANGAN</th>
-                     <th style={{ width: '10%' }} className="text-center">JML</th>
-                     <th style={{ width: '25%' }} className="text-right">HARGA</th>
-                     <th style={{ width: '25%' }} className="text-right">SUB TOTAL</th>
+                     <th style={{ width: '70%', background: '#ffcc00' }}>KETERANGAN</th>
+                     <th style={{ width: '6%', background: '#ffcc00' }} className="text-center">JML</th>
+                     <th style={{ width: '12%', background: '#ffcc00' }} className="text-right">HARGA</th>
+                     <th style={{ width: '12%', background: '#ffcc00' }} className="text-right">TOTAL</th>
                   </tr>
                </thead>
                <tbody>
@@ -182,7 +195,6 @@ export default function InvoicePage() {
             </table>
           </div>
 
-          {/* Totals Section */}
           <div className="invoice-summary-grid">
              <div className="summary-left">
                 <div className="payment-title">PEMBAYARAN BISA MELALUI</div>
@@ -214,7 +226,6 @@ export default function InvoicePage() {
              </div>
           </div>
 
-          {/* Footer Bottom */}
           <div className="invoice-footer-bottom">
              <div className="signature-container">
                 <div>Dikeluarkan oleh</div>
@@ -224,7 +235,6 @@ export default function InvoicePage() {
           </div>
        </div>
 
-       {/* INVOICE CSS */}
        <style jsx>{`
           .invoice-outer-container {
              padding: 40px 20px;
@@ -238,20 +248,21 @@ export default function InvoicePage() {
              margin: 0 auto;
              background: white;
              padding: 0;
-             box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
              position: relative;
              display: flex;
              flex-direction: column;
              color: #1e293b;
-             box-sizing: border-box;
+             overflow: hidden;
           }
           
-          /* Header Layout */
+          .custom-header-image-container {
+             width: 100%;
+          }
+
           .invoice-header {
              display: flex;
              height: 160px;
-             position: relative;
-             margin-bottom: 20px;
           }
           .header-yellow-box {
              background: #ffcc00;
@@ -268,31 +279,27 @@ export default function InvoicePage() {
              display: flex;
              align-items: center;
              justify-content: flex-end;
-             padding: 0 40px 0 0;
+             padding-right: 40px;
              margin-left: -60px;
           }
           
           .header-input {
-             background: rgba(255,255,255,0.2);
              border: 1px dashed #000;
-             padding: 2px 4px;
-             font-family: inherit;
+             padding: 4px;
              width: 100%;
+             font-size: 11px;
           }
           .header-input.dark {
              background: rgba(0,0,0,0.3);
              color: white;
              border: 1px dashed #ccc;
              text-align: right;
-             font-size: 10px;
           }
 
-          /* Branding */
           .invoice-logo-container {
              display: flex;
              align-items: center;
              gap: 15px;
-             color: #232833;
           }
           .invoice-logo {
              width: 60px;
@@ -302,9 +309,8 @@ export default function InvoicePage() {
              display: flex;
              align-items: center;
              justify-content: center;
-             position: relative;
-             flex-shrink: 0;
              overflow: hidden;
+             flex-shrink: 0;
           }
           .logo-bubble {
              width: 100%;
@@ -312,82 +318,28 @@ export default function InvoicePage() {
              background: #ffcc00;
              border-radius: 50%;
              clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-             transform: rotate(15deg) scale(0.7);
+             transform: rotate(15deg) scale(0.6);
           }
-          .main-name {
-             font-size: 20px;
-             font-weight: 900;
-             letter-spacing: -0.5px;
-             line-height: 1;
-          }
-          .tagline {
-             font-size: 10px;
-             font-weight: 600;
-             margin-top: 4px;
-          }
-          .company-details {
-             color: white;
-             text-align: right;
-             font-size: 10px;
-             line-height: 1.5;
-          }
-          .company-details p { margin: 0; }
-          .website {
-             margin-top: 8px;
-             font-weight: 800;
-             color: #ffcc00;
-             letter-spacing: 1.5px;
-             font-size: 11px;
-          }
+          .main-name { font-weight: 900; letter-spacing: -0.5px; line-height: 1; }
+          .tagline { font-size: 10px; font-weight: 600; margin-top: 4px; }
+          .company-details { color: white; text-align: right; font-size: 10px; line-height: 1.5; }
+          .website { margin-top: 8px; font-weight: 800; color: #ffcc00; font-size: 11px; }
           
-          /* Meta Info Clean */
           .invoice-meta {
              display: flex;
              justify-content: flex-end;
-             padding: 0 40px 10px 40px;
+             padding: 15px 40px 10px 40px;
           }
-          .meta-right-clean {
-             width: 320px;
-          }
-          .meta-row-clean {
-             display: flex;
-             justify-content: flex-end;
-             gap: 10px;
-             margin-bottom: 4px;
-          }
-          .meta-label {
-             font-size: 12px;
-             font-weight: 500;
-             color: #64748b;
-          }
-          .meta-value {
-             font-size: 12px;
-             text-align: right;
-             font-weight: 700;
-             width: 160px;
-          }
+          .meta-right-clean { width: 300px; }
+          .meta-row-clean { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 4px; }
+          .meta-label { font-size: 11px; color: #64748b; }
+          .meta-value { font-size: 11px; text-align: right; font-weight: 700; width: 150px; }
           
-          /* Recipient */
-          .invoice-recipient {
-             padding: 10px 40px 30px 40px;
-          }
-          .recipient-row {
-             display: flex;
-             margin-bottom: 5px;
-             font-size: 13px;
-          }
-          .recipient-label {
-             width: 80px;
-             font-weight: 500;
-          }
-          .recipient-value {
-             border-bottom: 1px solid #000;
-             flex: 1;
-             max-width: 350px;
-             font-weight: 600;
-          }
+          .invoice-recipient { padding: 10px 40px 25px 40px; }
+          .recipient-row { display: flex; margin-bottom: 5px; font-size: 12px; }
+          .recipient-label { width: 80px; font-weight: 500; }
+          .recipient-value { border-bottom: 1px solid #000; flex: 1; max-width: 350px; font-weight: 600; }
           
-          /* Table Style Fixed */
           .table-print-container {
              padding: 0 40px;
              width: 100%;
@@ -400,75 +352,39 @@ export default function InvoicePage() {
              table-layout: fixed;
           }
           .invoice-table th {
-             background: #ffcc00;
              color: #000;
-             padding: 10px 12px;
+             padding: 8px 10px;
              text-align: left;
-             font-size: 13px;
-             font-weight: 800;
+             font-size: 11px;
+             font-weight: 900;
              border: 1.5px solid #000;
           }
           .invoice-table td {
-             padding: 12px;
-             font-size: 12px;
+             padding: 10px;
+             font-size: 11px;
              border-left: 1.5px solid #000;
              border-right: 1.5px solid #000;
-             background: #fff;
           }
-          .item-name { font-weight: 800; margin-bottom: 3px; }
-          .item-desc { font-size: 10px; color: #475569; }
-          .empty-row td { height: 35px; border-bottom: none; border-top: none; }
+          .item-name { font-weight: 800; }
+          .empty-row td { height: 35px; }
           .invoice-table tbody tr:last-child td { border-bottom: 1.5px solid #000; }
           
-          /* Summary Section */
-          .invoice-summary-grid {
-             display: flex;
-             padding: 30px 40px;
-          }
+          .invoice-summary-grid { display: flex; padding: 25px 40px; }
           .summary-left { flex: 1.2; }
-          .payment-title {
-             font-size: 12px;
-             font-weight: 800;
-             text-decoration: underline;
-             margin-bottom: 8px;
-          }
-          .bank-list { font-size: 11px; line-height: 1.7; }
-          .bank-row span { font-weight: 700; display: inline-block; width: 60px; }
-          .acct-name { margin-top: 5px; font-size: 12px; }
+          .payment-title { font-size: 11px; font-weight: 800; text-decoration: underline; margin-bottom: 8px; }
+          .bank-list { font-size: 10px; line-height: 1.6; }
+          .bank-row span { font-weight: 700; width: 55px; display: inline-block; }
           
           .summary-right { flex: 0.8; }
-          .total-box-clean {
-             width: 100%;
-             border: 1.5px solid #000;
-          }
-          .total-row {
-             display: flex;
-             padding: 6px 12px;
-             font-size: 12px;
-          }
+          .total-box-clean { border: 1.5px solid #000; }
+          .total-row { display: flex; padding: 5px 10px; font-size: 11px; }
           .total-label { flex: 1; font-weight: 700; }
-          .total-symbol { width: 30px; font-weight: 600; }
-          .total-value { width: 80px; text-align: right; font-weight: 600; }
-          .grand-total-clean {
-             border-top: 1.5px solid #000;
-             font-weight: 900;
-             font-size: 13px;
-             background: #f8fafc;
-          }
+          .total-value { width: 70px; text-align: right; font-weight: 600; }
+          .grand-total-clean { border-top: 1.5px solid #000; font-weight: 900; background: #f8fafc; }
           
-          /* Signature */
-          .invoice-footer-bottom {
-             margin-top: auto;
-             padding: 40px;
-             display: flex;
-             justify-content: flex-end;
-          }
-          .signature-container {
-             text-align: center;
-             min-width: 150px;
-             font-size: 12px;
-          }
-          .signature-space { height: 70px; }
+          .invoice-footer-bottom { margin-top: auto; padding: 40px; display: flex; justify-content: flex-end; }
+          .signature-container { text-align: center; min-width: 150px; font-size: 11px; }
+          .signature-space { height: 60px; }
           .signature-name { font-weight: 800; text-decoration: underline; }
           
           .text-center { text-align: center; }
@@ -476,9 +392,9 @@ export default function InvoicePage() {
 
           @media print {
              .no-print { display: none !important; }
-             body { background: white !important; margin: 0 !important; padding: 0 !important; }
+             body { background: white !important; }
              .invoice-outer-container { padding: 0 !important; background: white !important; }
-             .invoice-paper { box-shadow: none !important; width: 210mm !important; border: none !important; height: 297mm; }
+             .invoice-paper { box-shadow: none !important; width: 210mm !important; border: none !important; }
              @page { size: A4; margin: 0; }
           }
        `}</style>

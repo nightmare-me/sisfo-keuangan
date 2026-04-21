@@ -2,7 +2,24 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🚀 Fitur Baru: Lead Source Tracking & Attribution (v2.4)
+## 🚀 Fitur Baru: Premium Invoice System (v3.8) 📄 (BARU!)
+
+### 1. Unified Branding Identity 🎨
+*   **Flex-Grid Table Architecture**: Pembangunan ulang sistem tabel menggunakan Flexbox (bukan tag table tradisional) untuk menghentikan masalah *overflow* permanen saat dicetak di kertas A4.
+*   **Asymmetrical Dark-Yellow Header**: Implementasi identitas visual Speaking Partner yang modern dengan kombinasi warna `#facd00` (Kuning) dan `#1e293b` (Dark Slate).
+*   **100% Visual Parity**: Keseragaman desain mutlak antara Halaman Invoice, Preview Modal di dashboard, hingga file Download PDF.
+
+### 2. Branding Persistence & Customization 🖼️
+*   **LocalStorage Intelligence**: Detail kop surat (nama, alamat, telp) dan link logo disimpan di browser secara otomatis. CS cukup input satu kali, dan data akan bertahan di sesi berikutnya.
+*   **Dynamic GDrive Converter**: Mendukung link "Share" Google Drive secara langsung; sistem otomatis mengonversinya menjadi *direct source link* untuk merender logo secara instan.
+*   **Dual Mode Header**: Fleksibilitas memilih antara "Kop Teks" (Input Manual) atau "Kop Gambar" (Upload Banner) sesuai kebutuhan promosi.
+
+### 3. Print-Ready Engineering 📐
+*   **Fluid Print Scaling**: Komponen dirancang responsif terhadap fitur "Scale" di browser print preview, memastikan hasil cetak selalu pas di dalam margin printer apapun.
+*   **Direct-Download PDF Sync**: Modul unduh PDF di daftar invoice telah di-overhaul menggunakan `jsPDF` dengan styling yang sinkron dengan branding baru.
+*   **Smart Navigation**: Integrasi tombol kembali yang cerdas untuk alur kerja cepat antara CRM, Manajemen Lead, dan Dokumentasi Keuangan.
+
+## 🚀 Fitur Sebelumnya: Lead Source Tracking & Attribution (v2.4)
 
 ### 1. CRM: Marketing Source Attribution 🏷️ (BARU!)
 *   **Source Tagging**: Setiap lead kini memiliki label `sumber` (SOSMED, REGULAR, RO, MANUAL, IMPORT).
@@ -60,5 +77,5 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 *   **Modal Anti-Tutup Sendiri**: Modal form kelas tidak menutup ketika area luar diklik secara tidak sengaja.
 
 ---
-*Created with ❤️ by Antigravity for Speaking Partner Premium Operations.*
-*Semua sistem stabil, fitur lengkap, dan siap untuk operasional penuh. Selamat beristirahat, Pak Muis! ☕*
+*Created with ❤️ by Antigravity (Powered by Google Deepmind) for Speaking Partner Premium Operations.*
+*Semua sistem stabil, fitur invoice v3.8 aktif, dan siap untuk operasional penuh. Selamat bekerja, Pak Muis! ☕*

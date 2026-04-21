@@ -16,9 +16,37 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type");
 
     if (type === "permissions") {
-      const permissions = await prisma.permission.findMany({
+      let permissions = await prisma.permission.findMany({
         orderBy: { name: 'asc' }
       });
+
+      // Auto-Seed Permissions if empty
+      if (permissions.length === 0) {
+        const modules = [
+          'dashboard', 'crm', 'finance_in', 'finance_out', 'ads_spent', 'ads_performance',
+          'report', 'refund', 'payroll_staff', 'siswa', 'kelas', 'program',
+          'payroll_tutor', 'pengajar', 'invoice', 'inventaris', 'live_tracking',
+          'user', 'settings', 'audit', 'archive', 'wa_template'
+        ];
+        const actions = ['view', 'edit', 'delete'];
+        
+        const newPerms = [];
+        for (const mod of modules) {
+          for (const act of actions) {
+            newPerms.push({
+              name: `${act.toUpperCase()} ${mod.toUpperCase()}`,
+              slug: `${mod}:${act}`,
+              description: `Akses untuk ${act} pada modul ${mod}`
+            });
+          }
+        }
+        await prisma.permission.createMany({ data: newPerms, skipDuplicates: true });
+        
+        permissions = await prisma.permission.findMany({
+          orderBy: { name: 'asc' }
+        });
+      }
+
       return NextResponse.json(permissions);
     }
 

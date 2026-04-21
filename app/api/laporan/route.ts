@@ -130,6 +130,10 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 10. Breakdown sumber (RO, TOEFL, Live, Regular)
+    const rawBreakdown = await prisma.pemasukan.findMany({
+      where: { tanggal: dateFilter },
+      select: {
+        isRO: true,
         hargaFinal: true,
         programId: true,
         cs: { select: { teamType: true } },

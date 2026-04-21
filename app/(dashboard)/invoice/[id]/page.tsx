@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Printer, ArrowLeft, Layout } from "lucide-react";
 
-// Version 3.3 - Final Polish
 export default function InvoicePage() {
   const params = useParams();
   const router = useRouter();
@@ -24,6 +23,25 @@ export default function InvoicePage() {
     logoUrl: "",
     fullHeaderImageUrl: "" 
   });
+
+  // Local Storage Storage
+  useEffect(() => {
+    const saved = localStorage.getItem("invoice_header_v3");
+    if (saved) {
+      setHeaderInfo(JSON.parse(saved));
+    }
+    const savedMode = localStorage.getItem("invoice_custom_mode");
+    if (savedMode === "true") {
+      setUseCustomHeaderImage(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (lead) {
+      localStorage.setItem("invoice_header_v3", JSON.stringify(headerInfo));
+      localStorage.setItem("invoice_custom_mode", String(useCustomHeaderImage));
+    }
+  }, [headerInfo, useCustomHeaderImage, lead]);
 
   const getDirectLogoUrl = (url: string) => {
     if (!url) return "";
@@ -75,8 +93,7 @@ export default function InvoicePage() {
           </div>
        </div>
 
-       <div className="invoice-paper" id="invoice-paper">
-          {/* Header Section */}
+       <div className="invoice-paper">
           {useCustomHeaderImage ? (
              <div className="custom-header-image-container">
                 {headerInfo.fullHeaderImageUrl ? (
@@ -144,7 +161,6 @@ export default function InvoicePage() {
              </div>
           )}
 
-          {/* Meta Info */}
           <div className="invoice-meta">
              <div className="meta-right-clean">
                 <div className="meta-row-clean">
@@ -158,7 +174,6 @@ export default function InvoicePage() {
              </div>
           </div>
 
-          {/* Recipient */}
           <div className="invoice-recipient">
              <div className="recipient-row">
                 <span className="recipient-label">Kepada :</span>
@@ -174,15 +189,14 @@ export default function InvoicePage() {
              </div>
           </div>
 
-          {/* TABLE SECTION - STRICT WIDTH */}
           <div className="table-print-container">
             <table className="invoice-table">
                <thead>
                   <tr>
                      <th className="th-ket" style={{ width: '55%' }}>KETERANGAN</th>
-                     <th className="th-jml text-center" style={{ width: '10%' }}>JML</th>
-                     <th className="th-harga text-right" style={{ width: '17%' }}>HARGA</th>
-                     <th className="th-total text-right" style={{ width: '18%' }}>TOTAL</th>
+                     <th className="th-jml text-center" style={{ width: '8%' }}>JML</th>
+                     <th className="th-harga text-right" style={{ width: '18%' }}>HARGA</th>
+                     <th className="th-total text-right" style={{ width: '19%' }}>TOTAL</th>
                   </tr>
                </thead>
                <tbody>
@@ -202,7 +216,6 @@ export default function InvoicePage() {
             </table>
           </div>
 
-          {/* Totals Section */}
           <div className="invoice-summary-grid">
              <div className="summary-left">
                 <div className="payment-title">PEMBAYARAN BISA MELALUI</div>
@@ -234,7 +247,6 @@ export default function InvoicePage() {
              </div>
           </div>
 
-          {/* Signature */}
           <div className="invoice-footer-bottom">
              <div className="signature-container">
                 <div>Dikeluarkan oleh</div>
@@ -252,8 +264,8 @@ export default function InvoicePage() {
              font-family: 'Inter', 'Helvetica', sans-serif;
           }
           .invoice-paper {
-             width: 210mm;
-             min-height: 297mm;
+             width: 195mm;
+             min-height: 280mm;
              margin: 0 auto;
              background: white;
              box-shadow: 0 10px 40px rgba(0,0,0,0.1);
@@ -263,111 +275,57 @@ export default function InvoicePage() {
              position: relative;
              overflow: hidden;
              box-sizing: border-box;
-             padding: 0;
           }
           
-          .custom-header-image-container {
-             width: 210mm;
-             margin: 0;
-          }
-
-          .invoice-header {
-             width: 210mm;
-             height: 160px;
-             display: flex;
-             position: relative;
-             margin: 0;
-          }
-          .header-yellow-box { 
-             background: #facd00; flex: 4; display: flex; align-items: center; 
-             padding-left: 45px; clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%); z-index: 2; 
-          }
-          .header-dark-box { 
-             background: #1e293b; flex: 6; display: flex; align-items: center; 
-             justify-content: flex-end; padding-right: 40px; margin-left: -60px; 
-          }
-          
-          .invoice-logo { width: 55px; height: 55px; border-radius: 50%; background: #1e293b; overflow: hidden; flex-shrink: 0; }
+          .invoice-header { width: 100%; height: 160px; display: flex; }
+          .header-yellow-box { background: #facd00; flex: 4; display: flex; align-items: center; padding-left: 35px; clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%); z-index: 2; }
+          .header-dark-box { background: #1e293b; flex: 6; display: flex; align-items: center; justify-content: flex-end; padding-right: 35px; margin-left: -50px; }
+          .invoice-logo { width: 50px; height: 50px; border-radius: 50%; background: #1e293b; overflow: hidden; flex-shrink: 0; }
           .logo-bubble { width: 100%; height: 100%; background: #facd00; transform: scale(0.6) rotate(15deg); clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); }
-          .invoice-brand { margin-left: 15px; color: #1e293b; }
-          .main-name { font-size: 18px; font-weight: 900; line-height: 1; margin-bottom: 2px; }
-          .tagline { font-size: 9px; font-weight: 700; }
-          
-          .company-details { color: white; text-align: right; font-size: 10px; line-height: 1.5; }
-          .company-details p { margin: 0; }
-          .website { margin-top: 5px; color: #facd00; font-weight: 900; font-size: 10px; }
-
+          .invoice-brand { margin-left: 12px; color: #1e293b; }
+          .main-name { font-size: 16px; font-weight: 900; line-height: 1; }
+          .tagline { font-size: 8px; font-weight: 700; }
+          .company-details { color: white; text-align: right; font-size: 9px; line-height: 1.5; }
+          .website { margin-top: 5px; color: #facd00; font-weight: 900; font-size: 9px; }
           .header-input { border: 1px dashed #000; padding: 2px; width: 100%; font-size: 10px; }
           .header-input.dark { background: rgba(0,0,0,0.3); color: white; border: 1px dashed #777; }
 
-          /* Meta */
-          .invoice-meta { display: flex; justify-content: flex-end; padding: 20px 45px 5px 45px; width: 210mm; box-sizing: border-box; }
-          .meta-right-clean { width: 280px; }
-          .meta-row-clean { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 3px; }
-          .meta-label { font-size: 10px; font-weight: 500; color: #64748b; }
-          .meta-value { font-size: 10px; font-weight: 700; width: 140px; text-align: right; }
+          .invoice-meta { display: flex; justify-content: flex-end; padding: 20px 35px 5px 35px; }
+          .meta-right-clean { width: 250px; }
+          .meta-row-clean { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 2px; }
+          .meta-label { font-size: 10px; color: #64748b; }
+          .meta-value { font-size: 10px; font-weight: 700; width: 130px; text-align: right; }
 
-          /* Recipient */
-          .invoice-recipient { padding: 5px 45px 30px 45px; width: 210mm; box-sizing: border-box; }
-          .recipient-row { display: flex; margin-bottom: 5px; font-size: 12px; align-items: center; }
-          .recipient-label { width: 80px; font-weight: 500; }
-          .recipient-value { border-bottom: 1px solid #ddd; flex: 1; max-width: 320px; font-weight: 500; }
+          .invoice-recipient { padding: 5px 35px 25px 35px; }
+          .recipient-row { display: flex; margin-bottom: 4px; font-size: 11px; align-items: center; }
+          .recipient-label { width: 70px; font-weight: 500; }
+          .recipient-value { border-bottom: 1px solid #eee; flex: 1; max-width: 300px; }
 
-          /* TABLE STABILITY - ABSOLUTE CONSTRAINT */
-          .table-print-container { 
-             padding: 0 15mm; 
-             width: 210mm; 
-             box-sizing: border-box; 
-          }
-          .invoice-table { 
-             width: 180mm; 
-             border-collapse: collapse; 
-             border: 1.5px solid #000; 
-             table-layout: fixed; 
-             margin: 0;
-          }
-          .invoice-table th { 
-             background: #facd00; 
-             color: #000; 
-             border: 1.5px solid #000; 
-             padding: 8px 10px; 
-             font-size: 11px; 
-             font-weight: 900; 
-             text-align: left; 
-          }
-          .invoice-table td { 
-             padding: 8px 10px; 
-             font-size: 10px; 
-             border-left: 1.5px solid #000; 
-             border-right: 1.5px solid #000; 
-             border-bottom: 0;
-             line-height: 1.4;
-          }
+          .table-print-container { padding: 0 35px; width: 100%; box-sizing: border-box; }
+          .invoice-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; table-layout: fixed; }
+          .invoice-table th { background: #facd00; color: #000; border: 1.5px solid #000; padding: 6px 10px; font-size: 10px; font-weight: 900; text-align: left; }
+          .invoice-table td { padding: 8px 10px; font-size: 10px; border-left: 1.5px solid #000; border-right: 1.5px solid #000; line-height: 1.4; }
           .item-name { font-weight: 800; margin-bottom: 2px; }
-          .item-desc { font-size: 9px; color: #475569; }
-          .empty-row td { height: 30px; }
+          .item-desc { font-size: 8px; color: #475569; }
+          .empty-row td { height: 25px; }
           .invoice-table tbody tr:last-child td { border-bottom: 1.5px solid #000; }
 
-          /* Summary */
-          .invoice-summary-grid { display: flex; padding: 30px 15mm; width: 210mm; box-sizing: border-box; gap: 20px; }
-          .summary-left { flex: 1.3; }
-          .payment-title { font-size: 11px; font-weight: 900; text-decoration: underline; margin-bottom: 8px; }
-          .bank-list { font-size: 10px; line-height: 1.7; }
-          .bank-row span { font-weight: 800; width: 55px; display: inline-block; }
-          .acct-name { margin-top: 5px; font-size: 11px; }
+          .invoice-summary-grid { display: flex; padding: 20px 35px; gap: 20px; }
+          .summary-left { flex: 1.2; }
+          .payment-title { font-size: 10px; font-weight: 900; text-decoration: underline; margin-bottom: 6px; }
+          .bank-list { font-size: 9px; line-height: 1.5; }
+          .bank-row span { font-weight: 800; width: 50px; display: inline-block; }
 
-          .summary-right { flex: 0.7; }
+          .summary-right { flex: 0.8; }
           .total-box-clean { border: 1.5px solid #000; width: 100%; }
-          .total-row { display: flex; padding: 5px 12px; font-size: 10px; }
+          .total-row { display: flex; padding: 4px 10px; font-size: 10px; }
           .total-label { flex: 1; font-weight: 700; }
-          .total-symbol { width: 25px; }
           .total-value { width: 70px; text-align: right; font-weight: 600; }
           .grand-total-clean { border-top: 1.5px solid #000; background: #f8fafc; font-weight: 900; font-size: 11px; }
 
-          /* Bottom */
-          .invoice-footer-bottom { margin-top: auto; padding: 40px 15mm; width: 210mm; box-sizing: border-box; display: flex; justify-content: flex-end; }
-          .signature-container { text-align: center; min-width: 150px; font-size: 11px; }
-          .signature-space { height: 65px; }
+          .invoice-footer-bottom { margin-top: auto; padding: 30px 35px; display: flex; justify-content: flex-end; }
+          .signature-container { text-align: center; min-width: 140px; font-size: 10px; }
+          .signature-space { height: 50px; }
           .signature-name { font-weight: 800; text-decoration: underline; }
 
           .text-center { text-align: center; }
@@ -376,8 +334,8 @@ export default function InvoicePage() {
           @media print {
              .no-print { display: none !important; }
              body { background: white !important; margin: 0 !important; }
-             .invoice-outer-container { padding: 0 !important; background: white !important; min-height: 297mm; }
-             .invoice-paper { box-shadow: none !important; width: 210mm !important; height: 297mm !important; border: none !important; position: absolute; top: 0; left: 0; }
+             .invoice-outer-container { padding: 0 !important; background: white !important; }
+             .invoice-paper { box-shadow: none !important; width: 195mm !important; border: none !important; }
              @page { size: A4; margin: 0; }
           }
        `}</style>

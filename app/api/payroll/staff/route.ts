@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const results = employees.map(emp => {
+    const results = employees.map((emp: any) => {
       const profile = emp.karyawanProfile!;
       const posisi = profile.posisi || "";
       const roleSlug = emp.role?.slug?.toLowerCase();

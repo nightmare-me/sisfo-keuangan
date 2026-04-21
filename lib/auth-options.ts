@@ -34,7 +34,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role?.slug.toUpperCase() || "USER",
           roleSlug: user.role?.slug || "user",
-          permissions: user.role?.permissions.map(p => p.slug) || [],
+          permissions: user.role?.permissions.map((p: any) => p.slug) || [],
         } as any;
       },
     }),

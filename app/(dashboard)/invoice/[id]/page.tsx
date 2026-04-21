@@ -26,13 +26,16 @@ export default function InvoicePage() {
 
   const getDirectLogoUrl = (url: string) => {
     if (!url) return "";
-    if (url.includes('drive.google.com')) {
-      const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+    const cleanUrl = url.trim();
+    if (cleanUrl.includes('drive.google.com')) {
+      const idMatch = cleanUrl.match(/\/d\/([a-zA-Z0-9_-]{25,})\//) || 
+                      cleanUrl.match(/\/d\/([a-zA-Z0-9_-]{25,})$/) || 
+                      cleanUrl.match(/id=([a-zA-Z0-9_-]{25,})/);
       if (idMatch && idMatch[1]) {
         return `https://drive.google.com/uc?id=${idMatch[1]}&export=download`;
       }
     }
-    return url;
+    return cleanUrl;
   };
 
   useEffect(() => {
@@ -172,10 +175,10 @@ export default function InvoicePage() {
             <table className="invoice-table">
                <thead>
                   <tr>
-                     <th style={{ width: '70%', background: '#ffcc00' }}>KETERANGAN</th>
-                     <th style={{ width: '6%', background: '#ffcc00' }} className="text-center">JML</th>
-                     <th style={{ width: '12%', background: '#ffcc00' }} className="text-right">HARGA</th>
-                     <th style={{ width: '12%', background: '#ffcc00' }} className="text-right">TOTAL</th>
+                     <th style={{ width: '55%', background: '#ffcc00' }}>KETERANGAN</th>
+                     <th style={{ width: '10%', background: '#ffcc00' }} className="text-center">JML</th>
+                     <th style={{ width: '17%', background: '#ffcc00' }} className="text-right">HARGA</th>
+                     <th style={{ width: '18%', background: '#ffcc00' }} className="text-right">TOTAL</th>
                   </tr>
                </thead>
                <tbody>
@@ -298,8 +301,7 @@ export default function InvoicePage() {
 
           .invoice-logo-container {
              display: flex;
-             align-items: center;
-             gap: 15px;
+             align-items: center; gap: 15px;
           }
           .invoice-logo {
              width: 60px;
@@ -320,7 +322,7 @@ export default function InvoicePage() {
              clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
              transform: rotate(15deg) scale(0.6);
           }
-          .main-name { font-weight: 900; letter-spacing: -0.5px; line-height: 1; }
+          .main-name { font-weight: 900; letter-spacing: -0.5px; line-height: 1; font-size: 20px; }
           .tagline { font-size: 10px; font-weight: 600; margin-top: 4px; }
           .company-details { color: white; text-align: right; font-size: 10px; line-height: 1.5; }
           .website { margin-top: 8px; font-weight: 800; color: #ffcc00; font-size: 11px; }
@@ -364,9 +366,11 @@ export default function InvoicePage() {
              font-size: 11px;
              border-left: 1.5px solid #000;
              border-right: 1.5px solid #000;
+             background: #fff;
           }
-          .item-name { font-weight: 800; }
-          .empty-row td { height: 35px; }
+          .item-name { font-weight: 800; margin-bottom: 3px; }
+          .item-desc { font-size: 10px; color: #475569; }
+          .empty-row td { height: 35px; border-bottom: none; border-top: none; }
           .invoice-table tbody tr:last-child td { border-bottom: 1.5px solid #000; }
           
           .invoice-summary-grid { display: flex; padding: 25px 40px; }
@@ -379,8 +383,9 @@ export default function InvoicePage() {
           .total-box-clean { border: 1.5px solid #000; }
           .total-row { display: flex; padding: 5px 10px; font-size: 11px; }
           .total-label { flex: 1; font-weight: 700; }
+          .total-symbol { width: 30px; font-weight: 600; }
           .total-value { width: 70px; text-align: right; font-weight: 600; }
-          .grand-total-clean { border-top: 1.5px solid #000; font-weight: 900; background: #f8fafc; }
+          .grand-total-clean { border-top: 1.5px solid #000; font-weight: 900; font-size: 11px; background: #f8fafc; }
           
           .invoice-footer-bottom { margin-top: auto; padding: 40px; display: flex; justify-content: flex-end; }
           .signature-container { text-align: center; min-width: 150px; font-size: 11px; }

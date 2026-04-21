@@ -299,7 +299,7 @@ export default function InvoicePage() {
               <div style={{ background: "white", color: "#000", minHeight: "22cm", display: "flex", flexDirection: "column", fontFamily: "sans-serif" }}>
                  {/* Header Mockup */}
                  <div style={{ display: "flex", height: 120, overflow: "hidden" }}>
-                    <div style={{ background: "#facd00", flex: 4, display: "flex", alignItems: "center", paddingLeft: "5%", clipPath: "polygon(0 0, 100% 0, 85% 100%, 0 100%)", z-index: 2 }}>
+                    <div style={{ background: "#facd00", flex: 4, display: "flex", alignItems: "center", paddingLeft: "5%", clipPath: "polygon(0 0, 100% 0, 85% 100%, 0 100%)", zIndex: 2 }}>
                        <div style={{ color: "#1e293b", fontWeight: "bold", fontSize: 16 }}>SPEAKING PARTNER</div>
                     </div>
                     <div style={{ background: "#1e293b", flex: 6, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: "5%", marginLeft: "-10%", color: "white", fontSize: 8 }}>

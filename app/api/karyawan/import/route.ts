@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
         // Find match for role name/slug
         const roleName = item.role?.toLowerCase() || 'cs';
-        const targetRole = allRoles.find(r => 
+        const targetRole = allRoles.find((r: any) => 
           r.name.toLowerCase() === roleName || 
           r.slug.toLowerCase() === roleName
         );

@@ -22,12 +22,12 @@ export async function GET(request: NextRequest) {
   });
 
   // Flag low stock items
-  const withLowStock = data.map((item) => ({
+  const withLowStock = data.map((item: any) => ({
     ...item,
     isLowStock: item.jumlah <= item.stokMinimum,
   }));
 
-  const lowStockCount = withLowStock.filter((i) => i.isLowStock).length;
+  const lowStockCount = withLowStock.filter((i: any) => i.isLowStock).length;
 
   return NextResponse.json({ data: withLowStock, lowStockCount });
 }

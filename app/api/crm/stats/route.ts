@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     let totalFee = 0;
     const teamType = user?.teamType || 'CS_REGULAR';
     
-    myPemasukan.forEach(p => {
+    myPemasukan.forEach((p: any) => {
       totalFee += calculateCSFee(
         teamType as any,
         p.program?.kategoriFee || 'REG_1B',

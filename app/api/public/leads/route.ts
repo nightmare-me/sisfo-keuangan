@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         hour12: false
       }).format(new Date());
 
-      const onShiftCS = availableCS.filter(user => {
+      const onShiftCS = availableCS.filter((user: any) => {
         const start = user.shiftStart || "00:00";
         const end = user.shiftEnd || "23:59";
         if (start <= end) {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (onShiftCS.length > 0) {
-        onShiftCS.sort((a, b) => a.id.localeCompare(b.id)); // Konsistensi urutan
+        onShiftCS.sort((a: any, b: any) => a.id.localeCompare(b.id)); // Konsistensi urutan
         // 2. Hitung total lead untuk tim spesifik ini guna menentukan giliran
         const teamLeadCount = await prisma.lead.count({
           where: { cs: { teamType: targetTeamType } }

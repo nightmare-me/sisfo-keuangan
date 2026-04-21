@@ -10,6 +10,17 @@ export default function InvoicePage() {
   const router = useRouter();
   const [lead, setLead] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditingHeader, setIsEditingHeader] = useState(false);
+  
+  // Header editable state
+  const [headerInfo, setHeaderInfo] = useState({
+    name: "SPEAKING PARTNER",
+    tagline: "Teman Terhebat Belajar Bahasa Inggris",
+    address: "Jalan Brawijaya 13A, Pare, Kediri - Kode Pos 64213",
+    email: "speakingpartnerku@gmail.com",
+    telp: "0877 6263 0406",
+    website: "WWW.SPEAKINGPARTNER.ID"
+  });
 
   useEffect(() => {
     fetch(`/api/leads/${params.id}/invoice`)
@@ -20,6 +31,15 @@ export default function InvoicePage() {
   if (loading) return <div style={{ padding: 40, textAlign: 'center' }}>Memuat data invoice...</div>;
   if (!lead) return <div style={{ padding: 40, textAlign: 'center' }}>Data tidak ditemukan</div>;
 
+  // Simple deterministic hash based on ID
+  const idHash = lead.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+  const dateObj = new Date(lead.tanggalLead || lead.createdAt);
+  const yearStr = dateObj.getFullYear();
+  const dateStr = dateObj.toISOString().slice(0, 10).replace(/-/g, '');
+  
+  const invNumber = `INV-${dateStr}-${(idHash % 9000) + 1000}`;
+  const siswaNumber = `SP-${yearStr}-${(idHash % 90000) + 10000}`;
+
   return (
     <div className="invoice-outer-container">
        {/* UI Tools (Hidden on print) */}
@@ -28,6 +48,9 @@ export default function InvoicePage() {
              <ArrowLeft size={16} /> Kembali
           </button>
           <div style={{ display: 'flex', gap: 12 }}>
+             <button className={`btn btn-sm ${isEditingHeader ? 'btn-success' : 'btn-secondary'}`} onClick={() => setIsEditingHeader(!isEditingHeader)}>
+                {isEditingHeader ? "Selesai Edit" : "Edit Kop Surat"}
+             </button>
              <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
                 <Printer size={16} /> Cetak Invoice
              </button>
@@ -46,17 +69,37 @@ export default function InvoicePage() {
                       </div>
                    </div>
                    <div className="invoice-brand">
-                      <div className="main-name">SPEAKING PARTNER</div>
-                      <div className="tagline">Teman Terhebat Belajar Bahasa Inggris</div>
+                      {isEditingHeader ? (
+                         <input className="header-input" value={headerInfo.name} onChange={e => setHeaderInfo({...headerInfo, name: e.target.value})} style={{ fontSize: 24, fontWeight: 900 }} />
+                      ) : (
+                         <div className="main-name">{headerInfo.name}</div>
+                      )}
+                      
+                      {isEditingHeader ? (
+                         <input className="header-input" value={headerInfo.tagline} onChange={e => setHeaderInfo({...headerInfo, tagline: e.target.value})} style={{ fontSize: 11, width: '100%' }} />
+                      ) : (
+                         <div className="tagline">{headerInfo.tagline}</div>
+                      )}
                    </div>
                 </div>
              </div>
              <div className="header-dark-box">
                 <div className="company-details">
-                   <p>Jalan Brawijaya 13A, Pare, Kediri - Kode Pos 64213</p>
-                   <p>Email: speakingpartnerku@gmail.com</p>
-                   <p>Telp: 0877 6263 0406</p>
-                   <div className="website">WWW.SPEAKINGPARTNER.ID</div>
+                   {isEditingHeader ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: 250 }}>
+                         <input className="header-input dark" value={headerInfo.address} onChange={e => setHeaderInfo({...headerInfo, address: e.target.value})} />
+                         <input className="header-input dark" value={headerInfo.email} onChange={e => setHeaderInfo({...headerInfo, email: e.target.value})} />
+                         <input className="header-input dark" value={headerInfo.telp} onChange={e => setHeaderInfo({...headerInfo, telp: e.target.value})} />
+                         <input className="header-input dark" value={headerInfo.website} onChange={e => setHeaderInfo({...headerInfo, website: e.target.value})} style={{ color: '#ffcc00' }} />
+                      </div>
+                   ) : (
+                      <>
+                         <p>{headerInfo.address}</p>
+                         <p>Email: {headerInfo.email}</p>
+                         <p>Telp: {headerInfo.telp}</p>
+                         <div className="website">{headerInfo.website}</div>
+                      </>
+                   )}
                 </div>
              </div>
           </div>
@@ -66,11 +109,11 @@ export default function InvoicePage() {
              <div className="meta-right">
                 <div className="meta-row">
                    <span className="meta-label">No. INVOICE</span>
-                   <span className="meta-value">{lead.id.slice(-7).toUpperCase()}</span>
+                   <span className="meta-value">{invNumber}</span>
                 </div>
                 <div className="meta-row">
                    <span className="meta-label">Tgl Pendaftaran:</span>
-                   <span className="meta-value">{formatDate(lead.tanggalLead || lead.createdAt, "d/MM/yyyy")}</span>
+                   <span className="meta-value">{formatDate(dateObj, "d/MM/yyyy")}</span>
                 </div>
              </div>
           </div>
@@ -87,36 +130,37 @@ export default function InvoicePage() {
              </div>
              <div className="recipient-row">
                 <span className="recipient-label">No. Siswa</span>
-                <span className="recipient-value">-</span>
+                <span className="recipient-value">{siswaNumber}</span>
              </div>
           </div>
 
           {/* Table */}
-          <table className="invoice-table">
-             <thead>
-                <tr>
-                   <th style={{ width: '50%' }}>Keterangan</th>
-                   <th style={{ width: '10%' }} className="text-center">Jumlah</th>
-                   <th style={{ width: '20%' }} className="text-right">Harga</th>
-                   <th style={{ width: '20%' }} className="text-right">Sub Total</th>
-                </tr>
-             </thead>
-             <tbody>
-                <tr>
-                   <td>
-                      <div className="item-name">PENDAFTARAN PROGRAM {lead.program?.nama?.toUpperCase()}</div>
-                      <div className="item-desc">{lead.program?.tipe || 'Standard'} Class - Speaking Partner</div>
-                   </td>
-                   <td className="text-center" style={{ fontWeight: 600 }}>1</td>
-                   <td className="text-right">{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</td>
-                   <td className="text-right">{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</td>
-                </tr>
-                {/* Fixed empty rows for look */}
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <tr key={i} className="empty-row"><td></td><td></td><td></td><td></td></tr>
-                ))}
-             </tbody>
-          </table>
+          <div style={{ padding: '0 40px' }}>
+            <table className="invoice-table">
+               <thead>
+                  <tr>
+                     <th style={{ width: '50%' }}>KETERANGAN</th>
+                     <th style={{ width: '10%' }} className="text-center">JUMLAH</th>
+                     <th style={{ width: '20%' }} className="text-right">HARGA</th>
+                     <th style={{ width: '20%' }} className="text-right">SUB TOTAL</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  <tr>
+                     <td>
+                        <div className="item-name">PENDAFTARAN PROGRAM {lead.program?.nama?.toUpperCase()}</div>
+                        <div className="item-desc">{lead.program?.tipe || 'Standard'} Class - Speaking Partner</div>
+                     </td>
+                     <td className="text-center" style={{ fontWeight: 600 }}>1</td>
+                     <td className="text-right">{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</td>
+                     <td className="text-right">{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</td>
+                  </tr>
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <tr key={i} className="empty-row"><td></td><td></td><td></td><td></td></tr>
+                  ))}
+               </tbody>
+            </table>
+          </div>
 
           {/* Totals Section */}
           <div className="invoice-summary-grid">
@@ -179,6 +223,7 @@ export default function InvoicePage() {
              display: flex;
              flex-direction: column;
              color: #1e293b;
+             box-sizing: border-box;
           }
           
           /* Header Layout */
@@ -207,6 +252,21 @@ export default function InvoicePage() {
              margin-left: -60px;
           }
           
+          .header-input {
+             background: rgba(255,255,255,0.2);
+             border: 1px dashed #000;
+             padding: 2px 4px;
+             font-family: inherit;
+             width: 100%;
+          }
+          .header-input.dark {
+             background: rgba(0,0,0,0.3);
+             color: white;
+             border: 1px dashed #ccc;
+             text-align: right;
+             font-size: 10px;
+          }
+
           /* Branding */
           .invoice-logo-container {
              display: flex;
@@ -223,6 +283,7 @@ export default function InvoicePage() {
              align-items: center;
              justify-content: center;
              position: relative;
+             flex-shrink: 0;
           }
           .logo-bubble {
              width: 45px;
@@ -310,10 +371,9 @@ export default function InvoicePage() {
           
           /* Table Style */
           .invoice-table {
-             width: calc(100% - 80px);
-             margin: 0 40px;
+             width: 100%;
              border-collapse: collapse;
-             border: 1px solid #000;
+             border: 1.5px solid #000;
           }
           .invoice-table th {
              background: #ffcc00;
@@ -322,19 +382,19 @@ export default function InvoicePage() {
              text-align: left;
              font-size: 13px;
              font-weight: 800;
-             border: 1px solid #000;
+             border: 1.5px solid #000;
           }
           .invoice-table td {
              padding: 12px;
              font-size: 12px;
-             border-left: 1px solid #000;
-             border-right: 1px solid #000;
+             border-left: 1.5px solid #000;
+             border-right: 1.5px solid #000;
              background: #fff;
           }
           .item-name { font-weight: 800; margin-bottom: 3px; }
           .item-desc { font-size: 10px; color: #475569; }
           .empty-row td { height: 35px; border-bottom: none; border-top: none; }
-          .invoice-table tbody tr:last-child td { border-bottom: 1px solid #000; }
+          .invoice-table tbody tr:last-child td { border-bottom: 1.5px solid #000; }
           
           /* Summary Section */
           .invoice-summary-grid {
@@ -366,7 +426,7 @@ export default function InvoicePage() {
           .total-symbol { width: 30px; font-weight: 600; }
           .total-value { width: 80px; text-align: right; font-weight: 600; }
           .grand-total {
-             border-top: 1px solid #000;
+             border-top: 1.5px solid #000;
              font-weight: 900;
              font-size: 13px;
              background: #fff;
@@ -394,7 +454,7 @@ export default function InvoicePage() {
              .no-print { display: none !important; }
              body { background: white !important; margin: 0 !important; padding: 0 !important; }
              .invoice-outer-container { padding: 0 !important; background: white !important; }
-             .invoice-paper { box-shadow: none !important; width: 100% !important; border: none !important; }
+             .invoice-paper { box-shadow: none !important; width: 210mm !important; border: none !important; height: 297mm; }
              @page { size: A4; margin: 0; }
           }
        `}</style>

@@ -105,7 +105,7 @@ export default function InvoicePage() {
           formatCurrency(inv.total).replace("Rp", "").trim()
         ]
       ],
-      styles: { fontSize: 9, cellPadding: 5, borderBottomColor: [0, 0, 0], borderBottomWidth: 0.1 },
+      styles: { fontSize: 9, cellPadding: 5, lineColor: [0, 0, 0], lineWidth: 0.1 },
       headStyles: { fillColor: [250, 205, 0], textColor: [0, 0, 0], fontStyle: "bold" },
       columnStyles: {
         0: { cellWidth: 100 },

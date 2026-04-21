@@ -25,8 +25,10 @@ export default function InvoicePage() {
 
   // GDrive Helper: Convert view link to direct download link
   const getDirectLogoUrl = (url: string) => {
+    if (!url) return "";
     if (url.includes('drive.google.com')) {
-      const idMatch = url.match(/\/d\/(.+?)\/(view|edit)/) || url.match(/id=(.+?)(&|$)/);
+      // Regex for /d/ID/ or ?id=ID
+      const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
       if (idMatch && idMatch[1]) {
         return `https://drive.google.com/uc?id=${idMatch[1]}&export=download`;
       }
@@ -86,15 +88,15 @@ export default function InvoicePage() {
                    <div className="invoice-brand">
                       {isEditingHeader ? (
                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <input className="header-input" value={headerInfo.name} onChange={e => setHeaderInfo({...headerInfo, name: e.target.value})} style={{ fontSize: 22, fontWeight: 900 }} />
-                            <input className="header-input" value={headerInfo.logoUrl} placeholder="Paste Link GDrive di sini" onChange={e => setHeaderInfo({...headerInfo, logoUrl: e.target.value})} style={{ fontSize: 10 }} />
+                            <input className="header-input" value={headerInfo.name} onChange={e => setHeaderInfo({...headerInfo, name: e.target.value})} style={{ fontSize: 20, fontWeight: 900 }} />
+                            <input className="header-input" value={headerInfo.logoUrl} placeholder="Paste Link GDrive di sini" onChange={e => setHeaderInfo({...headerInfo, logoUrl: e.target.value})} style={{ fontSize: 9 }} />
                          </div>
                       ) : (
-                         <div className="main-name">{headerInfo.name}</div>
+                         <div className="main-name" style={{ fontSize: '20px' }}>{headerInfo.name}</div>
                       )}
                       
                       {isEditingHeader ? (
-                         <input className="header-input" value={headerInfo.tagline} onChange={e => setHeaderInfo({...headerInfo, tagline: e.target.value})} style={{ fontSize: 11, width: '100%' }} />
+                         <input className="header-input" value={headerInfo.tagline} onChange={e => setHeaderInfo({...headerInfo, tagline: e.target.value})} style={{ fontSize: 10, width: '100%' }} />
                       ) : (
                          <div className="tagline">{headerInfo.tagline}</div>
                       )}
@@ -157,10 +159,10 @@ export default function InvoicePage() {
             <table className="invoice-table">
                <thead>
                   <tr>
-                     <th style={{ width: '55%' }}>KETERANGAN</th>
+                     <th style={{ width: '40%' }}>KETERANGAN</th>
                      <th style={{ width: '10%' }} className="text-center">JML</th>
-                     <th style={{ width: '17%' }} className="text-right">HARGA</th>
-                     <th style={{ width: '18%' }} className="text-right">SUB TOTAL</th>
+                     <th style={{ width: '25%' }} className="text-right">HARGA</th>
+                     <th style={{ width: '25%' }} className="text-right">SUB TOTAL</th>
                   </tr>
                </thead>
                <tbody>
@@ -253,7 +255,7 @@ export default function InvoicePage() {
           }
           .header-yellow-box {
              background: #ffcc00;
-             flex: 4.2;
+             flex: 4;
              display: flex;
              align-items: center;
              padding-left: 50px;
@@ -262,7 +264,7 @@ export default function InvoicePage() {
           }
           .header-dark-box {
              background: #232833;
-             flex: 5.8;
+             flex: 6;
              display: flex;
              align-items: center;
              justify-content: flex-end;
@@ -293,8 +295,8 @@ export default function InvoicePage() {
              color: #232833;
           }
           .invoice-logo {
-             width: 65px;
-             height: 65px;
+             width: 60px;
+             height: 60px;
              background: #232833;
              border-radius: 50%;
              display: flex;
@@ -313,7 +315,7 @@ export default function InvoicePage() {
              transform: rotate(15deg) scale(0.7);
           }
           .main-name {
-             font-size: 22px;
+             font-size: 20px;
              font-weight: 900;
              letter-spacing: -0.5px;
              line-height: 1;

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         // Matching CS (Pencarian otomatis CS berdasarkan nama di CSV)
         let finalCSId = role === "CS" ? userId : undefined;
         if (item.nama_cs) {
-           const targetCS = allCS.find(u => u.name?.toLowerCase().includes(item.nama_cs.toLowerCase()));
+           const targetCS = allCS.find((u: any) => u.name?.toLowerCase().includes(item.nama_cs.toLowerCase()));
            if (targetCS) finalCSId = targetCS.id;
         }
 

@@ -121,8 +121,8 @@ export async function GET(request: NextRequest) {
     const labaBersih = labaKotor - totalAds;
 
     // Fetch related info
-    const csIds = rawPemasukanPerCS.map(p => p.csId).filter(Boolean) as string[];
-    const programIds = rawPemasukanPerProgram.map(p => p.programId).filter(Boolean) as string[];
+    const csIds = rawPemasukanPerCS.map((p: any) => p.csId).filter(Boolean) as string[];
+    const programIds = rawPemasukanPerProgram.map((p: any) => p.programId).filter(Boolean) as string[];
 
     const [csUsers, programs] = await Promise.all([
       prisma.user.findMany({ where: { id: { in: csIds } }, select: { id: true, name: true } }),
@@ -151,8 +151,8 @@ export async function GET(request: NextRequest) {
     const perCSMap: Record<string, { total: number, count: number }> = {};
     const perMetodeMap: Record<string, { total: number, count: number }> = {};
 
-    rawBreakdown.forEach(p => {
-      const refundAmount = p.refunds.reduce((s, r) => s + r.jumlah, 0);
+    rawBreakdown.forEach((p: any) => {
+      const refundAmount = p.refunds.reduce((s: number, r: any) => s + r.jumlah, 0);
       const netAmount = p.hargaFinal - refundAmount;
       
       // Breakdown Sumber
@@ -195,25 +195,25 @@ export async function GET(request: NextRequest) {
         jumlahTransaksiOut: pengeluaranAgg._count,
         sourceBreakdown
       },
-      pemasukanPerProgram: programs.map(prog => ({
+      pemasukanPerProgram: programs.map((prog: any) => ({
         programId: prog.id,
         nama: prog.nama,
         tipe: prog.tipe,
         total: perProgramMap[prog.id]?.total ?? 0,
         count: perProgramMap[prog.id]?.count ?? 0,
-      })).filter(p => p.count > 0 || p.total > 0),
-      pengeluaranPerKategori: rawPengeluaranPerKategori.map(p => ({
+      })).filter((p: any) => p.count > 0 || p.total > 0),
+      pengeluaranPerKategori: rawPengeluaranPerKategori.map((p: any) => ({
         kategori: p.kategori,
         total: p._sum.jumlah ?? 0,
         count: p._count,
       })),
-      pemasukanPerCS: csUsers.map(u => ({
+      pemasukanPerCS: csUsers.map((u: any) => ({
         csId: u.id,
         nama: u.name,
         total: perCSMap[u.id]?.total ?? 0,
         count: perCSMap[u.id]?.count ?? 0,
-      })).filter(p => p.count > 0 || p.total > 0),
-      pemasukanPerMetode: rawPemasukanPerMetode.map(p => ({
+      })).filter((p: any) => p.count > 0 || p.total > 0),
+      pemasukanPerMetode: rawPemasukanPerMetode.map((p: any) => ({
         metode: p.metodeBayar,
         total: p._sum.hargaFinal ?? 0, // Metode bayar remains bruto/historical for now or we could fix it too
         count: p._count,

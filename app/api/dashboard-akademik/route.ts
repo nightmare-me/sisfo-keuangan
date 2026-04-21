@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   });
 
   // Ambil info kelas + program
-  const kelasIds = pendaftaranPerProgram.map(p => p.kelasId);
+  const kelasIds = pendaftaranPerProgram.map((p: any) => p.kelasId);
   const kelasList = await prisma.kelas.findMany({
     where: { id: { in: kelasIds } },
     include: { program: { select: { id: true, nama: true, tipe: true } } },
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   // Group by program
   const programMap: Record<string, { nama: string; tipe: string; jumlahSiswa: number }> = {};
   for (const p of pendaftaranPerProgram) {
-    const kelas = kelasList.find(k => k.id === p.kelasId);
+    const kelas = kelasList.find((k: any) => k.id === p.kelasId);
     if (!kelas?.program) continue;
     const key = kelas.program.id;
     if (!programMap[key]) {
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     }
     programMap[key].jumlahSiswa += p._count.siswaId;
   }
-  const siswaPerProgram = Object.values(programMap).sort((a, b) => b.jumlahSiswa - a.jumlahSiswa);
+  const siswaPerProgram = (Object.values(programMap) as any[]).sort((a: any, b: any) => b.jumlahSiswa - a.jumlahSiswa);
 
   // 7. Murid terkini (siswa yang baru daftar)
   const muridTerkini = await prisma.siswa.findMany({

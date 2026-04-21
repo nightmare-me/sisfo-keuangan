@@ -36,11 +36,11 @@ export async function GET(request: NextRequest) {
       where: { status: "APPROVED" },
       select: { pemasukanId: true, siswaId: true, jumlah: true }
     });
-    const refundedIds = new Set(approvedRefunds.map(r => r.pemasukanId).filter(Boolean));
+    const refundedIds = new Set(approvedRefunds.map((r: any) => r.pemasukanId).filter(Boolean));
 
     const checkRefund = (p: any) => {
       if (refundedIds.has(p.id)) return true;
-      const match = approvedRefunds.find(r => !r.pemasukanId && r.siswaId === p.siswaId && Math.abs(Number(r.jumlah) - p.hargaFinal) < 100);
+      const match = approvedRefunds.find((r: any) => !r.pemasukanId && r.siswaId === p.siswaId && Math.abs(Number(r.jumlah) - p.hargaFinal) < 100);
       return !!match;
     };
 
@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
       prisma.pemasukan.findMany({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } } })
     ]);
     
-    const totalPemasukanIni = pemasukanPeriodeIni.filter(p => !checkRefund(p)).reduce((s, p) => s + p.hargaFinal, 0);
-    const totalPemasukanLalu = pemasukanPeriodeLalu.filter(p => !checkRefund(p)).reduce((s, p) => s + p.hargaFinal, 0);
+    const totalPemasukanIni = pemasukanPeriodeIni.filter((p: any) => !checkRefund(p)).reduce((s: number, p: any) => s + p.hargaFinal, 0);
+    const totalPemasukanLalu = pemasukanPeriodeLalu.filter((p: any) => !checkRefund(p)).reduce((s: number, p: any) => s + p.hargaFinal, 0);
 
     // Pengeluaran & Ads & Siswa
     const [pengeluaranIni, adsIniSpent, adsIniPerf, pengeluaranLalu, adsLaluSpent, adsLaluPerf, siswAktif] = await Promise.all([
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       ]);
       trendData.push({
         date: date.toISOString(),
-        pemasukan: incomeRaw.filter(p => !checkRefund(p)).reduce((s, p) => s + p.hargaFinal, 0),
+        pemasukan: incomeRaw.filter((p: any) => !checkRefund(p)).reduce((s: number, p: any) => s + p.hargaFinal, 0),
         pengeluaran: expAgg._sum.jumlah ?? 0,
         ads: (adsAggSpent._sum.jumlah ?? 0) + (adsAggPerf._sum.spent ?? 0),
       });
@@ -110,15 +110,15 @@ export async function GET(request: NextRequest) {
     });
 
     const programs = await prisma.program.findMany({
-      where: { id: { in: pemasukanPerProgramRaw.map(p => p.programId).filter((id): id is string => id !== null) } },
+      where: { id: { in: pemasukanPerProgramRaw.map((p: any) => p.programId).filter((id): id is string => id !== null) } },
       select: { id: true, nama: true }
     });
 
-    const pemasukanPerProgram = pemasukanPerProgramRaw.map(p => ({
-      programName: programs.find(pr => pr.id === p.programId)?.nama || "Lainnya",
+    const pemasukanPerProgram = pemasukanPerProgramRaw.map((p: any) => ({
+      programName: programs.find((pr: any) => pr.id === p.programId)?.nama || "Lainnya",
       total: p._sum.hargaFinal ?? 0,
       count: p._count._all
-    })).sort((a, b) => b.total - a.total);
+    })).sort((a: any, b: any) => b.total - a.total);
 
     // Breakdown Pengeluaran per Kategori
     const pengeluaranPerKategoriRaw = await prisma.pengeluaran.groupBy({
@@ -127,10 +127,10 @@ export async function GET(request: NextRequest) {
       _sum: { jumlah: true }
     });
 
-    const pengeluaranPerKategori = pengeluaranPerKategoriRaw.map(p => ({
+    const pengeluaranPerKategori = pengeluaranPerKategoriRaw.map((p: any) => ({
       kategori: p.kategori,
       total: p._sum.jumlah ?? 0
-    })).sort((a, b) => b.total - a.total);
+    })).sort((a: any, b: any) => b.total - a.total);
 
     return NextResponse.json({
       kpi: { 

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       where: { status: "APPROVED" },
       select: { pemasukanId: true, siswaId: true, jumlah: true }
     });
-    const refundedPemasukanIds = new Set(approvedRefunds.map(r => r.pemasukanId).filter(Boolean));
+    const refundedPemasukanIds = new Set(approvedRefunds.map((r: any) => r.pemasukanId).filter(Boolean));
 
     // 2. Query Pemasukan (Include SiswaId for fallback filtering)
     const allMatchingPemasukan = await prisma.pemasukan.findMany({
@@ -49,12 +49,12 @@ export async function GET(request: NextRequest) {
     });
 
     // 3. Filter dengan "Radar Refund" (Fallback logic)
-    const filteredData = allMatchingPemasukan.filter(p => {
+    const filteredData = allMatchingPemasukan.filter((p: any) => {
       // Cek berdasarkan ID
       if (refundedPemasukanIds.has(p.id)) return false;
       
       // Backup: Cek jika ada refund APPROVED untuk siswa ini dengan jumlah yang sama
-      const hasMatchingRefund = approvedRefunds.find(r => 
+      const hasMatchingRefund = approvedRefunds.find((r: any) => 
         !r.pemasukanId && 
         r.siswaId === p.siswaId && 
         Math.abs(Number(r.jumlah) - p.hargaFinal) < 100
@@ -71,8 +71,8 @@ export async function GET(request: NextRequest) {
     // 4. Pagination & Summary
     const finalData = filteredData.slice((page - 1) * limit, page * limit);
     const totalCount = filteredData.length;
-    const totalPemasukan = filteredData.reduce((sum, p) => sum + p.hargaFinal, 0);
-    const totalDiskon = filteredData.reduce((sum, p) => sum + p.diskon, 0);
+    const totalPemasukan = filteredData.reduce((sum: number, p: any) => sum + p.hargaFinal, 0);
+    const totalDiskon = filteredData.reduce((sum: number, p: any) => sum + p.diskon, 0);
 
     return NextResponse.json({
       data: finalData,

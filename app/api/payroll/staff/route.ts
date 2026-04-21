@@ -36,20 +36,20 @@ export async function GET(request: NextRequest) {
       prisma.spentAds.aggregate({ where: { tanggal: { gte: dayStart, lte: dayEnd } }, _sum: { jumlah: true } })
     ]);
 
-    const totalRefund = approvedRefunds.reduce((s, r) => s + r.jumlah, 0);
-    const totalPemasukan = pemasukanAll.reduce((s, p) => s + p.hargaFinal, 0);
+    const totalRefund = approvedRefunds.reduce((s: number, r: any) => s + r.jumlah, 0);
+    const totalPemasukan = pemasukanAll.reduce((s: number, p: any) => s + p.hargaFinal, 0);
     const grossProfit = totalPemasukan - totalRefund;
 
     const opCosts = pengeluaranAll
-        .filter(exp => exp.kategori !== "GAJI_STAF" && exp.kategori !== "GAJI_PENGAJAR")
-        .reduce((s, e) => s + e.jumlah, 0);
+        .filter((exp: any) => exp.kategori !== "GAJI_STAF" && exp.kategori !== "GAJI_PENGAJAR")
+        .reduce((s: number, e: any) => s + e.jumlah, 0);
     
     // 2. ANALISIS KHUSUS TOEFL (Sesuai Gambar Flowchart)
     let toeflRevenue = 0;
     let toeflFeeCS = 0;
     let toeflFeeAdv = 0;
     
-    pemasukanAll.filter(p => p.program?.isProfitSharing).forEach(p => {
+    pemasukanAll.filter((p: any) => p.program?.isProfitSharing).forEach((p: any) => {
       toeflRevenue += p.hargaFinal;
       // Hitung jatah CS untuk pengeluaran TOEFL
       toeflFeeCS += calculateCSFee(
@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
 
     // Hitung jatah Adv untuk pengeluaran TOEFL
     const toeflTeam = await prisma.user.findMany({ where: { teamType: "ADV_TOEFL" as any }, include: { adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } } } });
-    toeflTeam.forEach(adv => {
-       adv.adPerformances.forEach(perf => {
+    toeflTeam.forEach((adv: any) => {
+       adv.adPerformances.forEach((perf: any) => {
          toeflFeeAdv += calculateAdvFee("ADV_TOEFL" as any, perf.cpl, perf.leads);
        });
     });
@@ -98,12 +98,12 @@ export async function GET(request: NextRequest) {
       let extraGaji = 0;
 
       // A. Hitung Gaji Live
-      const totalJam = emp.liveSessions.reduce((s, l) => s + l.durasi, 0);
+      const totalJam = emp.liveSessions.reduce((s: number, l: any) => s + l.durasi, 0);
       extraGaji += calculateGajiLive(totalJam);
 
       // B. Hitung Fee CS (Jika Role CS)
       if (roleSlug === "cs") {
-        emp.pemasukan.forEach(p => {
+        emp.pemasukan.forEach((p: any) => {
           totalFee += calculateCSFee(
             (emp.teamType || "CS_REGULAR") as any,
             p.program?.kategoriFee || "",
@@ -117,18 +117,18 @@ export async function GET(request: NextRequest) {
 
       // C. Hitung Fee Advertiser
       if (roleSlug === "advertiser" || posisi.toUpperCase().includes("ADV")) {
-        emp.adPerformances.forEach(perf => {
+        emp.adPerformances.forEach((perf: any) => {
           totalFee += perf.fee; // Already calculated in API Performance
         });
       }
 
       // D. Bonus Omset Talent
-      const omsetTalent = emp.pemasukanTalent.reduce((s, p) => s + p.hargaFinal, 0);
+      const omsetTalent = emp.pemasukanTalent.reduce((s: number, p: any) => s + p.hargaFinal, 0);
       totalBonus += calculateBonusTalent(omsetTalent);
 
       // E. Bonus Akademik (RO Omset) - If role is Akademik or SPV Akademik
       if (posisi.toUpperCase().includes("AKADEMIK")) {
-          const totalRO = pemasukanAll.filter(p => p.isRO).reduce((s, p) => s + p.hargaFinal, 0);
+          const totalRO = pemasukanAll.filter((p: any) => p.isRO).reduce((s: number, p: any) => s + p.hargaFinal, 0);
           totalBonus += calculateBonusAkademikRO(totalRO);
       }
 

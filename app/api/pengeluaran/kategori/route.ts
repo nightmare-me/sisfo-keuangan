@@ -20,7 +20,7 @@ async function ensureCategories() {
           slug: nama.toLowerCase().replace(/\s+/g, '-'),
           color: "#6366f1"
         }
-      }).catch(e => console.error("SEED_ERROR:", e.message));
+      }).catch((e: any) => console.error("SEED_ERROR:", e.message));
     }
   }
 }

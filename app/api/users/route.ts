@@ -137,6 +137,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const body = await request.json();
   const { id, name, email, roleId, teamType, aktif, password, shiftStart, shiftEnd, isLeadActive } = body;
 
   const updateData: any = { name, email, aktif };

@@ -26,15 +26,15 @@ export async function GET(request: NextRequest) {
       where: { status: "APPROVED" },
       select: { pemasukanId: true, siswaId: true, jumlah: true }
     });
-    const refundedPemasukanIds = new Set(approvedRefunds.map(r => r.pemasukanId).filter(Boolean));
+    const refundedPemasukanIds = new Set(approvedRefunds.map((r: any) => r.pemasukanId).filter(Boolean));
 
     // Filter pemasukan yang TIDAK direfund secara manual di JS
-    const myPemasukan = rawPemasukan.filter(p => {
+    const myPemasukan = rawPemasukan.filter((p: any) => {
       // 1. Cek berdasarkan ID (Past)
       if (refundedPemasukanIds.has(p.id)) return false;
       
       // 2. Backup: Cek jika ada refund APPROVED untuk siswa ini dengan jumlah yang sama (Fallback)
-      const hasMatchingRefund = approvedRefunds.find(r => 
+      const hasMatchingRefund = approvedRefunds.find((r: any) => 
         !r.pemasukanId && // Hanya cari refund yang tidak punya ID link
         r.siswaId === p.siswaId && 
         Math.abs(Number(r.jumlah) - p.hargaFinal) < 100 // Toleransi selisih tipis
@@ -54,10 +54,10 @@ export async function GET(request: NextRequest) {
     });
 
     const totalLeads = myLeads.length;
-    const paidLeads = myLeads.filter(l => l.status === "PAID").length;
-    const refundedLeads = myLeads.filter(l => l.status === "REFUNDED").length;
+    const paidLeads = myLeads.filter((l: any) => l.status === "PAID").length;
+    const refundedLeads = myLeads.filter((l: any) => l.status === "REFUNDED").length;
     const cr = totalLeads > 0 ? (paidLeads / totalLeads) : 0;
-    const omset = myPemasukan.reduce((sum, p) => sum + p.hargaFinal, 0);
+    const omset = myPemasukan.reduce((sum: number, p: any) => sum + p.hargaFinal, 0);
 
     let totalFee = 0;
     const teamType = user?.teamType || 'CS_REGULAR';

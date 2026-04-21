@@ -2,9 +2,16 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🚀 Fitur Baru: CRM Date Intelligence & Class Dashboard Upgrade (v2.3)
+## 🚀 Fitur Baru: Lead Source Tracking & Attribution (v2.4)
 
-### 1. CRM: Lead Conversion Tracking & Analytics 📈 (BARU!)
+### 1. CRM: Marketing Source Attribution 🏷️ (BARU!)
+*   **Source Tagging**: Setiap lead kini memiliki label `sumber` (SOSMED, REGULAR, RO, MANUAL, IMPORT).
+*   **Jalur Sosmed (Viral)**: Penambahan link pendaftaran khusus untuk kampanye sosial media (IG/TikTok) guna membedakan trafik organik dan iklan.
+*   **Visual Badge**: Tabel CRM kini menampilkan badge sumber di bawah nama siswa untuk identifikasi cepat delegasi tim.
+*   **Manual Source Selection**: Admin/CS dapat menentukan sumber lead saat melakukan input manual.
+*   **Round Robin Sosmed Ready**: Arsitektur pendistribusian lead otomatis untuk tim khusus `CS_SOSMED`.
+
+### 2. CRM: Lead Conversion Tracking & Analytics (v2.3 Recap) 📈
 *   **Dual-Date Tracking**: Ditambahkan kolom **TGL LEAD** (kapan prospek masuk) dan **TGL CLOSING** (kapan prospek bayar/lunas).
 *   **Auto-Closing Logic**: Tanggal closing otomatis terisi saat status diubah ke `PAID`, namun tetap bisa diedit manual untuk akurasi data.
 *   **Timezone Local (WIB)**: Perbaikan logika penanggalan yang kini menggunakan waktu lokal (WIB), mencegah tanggal "berubah ke hari kemarin" saat input di dini hari.

@@ -289,6 +289,7 @@ model Lead {
   keterangan       String?
   tanggalLead      DateTime?
   tanggalClosing   DateTime?
+  sumber           String?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   cs               User?      @relation("CSLeads", fields: [csId], references: [id])

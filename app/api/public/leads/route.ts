@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nama, whatsapp, email, preferensiJadwal, programId, csId, isRO } = body;
+    const { nama, whatsapp, email, preferensiJadwal, programId, csId, isRO, sumber } = body;
 
     if (!nama || !whatsapp) {
       return NextResponse.json({ error: "Nama dan WhatsApp wajib diisi" }, { status: 400 });
@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
 
       if (isRO) {
         targetTeamType = "CS_RO";
+      } else if (sumber === "SOSMED") {
+        targetTeamType = "CS_SOSMED";
       } else if (lowerName.includes("tes toefl")) {
         targetTeamType = "CS_TOEFL";
       } else if (lowerName.includes("live")) {
@@ -77,6 +79,7 @@ export async function POST(request: NextRequest) {
         status: finalCsId ? "FOLLOW_UP" : "NEW",
         csId: finalCsId,
         tanggalLead: new Date(),
+        sumber: sumber || null,
       },
     });
 

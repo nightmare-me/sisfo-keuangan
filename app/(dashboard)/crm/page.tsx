@@ -72,13 +72,9 @@ export default function CRMPage() {
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
   const [showShareLinksModal, setShowShareLinksModal] = useState(false);
   const [submittingLead, setSubmittingLead] = useState(false);
-  const [newLeadForm, setNewLeadForm] = useState({
-    nama: "",
-    whatsapp: "",
-    programId: "",
-    preferensiJadwal: "",
     isRO: false,
     tanggalLead: new Date().toLocaleDateString('sv'),
+    sumber: "MANUAL",
   });
   const [programs, setPrograms] = useState<any[]>([]);
 
@@ -155,6 +151,7 @@ export default function CRMPage() {
           keterangan: updatedLead.keterangan,
           status: updatedLead.status,
           isRO: updatedLead.isRO,
+          sumber: updatedLead.sumber,
           tanggalLead: formatToDateString(updatedLead.tanggalLead),
           tanggalClosing: formatToDateString(updatedLead.tanggalClosing),
         })
@@ -205,13 +202,14 @@ export default function CRMPage() {
         ...newLeadForm, 
         whatsapp: wa, 
         isRO: newLeadForm.isRO,
+        sumber: newLeadForm.sumber,
         csId: role === "CS" ? (session?.user as any)?.id : undefined 
       }),
     });
 
     if (res.ok) {
       setShowNewLeadModal(false);
-      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false, tanggalLead: new Date().toLocaleDateString('sv') });
+      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false, tanggalLead: new Date().toLocaleDateString('sv'), sumber: "MANUAL" });
       fetchData();
     } else {
       alert("Gagal menyimpan lead baru.");
@@ -394,8 +392,13 @@ export default function CRMPage() {
                     <td><input type="checkbox" checked={selectedIds.includes(lead.id)} onChange={() => toggleSelect(lead.id)} /></td>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--on-surface)' }}>{lead.nama}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <MessageCircle size={10} /> {lead.whatsapp}
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={10} /> {lead.whatsapp}</div>
+                        {lead.sumber && (
+                          <span style={{ background: 'var(--surface-container-highest)', padding: '2px 6px', borderRadius: 4, fontWeight: 700, fontSize: 9, color: 'var(--primary)' }}>
+                            {lead.sumber}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -605,8 +608,16 @@ export default function CRMPage() {
                        />
                        <label htmlFor="newLeadRO" style={{ fontSize: 14, fontWeight: 600, cursor: 'pointer', color: 'var(--primary)' }}>Repeat Order (RO)</label>
                     </div>
-                   <div className="form-group">
-                      <label className="form-label">Preferensi Jadwal (Opsional)</label>
+                    <div className="form-group">
+                       <label className="form-label">Sumber Lead</label>
+                       <select className="form-control" value={newLeadForm.sumber} onChange={(e) => setNewLeadForm({ ...newLeadForm, sumber: e.target.value })}>
+                         <option value="MANUAL">MANUAL (Input Langsung)</option>
+                         <option value="SOSMED">SOSMED</option>
+                         <option value="REGULAR">REGULAR</option>
+                       </select>
+                    </div>
+                    <div className="form-group">
+                       <label className="form-label">Preferensi Jadwal (Opsional)</label>
                       <input type="text" className="form-control" placeholder="Cth: Malam hari jam 19.00" value={newLeadForm.preferensiJadwal} onChange={(e) => setNewLeadForm({ ...newLeadForm, preferensiJadwal: e.target.value })} />
                    </div>
                    <div className="form-group">
@@ -891,6 +902,21 @@ export default function CRMPage() {
                     <option value="CANCELLED">Cancelled</option>
                   </select>
                 </div>
+                <div className="form-group">
+                  <label className="form-label">Sumber Lead</label>
+                  <select 
+                    className="form-control"
+                    value={selectedEditLead.sumber || ""}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, sumber: e.target.value })}
+                  >
+                    <option value="">(Tanpa Sumber)</option>
+                    <option value="REGULAR">REGULAR</option>
+                    <option value="SOSMED">SOSMED</option>
+                    <option value="RO">RO</option>
+                    <option value="MANUAL">MANUAL</option>
+                    <option value="IMPORT">IMPORT</option>
+                  </select>
+                </div>
                 <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                   <input 
                     type="checkbox" 
@@ -965,6 +991,7 @@ export default function CRMPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {[
                   { label: "Link Jalur REGULAR", team: "", color: "var(--primary)" },
+                  { label: "Link Jalur SOSMED (Viral)", team: "SOSMED", color: "#ec4899" },
                   { label: "Link Jalur RO (Repeat Order)", team: "RO", color: "#8b5cf6" },
                   { label: "Link Jalur TES TOEFL", team: "TOEFL", color: "#f59e0b" },
                   { label: "Link Jalur KELAS LIVE", team: "LIVE", color: "#ef4444" },

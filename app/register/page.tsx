@@ -19,7 +19,7 @@ import "./register.css";
 
 function RegisterContent() {
   const searchParams = useSearchParams();
-  const teamParam = searchParams.get("team")?.toUpperCase() || "REGULAR"; // REGULAR, RO, TOEFL, LIVE
+  const teamParam = searchParams.get("team")?.toUpperCase() || "REGULAR"; // REGULAR, RO, TOEFL, LIVE, SOSMED
   
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,10 +46,9 @@ function RegisterContent() {
         } else if (teamParam === "LIVE") {
           filtered = data.filter((p: any) => p.nama.toLowerCase().includes("live"));
         } else if (teamParam === "RO") {
-          // Asumsi RO bisa milih semua program tapi statusnya dikunci RO
           filtered = data;
         } else {
-          // Regular: Sembunyikan produk yang ada kata TOEFL atau LIVE agar tidak salah pilih
+          // Regular / SOSMED: Sembunyikan produk yang ada kata TOEFL atau LIVE agar tidak salah pilih
           filtered = data.filter((p: any) => 
             !p.nama.toLowerCase().includes("toefl") && 
             !p.nama.toLowerCase().includes("live")
@@ -71,7 +70,11 @@ function RegisterContent() {
     const res = await fetch("/api/public/leads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, whatsapp: wa }),
+      body: JSON.stringify({ 
+        ...form, 
+        whatsapp: wa,
+        sumber: teamParam === "SOSMED" ? "SOSMED" : undefined
+      }),
     });
 
     if (res.ok) {
@@ -129,6 +132,7 @@ function RegisterContent() {
             {teamParam === "REGULAR" ? "Mulai Belajar Hari Ini!" : 
              teamParam === "RO" ? "Pendaftaran Siswa Lanjutan (RO)" :
              teamParam === "TOEFL" ? "Pendaftaran Tes TOEFL" :
+             teamParam === "SOSMED" ? "Pendaftaran Partner Sosmed" :
              "Pendaftaran Kelas Live"}
           </h1>
           <p>Tingkatkan rasa percaya diri bicaramu dengan kurikulum terbaik di Speaking Partner.</p>

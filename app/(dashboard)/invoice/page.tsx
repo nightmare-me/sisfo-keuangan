@@ -295,43 +295,68 @@ export default function InvoicePage() {
               <div className="modal-title">Preview Invoice</div>
               <button className="modal-close" onClick={()=>setSelectedInvoice(null)}>✕</button>
             </div>
-            <div className="modal-body">
-              <div style={{ background:"white",color:"#111",borderRadius:12,padding:24,fontFamily:"serif" }}>
-                <div style={{ textAlign:"center",borderBottom:"2px solid #6366f1",paddingBottom:12,marginBottom:16 }}>
-                  <div style={{ fontWeight:800,fontSize:18,color:"#6366f1" }}>SPEAKING PARTNER</div>
-                  <div style={{ fontSize:11,color:"#555" }}>by Kampung Inggris</div>
-                </div>
-                <div style={{ display:"flex",justifyContent:"space-between",marginBottom:16 }}>
-                  <div>
-                    <div style={{ fontSize:11,color:"#888" }}>No Invoice</div>
-                    <div style={{ fontWeight:700,fontFamily:"monospace",fontSize:13 }}>{selectedInvoice.noInvoice}</div>
-                  </div>
-                  <div style={{ textAlign:"right" }}>
-                    <div style={{ fontSize:11,color:"#888" }}>Tanggal</div>
-                    <div style={{ fontWeight:600,fontSize:13 }}>{formatDate(selectedInvoice.tanggal)}</div>
-                  </div>
-                </div>
-                <div style={{ background:"#f8f9ff",borderRadius:8,padding:12,marginBottom:16 }}>
-                  <div style={{ fontSize:11,color:"#888",marginBottom:4 }}>Kepada</div>
-                  <div style={{ fontWeight:700 }}>{selectedInvoice.siswa?.nama??"—"}</div>
-                  <div style={{ fontSize:12,color:"#555" }}>{selectedInvoice.siswa?.noSiswa}</div>
-                </div>
-                <table style={{ width:"100%",borderCollapse:"collapse",fontSize:13 }}>
-                  <thead>
-                    <tr style={{ background:"#6366f1",color:"white" }}>
-                      <th style={{ padding:"8px 12px",textAlign:"left" }}>Keterangan</th>
-                      <th style={{ padding:"8px 12px",textAlign:"right" }}>Jumlah</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr><td style={{ padding:"8px 12px",borderBottom:"1px solid #eee" }}>{selectedInvoice.pemasukan?.program?.nama??"Kursus Bahasa"}</td><td style={{ padding:"8px 12px",textAlign:"right",borderBottom:"1px solid #eee" }}>{formatCurrency(selectedInvoice.total)}</td></tr>
-                    {selectedInvoice.diskon > 0 && <tr><td style={{ padding:"8px 12px",borderBottom:"1px solid #eee",color:"red" }}>Diskon</td><td style={{ padding:"8px 12px",textAlign:"right",borderBottom:"1px solid #eee",color:"red" }}>-{formatCurrency(selectedInvoice.diskon)}</td></tr>}
-                    <tr style={{ fontWeight:800,background:"#f0fdf4" }}><td style={{ padding:"10px 12px" }}>TOTAL BAYAR</td><td style={{ padding:"10px 12px",textAlign:"right",color:"#10b981",fontSize:16 }}>{formatCurrency(selectedInvoice.totalFinal)}</td></tr>
-                  </tbody>
-                </table>
-                <div style={{ marginTop:12,fontSize:11,color:"#888",textAlign:"center" }}>
-                  <span className="badge badge-success" style={{ color:"#10b981" }}>✓ LUNAS</span> · Metode: {selectedInvoice.pemasukan?.metodeBayar??"—"}
-                </div>
+            <div className="modal-body" style={{ padding: 0 }}>
+              <div style={{ background: "white", color: "#000", minHeight: "22cm", display: "flex", flexDirection: "column", fontFamily: "sans-serif" }}>
+                 {/* Header Mockup */}
+                 <div style={{ display: "flex", height: 120, overflow: "hidden" }}>
+                    <div style={{ background: "#facd00", flex: 4, display: "flex", alignItems: "center", paddingLeft: "5%", clipPath: "polygon(0 0, 100% 0, 85% 100%, 0 100%)", z-index: 2 }}>
+                       <div style={{ color: "#1e293b", fontWeight: "bold", fontSize: 16 }}>SPEAKING PARTNER</div>
+                    </div>
+                    <div style={{ background: "#1e293b", flex: 6, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: "5%", marginLeft: "-10%", color: "white", fontSize: 8 }}>
+                       <div style={{ textAlign: "right" }}>
+                          <p style={{ margin: 0 }}>Jalan Brawijaya 13A, Pare, Kediri</p>
+                          <p style={{ margin: 0 }}>speakingpartnerku@gmail.com</p>
+                          <p style={{ margin: 0, fontWeight: "bold", color: "#facd00" }}>WWW.SPEAKINGPARTNER.ID</p>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div style={{ padding: "20px 30px" }}>
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
+                       <div style={{ textAlign: "right", fontSize: 10 }}>
+                          <div>No. INVOICE: <strong>{selectedInvoice.noInvoice}</strong></div>
+                          <div>Tgl: <strong>{formatDate(selectedInvoice.tanggal)}</strong></div>
+                       </div>
+                    </div>
+
+                    <div style={{ marginBottom: 20, fontSize: 11 }}>
+                       <div style={{ marginBottom: 4 }}>Kepada: <strong>{selectedInvoice.siswa?.nama || "—"}</strong></div>
+                       <div style={{ marginBottom: 4 }}>No. Siswa: <strong>{selectedInvoice.siswa?.noSiswa || "—"}</strong></div>
+                    </div>
+
+                    <div style={{ border: "1.5px solid #000" }}>
+                       <div style={{ display: "flex", background: "#facd00", borderBottom: "1.5px solid #000", fontSize: 10, fontWeight: "bold" }}>
+                          <div style={{ flex: 5.5, padding: 8, borderRight: "1.5px solid #000" }}>KETERANGAN</div>
+                          <div style={{ flex: 1, padding: 8, borderRight: "1.5px solid #000", textAlign: "center" }}>JML</div>
+                          <div style={{ flex: 1.8, padding: 8, textAlign: "right" }}>TOTAL</div>
+                       </div>
+                       <div style={{ display: "flex", fontSize: 10, minHeight: 60 }}>
+                          <div style={{ flex: 5.5, padding: 8, borderRight: "1.5px solid #000" }}>
+                             <div style={{ fontWeight: "bold" }}>{selectedInvoice.pemasukan?.program?.nama?.toUpperCase() || "PROGRAM KURSUS"}</div>
+                             <div style={{ fontSize: 8, color: "#666" }}>{selectedInvoice.pemasukan.program?.tipe} Class</div>
+                          </div>
+                          <div style={{ flex: 1, padding: 8, borderRight: "1.5px solid #000", textAlign: "center" }}>1</div>
+                          <div style={{ flex: 1.8, padding: 8, textAlign: "right" }}>{formatCurrency(selectedInvoice.total).replace("Rp", "").trim()}</div>
+                       </div>
+                    </div>
+
+                    <div style={{ display: "flex", marginTop: 20, gap: 20 }}>
+                       <div style={{ flex: 1.2, fontSize: 9 }}>
+                          <div style={{ fontWeight: "bold", textDecoration: "underline", marginBottom: 5 }}>PEMBAYARAN</div>
+                          <div style={{ fontSize: 8 }}>BCA: 1409585858 (Speaking Partner)</div>
+                       </div>
+                       <div style={{ flex: 0.8, border: "1.5px solid #000" }}>
+                          <div style={{ display: "flex", padding: "4px 8px", fontSize: 10 }}>
+                             <span style={{ flex: 1, fontWeight: "bold" }}>Sub Total</span>
+                             <span>{formatCurrency(selectedInvoice.total).replace("Rp", "").trim()}</span>
+                          </div>
+                          <div style={{ display: "flex", padding: "4px 8px", fontSize: 10, background: "#f8fafc", borderTop: "1.5px solid #000", fontWeight: "bold" }}>
+                             <span style={{ flex: 1 }}>GRAND TOTAL</span>
+                             <span>{formatCurrency(selectedInvoice.totalFinal).replace("Rp", "").trim()}</span>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
               </div>
             </div>
             <div className="modal-footer">

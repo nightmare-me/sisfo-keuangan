@@ -19,7 +19,8 @@ export default function InvoicePage() {
     address: "Jalan Brawijaya 13A, Pare, Kediri - Kode Pos 64213",
     email: "speakingpartnerku@gmail.com",
     telp: "0877 6263 0406",
-    website: "WWW.SPEAKINGPARTNER.ID"
+    website: "WWW.SPEAKINGPARTNER.ID",
+    logoUrl: "" // Custom logo URL
   });
 
   useEffect(() => {
@@ -43,13 +44,13 @@ export default function InvoicePage() {
   return (
     <div className="invoice-outer-container">
        {/* UI Tools (Hidden on print) */}
-       <div className="no-print" style={{ maxWidth: '800px', margin: '0 auto 20px auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+       <div className="no-print" style={{ maxWidth: '850px', margin: '0 auto 20px auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <button className="btn btn-secondary btn-sm" onClick={() => router.back()}>
              <ArrowLeft size={16} /> Kembali
           </button>
           <div style={{ display: 'flex', gap: 12 }}>
              <button className={`btn btn-sm ${isEditingHeader ? 'btn-success' : 'btn-secondary'}`} onClick={() => setIsEditingHeader(!isEditingHeader)}>
-                {isEditingHeader ? "Selesai Edit" : "Edit Kop Surat"}
+                {isEditingHeader ? "Selesai Edit" : "Edit Kop & Logo"}
              </button>
              <button className="btn btn-primary btn-sm" onClick={() => window.print()}>
                 <Printer size={16} /> Cetak Invoice
@@ -64,13 +65,20 @@ export default function InvoicePage() {
              <div className="header-yellow-box">
                 <div className="invoice-logo-container">
                    <div className="invoice-logo">
-                      <div className="logo-bubble">
-                         <div className="wave-icon"></div>
-                      </div>
+                      {headerInfo.logoUrl ? (
+                         <img src={headerInfo.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
+                      ) : (
+                         <div className="logo-bubble">
+                            <div className="wave-icon"></div>
+                         </div>
+                      )}
                    </div>
                    <div className="invoice-brand">
                       {isEditingHeader ? (
-                         <input className="header-input" value={headerInfo.name} onChange={e => setHeaderInfo({...headerInfo, name: e.target.value})} style={{ fontSize: 24, fontWeight: 900 }} />
+                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <input className="header-input" value={headerInfo.name} onChange={e => setHeaderInfo({...headerInfo, name: e.target.value})} style={{ fontSize: 22, fontWeight: 900 }} />
+                            <input className="header-input" value={headerInfo.logoUrl} placeholder="URL Logo (Opsional)" onChange={e => setHeaderInfo({...headerInfo, logoUrl: e.target.value})} style={{ fontSize: 10 }} />
+                         </div>
                       ) : (
                          <div className="main-name">{headerInfo.name}</div>
                       )}
@@ -106,13 +114,13 @@ export default function InvoicePage() {
 
           {/* Meta Info */}
           <div className="invoice-meta">
-             <div className="meta-right">
-                <div className="meta-row">
+             <div className="meta-right-clean">
+                <div className="meta-row-clean">
                    <span className="meta-label">No. INVOICE</span>
                    <span className="meta-value">{invNumber}</span>
                 </div>
-                <div className="meta-row">
-                   <span className="meta-label">Tgl Pendaftaran:</span>
+                <div className="meta-row-clean">
+                   <span className="meta-label">Tgl Pendaftaran</span>
                    <span className="meta-value">{formatDate(dateObj, "d/MM/yyyy")}</span>
                 </div>
              </div>
@@ -135,19 +143,19 @@ export default function InvoicePage() {
           </div>
 
           {/* Table */}
-          <div style={{ padding: '0 40px' }}>
+          <div style={{ padding: '0 40px', width: '100%', boxSizing: 'border-box' }}>
             <table className="invoice-table">
                <thead>
                   <tr>
-                     <th style={{ width: '50%' }}>KETERANGAN</th>
-                     <th style={{ width: '10%' }} className="text-center">JUMLAH</th>
-                     <th style={{ width: '20%' }} className="text-right">HARGA</th>
-                     <th style={{ width: '20%' }} className="text-right">SUB TOTAL</th>
+                     <th style={{ width: '55%' }}>KETERANGAN</th>
+                     <th style={{ width: '10%' }} className="text-center">JML</th>
+                     <th style={{ width: '17%' }} className="text-right">HARGA</th>
+                     <th style={{ width: '18%' }} className="text-right">SUB TOTAL</th>
                   </tr>
                </thead>
                <tbody>
                   <tr>
-                     <td>
+                     <td style={{ wordBreak: 'break-word' }}>
                         <div className="item-name">PENDAFTARAN PROGRAM {lead.program?.nama?.toUpperCase()}</div>
                         <div className="item-desc">{lead.program?.tipe || 'Standard'} Class - Speaking Partner</div>
                      </td>
@@ -155,7 +163,7 @@ export default function InvoicePage() {
                      <td className="text-right">{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</td>
                      <td className="text-right">{formatCurrency(lead.program?.harga || 0).replace('Rp', '').trim()}</td>
                   </tr>
-                  {[1, 2, 3, 4, 5].map(i => (
+                  {[1, 2, 3, 4].map(i => (
                     <tr key={i} className="empty-row"><td></td><td></td><td></td><td></td></tr>
                   ))}
                </tbody>
@@ -174,7 +182,7 @@ export default function InvoicePage() {
                 </div>
              </div>
              <div className="summary-right">
-                <div className="total-box">
+                <div className="total-box-clean">
                    <div className="total-row">
                       <span className="total-label">Sub Total</span>
                       <span className="total-symbol">Rp</span>
@@ -185,7 +193,7 @@ export default function InvoicePage() {
                       <span className="total-symbol">Rp</span>
                       <span className="total-value">{formatCurrency(lead.kodeUnik || 0).replace('Rp', '').trim()}</span>
                    </div>
-                   <div className="total-row grand-total">
+                   <div className="total-row grand-total-clean">
                       <span className="total-label">GRAND TOTAL</span>
                       <span className="total-symbol">Rp</span>
                       <span className="total-value">{formatCurrency(lead.nominalTagihan || lead.program?.harga || 0).replace('Rp', '').trim()}</span>
@@ -224,6 +232,7 @@ export default function InvoicePage() {
              flex-direction: column;
              color: #1e293b;
              box-sizing: border-box;
+             overflow: hidden;
           }
           
           /* Header Layout */
@@ -235,7 +244,7 @@ export default function InvoicePage() {
           }
           .header-yellow-box {
              background: #ffcc00;
-             flex: 4.5;
+             flex: 4.2;
              display: flex;
              align-items: center;
              padding-left: 50px;
@@ -244,7 +253,7 @@ export default function InvoicePage() {
           }
           .header-dark-box {
              background: #232833;
-             flex: 5.5;
+             flex: 5.8;
              display: flex;
              align-items: center;
              justify-content: flex-end;
@@ -284,23 +293,24 @@ export default function InvoicePage() {
              justify-content: center;
              position: relative;
              flex-shrink: 0;
+             overflow: hidden;
           }
           .logo-bubble {
-             width: 45px;
-             height: 45px;
+             width: 100%;
+             height: 100%;
              background: #ffcc00;
              border-radius: 50%;
              clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
-             transform: rotate(15deg);
+             transform: rotate(15deg) scale(0.7);
           }
           .main-name {
-             font-size: 24px;
+             font-size: 22px;
              font-weight: 900;
              letter-spacing: -0.5px;
              line-height: 1;
           }
           .tagline {
-             font-size: 11px;
+             font-size: 10px;
              font-weight: 600;
              margin-top: 4px;
           }
@@ -319,34 +329,31 @@ export default function InvoicePage() {
              font-size: 11px;
           }
           
-          /* Meta Info */
+          /* Meta Info Clean */
           .invoice-meta {
              display: flex;
              justify-content: flex-end;
              padding: 0 40px 10px 40px;
           }
-          .meta-right {
-             width: 280px;
-             border: 1px solid #000;
+          .meta-right-clean {
+             width: 320px;
           }
-          .meta-row {
+          .meta-row-clean {
              display: flex;
+             justify-content: flex-end;
+             gap: 20px;
+             margin-bottom: 4px;
           }
-          .meta-row:first-child { border-bottom: 1px solid #000; }
           .meta-label {
-             flex: 1.5;
-             padding: 8px 12px;
              font-size: 12px;
-             font-weight: 700;
-             border-right: 1px solid #000;
-             background: #fff;
+             font-weight: 500;
+             color: #64748b;
           }
           .meta-value {
-             flex: 1;
-             padding: 8px 12px;
              font-size: 12px;
              text-align: right;
-             font-weight: 600;
+             font-weight: 700;
+             min-width: 140px;
           }
           
           /* Recipient */
@@ -369,11 +376,12 @@ export default function InvoicePage() {
              font-weight: 600;
           }
           
-          /* Table Style */
+          /* Table Style Fixed */
           .invoice-table {
              width: 100%;
              border-collapse: collapse;
              border: 1.5px solid #000;
+             table-layout: fixed;
           }
           .invoice-table th {
              background: #ffcc00;
@@ -413,9 +421,9 @@ export default function InvoicePage() {
           .acct-name { margin-top: 5px; font-size: 12px; }
           
           .summary-right { flex: 0.8; }
-          .total-box {
-             border: 1px solid #000;
+          .total-box-clean {
              width: 100%;
+             border: 1.5px solid #000;
           }
           .total-row {
              display: flex;
@@ -425,11 +433,11 @@ export default function InvoicePage() {
           .total-label { flex: 1; font-weight: 700; }
           .total-symbol { width: 30px; font-weight: 600; }
           .total-value { width: 80px; text-align: right; font-weight: 600; }
-          .grand-total {
+          .grand-total-clean {
              border-top: 1.5px solid #000;
              font-weight: 900;
              font-size: 13px;
-             background: #fff;
+             background: #f8fafc;
           }
           
           /* Signature */

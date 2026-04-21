@@ -129,42 +129,55 @@ export async function GET(request: NextRequest) {
       prisma.program.findMany({ where: { id: { in: programIds } }, select: { id: true, nama: true, tipe: true } }),
     ]);
 
-    // 10. Breakdown sumber (RO, TOEFL, Live, Regular)
+    // 10. Breakdown sumber (RO, TOEFL, Live, Regular, Sosmed)
     const rawBreakdown = await prisma.pemasukan.findMany({
       where: { tanggal: dateFilter },
       select: {
         isRO: true,
         hargaFinal: true,
         programId: true,
+        csId: true,
         cs: { select: { teamType: true } },
         program: { select: { nama: true, isProfitSharing: true } },
+        refunds: {
+          where: { status: "APPROVED" },
+          select: { jumlah: true }
+        }
       }
     });
 
-    const sourceBreakdown = {
-      RO: 0,
-      TOEFL: 0,
-      LIVE: 0,
-      SOSMED: 0,
-      REGULAR: 0
-    };
+    const sourceBreakdown = { RO: 0, TOEFL: 0, LIVE: 0, SOSMED: 0, REGULAR: 0 };
+    const perProgramMap: Record<string, { total: number, count: number }> = {};
+    const perCSMap: Record<string, { total: number, count: number }> = {};
+    const perMetodeMap: Record<string, { total: number, count: number }> = {};
 
     rawBreakdown.forEach(p => {
+      const refundAmount = p.refunds.reduce((s, r) => s + r.jumlah, 0);
+      const netAmount = p.hargaFinal - refundAmount;
+      
+      // Breakdown Sumber
       const nama = p.program?.nama?.toUpperCase() || "";
       const isSharing = p.program?.isProfitSharing || false;
       const teamType = p.cs?.teamType;
       
-      if (p.isRO) {
-        sourceBreakdown.RO += p.hargaFinal;
-      } else if (teamType === "CS_SOSMED") {
-        sourceBreakdown.SOSMED += p.hargaFinal;
-      } else if (isSharing) {
-        sourceBreakdown.TOEFL += p.hargaFinal;
-      } else if (nama.includes("LIVE")) {
-        sourceBreakdown.LIVE += p.hargaFinal;
-      } else {
-        sourceBreakdown.REGULAR += p.hargaFinal;
+      if (p.isRO) sourceBreakdown.RO += netAmount;
+      else if (teamType === "CS_SOSMED") sourceBreakdown.SOSMED += netAmount;
+      else if (isSharing) sourceBreakdown.TOEFL += netAmount;
+      else if (nama.includes("LIVE")) sourceBreakdown.LIVE += netAmount;
+      else sourceBreakdown.REGULAR += netAmount;
+
+      // Per Program
+      if (p.programId) {
+        if (!perProgramMap[p.programId]) perProgramMap[p.programId] = { total: 0, count: 0 };
+        perProgramMap[p.programId].total += netAmount;
+        perProgramMap[p.programId].count += 1;
       }
+
+      // Per CS
+      const csId = p.csId || "UNKNOWN";
+      if (!perCSMap[csId]) perCSMap[csId] = { total: 0, count: 0 };
+      perCSMap[csId].total += netAmount;
+      perCSMap[csId].count += 1;
     });
 
     return NextResponse.json({
@@ -182,30 +195,27 @@ export async function GET(request: NextRequest) {
         jumlahTransaksiOut: pengeluaranAgg._count,
         sourceBreakdown
       },
-      pemasukanPerProgram: rawPemasukanPerProgram.map(p => {
-        const prog = programs.find(pr => pr.id === p.programId);
-        return {
-          programId: p.programId,
-          nama: prog?.nama ?? "Tidak Diketahui",
-          tipe: prog?.tipe,
-          total: p._sum.hargaFinal ?? 0,
-          count: p._count,
-        };
-      }),
+      pemasukanPerProgram: programs.map(prog => ({
+        programId: prog.id,
+        nama: prog.nama,
+        tipe: prog.tipe,
+        total: perProgramMap[prog.id]?.total ?? 0,
+        count: perProgramMap[prog.id]?.count ?? 0,
+      })).filter(p => p.count > 0 || p.total > 0),
       pengeluaranPerKategori: rawPengeluaranPerKategori.map(p => ({
         kategori: p.kategori,
         total: p._sum.jumlah ?? 0,
         count: p._count,
       })),
-      pemasukanPerCS: rawPemasukanPerCS.map(p => ({
-        csId: p.csId,
-        nama: csUsers.find(u => u.id === p.csId)?.name ?? "Tidak Diketahui",
-        total: p._sum.hargaFinal ?? 0,
-        count: p._count,
-      })),
+      pemasukanPerCS: csUsers.map(u => ({
+        csId: u.id,
+        nama: u.name,
+        total: perCSMap[u.id]?.total ?? 0,
+        count: perCSMap[u.id]?.count ?? 0,
+      })).filter(p => p.count > 0 || p.total > 0),
       pemasukanPerMetode: rawPemasukanPerMetode.map(p => ({
         metode: p.metodeBayar,
-        total: p._sum.hargaFinal ?? 0,
+        total: p._sum.hargaFinal ?? 0, // Metode bayar remains bruto/historical for now or we could fix it too
         count: p._count,
       })),
     });

@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
       orderBy: { tanggal: "desc" },
       include: { siswa: { select: { nama: true, noSiswa: true } }, program: { select: { nama: true } }, cs: { select: { name: true } } }
     });
-    const transaksiTerkini = recentRaw.filter(p => !checkRefund(p)).slice(0, 10);
+    const transaksiTerkini = recentRaw.filter((p: any) => !checkRefund(p)).slice(0, 10);
 
     const labaIni = totalPemasukanIni - totalExIni - totalAdsIni;
 

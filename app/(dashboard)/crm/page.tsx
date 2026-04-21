@@ -23,6 +23,10 @@ import {
   TrendingUp,
   Edit,
   RotateCcw,
+  Search,
+  RefreshCw,
+  FileText,
+  Printer,
   ChevronRight,
   ShieldCheck
 } from "lucide-react";
@@ -538,7 +542,7 @@ export default function CRMPage() {
                          )}
 
                          <div style={{ display: 'flex', gap: 4 }}>
-                            <button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0 }} onClick={() => { setSelectedEditLead(lead); setShowEditModal(true); }} title="Edit Lead">
+                            <button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0 }} title="Cetak Invoice" style={{ color: 'var(--primary)', marginRight: 6 }} onClick={(e) => { e.stopPropagation(); window.open('/invoice/'+lead.id, '_blank'); }}><FileText size={14} /></button><button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0, marginRight: 6 }} onClick={() => { setSelectedEditLead(lead); setShowEditModal(true); }} title="Edit Lead">
                                <Edit size={14} />
                             </button>
                             {canDelete && (

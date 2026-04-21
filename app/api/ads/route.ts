@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
   // Combine and Format data for table display
   // We transform AdPerformance records to look like SpentAds records
-  const formattedPerfData = perfData.map(p => ({
+  const formattedPerfData = perfData.map((p: any) => ({
     id: p.id,
     tanggal: p.date,
     platform: p.platform,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     isPerformanceData: true
   }));
 
-  const allData = [...spentData, ...formattedPerfData].sort((a,b) => 
+  const allData = [...spentData, ...formattedPerfData].sort((a: any, b: any) => 
     new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
   );
 
@@ -75,10 +75,10 @@ export async function GET(request: NextRequest) {
 
   // Combine platform breakdown
   const platformMap: Record<string, number> = {};
-  byPlatformSpent.forEach(p => {
+  byPlatformSpent.forEach((p: any) => {
     platformMap[p.platform] = (platformMap[p.platform] || 0) + (p._sum.jumlah || 0);
   });
-  byPlatformPerf.forEach(p => {
+  byPlatformPerf.forEach((p: any) => {
     platformMap[p.platform] = (platformMap[p.platform] || 0) + (p._sum.spent || 0);
   });
 

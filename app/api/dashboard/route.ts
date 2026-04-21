@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     });
 
     const programs = await prisma.program.findMany({
-      where: { id: { in: pemasukanPerProgramRaw.map((p: any) => p.programId).filter((id): id is string => id !== null) } },
+      where: { id: { in: pemasukanPerProgramRaw.map((p: any) => p.programId).filter((id: any): id is string => id !== null) } },
       select: { id: true, nama: true }
     });
 

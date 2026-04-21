@@ -41,6 +41,10 @@ export default function PengeluaranPage() {
   const [showCatModal, setShowCatModal] = useState(false);
   const [newCat, setNewCat] = useState({ nama: "", color: "#ef4444" });
   const [form, setForm] = useState({
+    jumlah: "",
+    kategori: "LAINNYA",
+    metodeBayar: "CASH",
+    keterangan: "",
     tanggal: new Date().toISOString().slice(0, 10),
   });
 

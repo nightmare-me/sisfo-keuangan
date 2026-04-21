@@ -46,48 +46,105 @@ export default function InvoicePage() {
     setPrinting(true);
     const { default: jsPDF } = await import("jspdf");
     const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF({ unit:"mm", format:"a5" });
+    const doc = new jsPDF({ unit:"mm", format:"a4" });
 
-    doc.setFontSize(16); doc.setFont("helvetica","bold");
-    doc.text("SPEAKING PARTNER", 74, 15, { align:"center" });
-    doc.setFontSize(9); doc.setFont("helvetica","normal");
-    doc.text("by Kampung Inggris", 74, 21, { align:"center" });
+    // Header Backgrounds
+    doc.setFillColor(250, 205, 0); // Yellow #facd00
+    doc.rect(0, 0, 80, 40, "F");
+    doc.setFillColor(30, 41, 59); // Dark #1e293b
+    doc.rect(80, 0, 130, 40, "F");
+
+    // Brand Text
+    doc.setTextColor(30, 41, 59);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("SPEAKING PARTNER", 10, 20);
     doc.setFontSize(8);
-    doc.text("Jl. Kampung Inggris, Pare, Kediri, Jawa Timur", 74, 26, { align:"center" });
-    doc.line(10, 30, 138, 30);
+    doc.text("Teman Terhebat Belajar Bahasa Inggris", 10, 25);
 
-    doc.setFontSize(14); doc.setFont("helvetica","bold");
-    doc.text("INVOICE", 74, 38, { align:"center" });
-    doc.setFontSize(9); doc.setFont("helvetica","normal");
-    doc.text(`No: ${inv.noInvoice}`, 74, 44, { align:"center" });
+    // Company Contact (Right Side)
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("Jalan Brawijaya 13A, Pare, Kediri", 200, 15, { align: "right" });
+    doc.text(`Email: speakingpartnerku@gmail.com`, 200, 20, { align: "right" });
+    doc.text(`Telp: 0877 6263 0406`, 200, 25, { align: "right" });
+    doc.setTextColor(250, 205, 0);
+    doc.setFont("helvetica", "bold");
+    doc.text("WWW.SPEAKINGPARTNER.ID", 200, 32, { align: "right" });
 
+    // Meta Info
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.text("INVOICE", 10, 55);
     doc.setFontSize(9);
-    doc.text(`Tanggal: ${formatDate(inv.tanggal, "dd MMMM yyyy")}`, 10, 54);
-    doc.text(`Kepada: ${inv.siswa?.nama??"—"}`, 10, 60);
-    doc.text(`No Siswa: ${inv.siswa?.noSiswa??"—"}`, 10, 66);
+    doc.setFont("helvetica", "normal");
+    doc.text(`No. Invoice: ${inv.noInvoice}`, 200, 55, { align: "right" });
+    doc.text(`Tgl Pendaftaran: ${formatDate(inv.tanggal)}`, 200, 60, { align: "right" });
 
+    // Recipient
+    doc.setFont("helvetica", "bold");
+    doc.text("Kepada:", 10, 75);
+    doc.setFont("helvetica", "normal");
+    doc.text(inv.siswa?.nama || "—", 30, 75);
+    doc.text("Alamat:", 10, 81);
+    doc.text("-", 30, 81);
+    doc.text("No. Siswa:", 10, 87);
+    doc.setFont("helvetica", "bold");
+    doc.text(inv.siswa?.noSiswa || "—", 30, 87);
+
+    // Table
     autoTable(doc, {
-      startY: 72,
-      head:[["Keterangan","Jumlah"]],
-      body:[
-        [inv.pemasukan?.program?.nama??"Kursus Bahasa", formatCurrency(inv.total)],
-        ...(inv.diskon>0 ? [["Diskon", `- ${formatCurrency(inv.diskon)}`]] : []),
-        ["TOTAL BAYAR", formatCurrency(inv.totalFinal)],
+      startY: 95,
+      head: [["KETERANGAN", "JML", "HARGA", "TOTAL"]],
+      body: [
+        [
+          inv.pemasukan?.program?.nama?.toUpperCase() || "PROGRAM KURSUS",
+          "1",
+          formatCurrency(inv.total).replace("Rp", "").trim(),
+          formatCurrency(inv.total).replace("Rp", "").trim()
+        ]
       ],
-      styles:{ fontSize:9 },
-      headStyles:{ fillColor:[99,102,241] },
-      foot:[["Metode Bayar", inv.pemasukan?.metodeBayar??"—"]],
-      footStyles:{ fontStyle:"italic", textColor:[100,100,100] },
+      styles: { fontSize: 9, cellPadding: 5, borderBottomColor: [0, 0, 0], borderBottomWidth: 0.1 },
+      headStyles: { fillColor: [250, 205, 0], textColor: [0, 0, 0], fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 100 },
+        1: { cellWidth: 20, halign: "center" },
+        2: { cellWidth: 35, halign: "right" },
+        3: { cellWidth: 35, halign: "right" }
+      }
     });
 
-    const yEnd = (doc as any).lastAutoTable.finalY + 10;
-    doc.setFontSize(8); doc.setFont("helvetica","italic");
-    doc.text("Terima kasih telah mempercayakan pendidikan bahasa Anda kepada kami.", 74, yEnd, { align:"center" });
-    doc.text("Invoice ini merupakan bukti pembayaran yang sah.", 74, yEnd+5, { align:"center" });
+    // Totals
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("PEMBAYARAN BISA MELALUI", 10, finalY);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text("BRI: 055501001893300", 10, finalY + 6);
+    doc.text("MANDIRI: 1710010743550", 10, finalY + 11);
+    doc.text("BCA: 1409585858", 10, finalY + 16);
+    doc.text("Atas satu nama: Speaking Partner", 10, finalY + 22);
 
-    doc.setFontSize(8); doc.setFont("helvetica","normal");
-    doc.text(`Dikeluarkan oleh: ${inv.pemasukan?.cs?.name??"Admin"}`, 10, yEnd+14);
-    doc.text("Status: LUNAS ✓", 138, yEnd+14, { align:"right" });
+    // Summary Box
+    doc.rect(140, finalY, 60, 25);
+    doc.setFontSize(9);
+    doc.text("Sub Total", 143, finalY + 7);
+    doc.text(formatCurrency(inv.total).replace("Rp", "").trim(), 197, finalY + 7, { align: "right" });
+    doc.text("Kode Unik", 143, finalY + 13);
+    doc.text(formatCurrency(inv.diskon || 0).replace("Rp", "").trim(), 197, finalY + 13, { align: "right" });
+    doc.line(140, finalY + 16, 200, finalY + 16);
+    doc.setFont("helvetica", "bold");
+    doc.text("GRAND TOTAL", 143, finalY + 21);
+    doc.text(formatCurrency(inv.totalFinal).replace("Rp", "").trim(), 197, finalY + 21, { align: "right" });
+
+    // Footer
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("Dikeluarkan oleh", 170, finalY + 50, { align: "center" });
+    doc.setFont("helvetica", "bold");
+    doc.text(inv.pemasukan?.cs?.name || "Admin", 170, finalY + 75, { align: "center" });
 
     doc.save(`invoice_${inv.noInvoice}.pdf`);
     setPrinting(false);

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         orderBy: { name: "asc" },
       });
       
-      const formatted = users.map(u => ({
+      const formatted = users.map((u: any) => ({
         ...u,
         role: u.role?.slug?.toUpperCase() || "USER",
         roleName: u.role?.name || "No Role"
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   });
   
   // Map output agar match format lama tapi dengan data role baru
-  const formattedUsers = users.map(u => ({
+  const formattedUsers = users.map((u: any) => ({
     ...u,
     role: u.role?.slug?.toUpperCase() || "USER",
     roleName: u.role?.name || "No Role"

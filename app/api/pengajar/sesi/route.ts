@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Kelas, Topik, dan Tanggal wajib diisi" }, { status: 400 });
   }
 
-  const tx = await prisma.$transaction(async (prisma) => {
+  const tx = await prisma.$transaction(async (tx: any) => {
     // 1. Buat SesiKelas
-    const sesi = await prisma.sesiKelas.create({
+    const sesi = await tx.sesiKelas.create({
       data: {
         kelasId,
         topik,
@@ -30,14 +30,14 @@ export async function POST(request: NextRequest) {
     });
 
     // 2. Ambil pendaftaran murid yang aktif di kelas ini
-    const pendaftaranList = await prisma.pendaftaran.findMany({
+    const pendaftaranList = await tx.pendaftaran.findMany({
       where: { kelasId, aktif: true }
     });
 
     // 3. Buat kerangka Absensi default "HADIR" untuk semua murid
     if (pendaftaranList.length > 0) {
-      await prisma.absensi.createMany({
-        data: pendaftaranList.map(p => ({
+      await tx.absensi.createMany({
+        data: pendaftaranList.map((p: any) => ({
           sesiKelasId: sesi.id,
           siswaId: p.siswaId,
           status: "HADIR"

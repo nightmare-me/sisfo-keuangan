@@ -20,9 +20,9 @@ export async function POST(request: NextRequest) {
     if (!lead) return NextResponse.json({ error: "Lead tidak ditemukan" }, { status: 404 });
     if (lead.status === "PAID") return NextResponse.json({ error: "Lead sudah lunas" }, { status: 400 });
 
-    const tx = await prisma.$transaction(async (prisma) => {
+    const tx = await prisma.$transaction(async (tx: any) => {
       // 1. Ubah status lead jadi PAID
-      await prisma.lead.update({
+      await tx.lead.update({
         where: { id: leadId },
         data: { 
           status: "PAID",
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       });
 
       // 2. Cek Siswa (RO Check)
-      let siswa = await prisma.siswa.findFirst({
+      let siswa = await tx.siswa.findFirst({
         where: { telepon: lead.whatsapp }
       });
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         isRO = true;
       } else {
         const noSiswa = generateSiswaNumber();
-        siswa = await prisma.siswa.create({
+        siswa = await tx.siswa.create({
           data: {
             noSiswa,
             nama: lead.nama,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
       // 3. Buat Pemasukan
       const noInvoice = generateInvoiceNumber();
-      const pemasukan = await prisma.pemasukan.create({
+      const pemasukan = await tx.pemasukan.create({
         data: {
           tanggal: tanggalLunas ? new Date(tanggalLunas) : new Date(),
           siswaId: siswa.id,

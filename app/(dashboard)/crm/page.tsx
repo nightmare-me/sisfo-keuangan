@@ -72,6 +72,11 @@ export default function CRMPage() {
   const [showNewLeadModal, setShowNewLeadModal] = useState(false);
   const [showShareLinksModal, setShowShareLinksModal] = useState(false);
   const [submittingLead, setSubmittingLead] = useState(false);
+  const [newLeadForm, setNewLeadForm] = useState({
+    nama: "",
+    whatsapp: "",
+    programId: "",
+    preferensiJadwal: "",
     isRO: false,
     tanggalLead: new Date().toLocaleDateString('sv'),
     sumber: "MANUAL",

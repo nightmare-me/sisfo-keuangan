@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
             csId: role === "CS" ? userId : undefined,
             status: "NEW",
             tanggalLead: item.tanggal ? new Date(item.tanggal) : new Date(),
+            sumber: "IMPORT",
           }
         });
         

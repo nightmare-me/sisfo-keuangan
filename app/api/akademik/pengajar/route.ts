@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Transaction untuk membuat User dan Profile sekaligus
-    const newTeacher = await prisma.$transaction(async (tx) => {
+    const newTeacher = await prisma.$transaction(async (tx: any) => {
         const user = await tx.user.create({
             data: {
                 name,

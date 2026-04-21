@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         const hargaFinal = Math.max(0, hargaNormal - diskon);
 
         // Start Transaction for each row
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
           const pemasukan = await tx.pemasukan.create({
             data: {
               tanggal: new Date(item.tanggal),

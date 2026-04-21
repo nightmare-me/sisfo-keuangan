@@ -50,7 +50,10 @@ export default function UsersPage() {
   const [csvLoading, setCsvLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({ name: "", email: "", password: "", roleId: "", teamType: "", aktif: true });
+  const [form, setForm] = useState({ 
+    name: "", email: "", password: "", roleId: "", teamType: "", aktif: true,
+    shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
+  });
 
   const emptyRow = { name: "", email: "", password: "", roleSlug: "cs" };
   const [bulkRows, setBulkRows] = useState([{ ...emptyRow }, { ...emptyRow }, { ...emptyRow }]);
@@ -94,14 +97,27 @@ export default function UsersPage() {
 
   function openEdit(user: any) {
     setEditUser(user);
-    setForm({ name: user.name, email: user.email, password: "", roleId: user.roleId, teamType: user.teamType || "", aktif: user.aktif });
+    setForm({ 
+      name: user.name, 
+      email: user.email, 
+      password: "", 
+      roleId: user.roleId, 
+      teamType: user.teamType || "", 
+      aktif: user.aktif,
+      shiftStart: user.shiftStart || "08:00",
+      shiftEnd: user.shiftEnd || "16:00",
+      isLeadActive: user.isLeadActive ?? true
+    });
     setMode("single");
     setShowModal(true);
   }
 
   function openAdd() {
     setEditUser(null);
-    setForm({ name: "", email: "", password: "", roleId: roles.find(r => r.slug === 'cs')?.id || "", teamType: "", aktif: true });
+    setForm({ 
+      name: "", email: "", password: "", roleId: roles.find(r => r.slug === 'cs')?.id || "", teamType: "", aktif: true,
+      shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
+    });
     setMode("single");
     setShowModal(true);
   }
@@ -469,6 +485,27 @@ export default function UsersPage() {
                                 <option value="CS_RO">CS Repeat Order (RO)</option>
                               </select>
                             </div>
+                          )}
+                          {selectedRole?.slug === 'cs' && (
+                             <div className="card" style={{ gridColumn: 'span 2', padding: 12, background: 'rgba(99,102,241,0.05)', border: '1px dashed var(--primary)' }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                   ⏰ JADWAL PENERIMAAN LEAD
+                                </div>
+                                <div className="form-grid-2">
+                                   <div className="form-group">
+                                      <label className="form-label">Jam Mulai</label>
+                                      <input type="time" className="form-control" value={form.shiftStart} onChange={e => setForm(f => ({ ...f, shiftStart: e.target.value }))} />
+                                   </div>
+                                   <div className="form-group">
+                                      <label className="form-label">Jam Selesai</label>
+                                      <input type="time" className="form-control" value={form.shiftEnd} onChange={e => setForm(f => ({ ...f, shiftEnd: e.target.value }))} />
+                                   </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                                   <input type="checkbox" id="chkLeadActive" checked={form.isLeadActive} onChange={e => setForm(f => ({ ...f, isLeadActive: e.target.checked }))} />
+                                   <label htmlFor="chkLeadActive" style={{ fontSize: 13, fontWeight: 600 }}>Siap Menerima Lead</label>
+                                </div>
+                             </div>
                           )}
                           {selectedRole?.slug === 'advertiser' && (
                             <div className="form-group">

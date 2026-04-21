@@ -46,23 +46,44 @@ export async function POST(request: NextRequest) {
         targetTeamType = "CS_LIVE";
       }
 
-      // 1. Ambil semua CS aktif sesuai timnya
-      const allCS = await prisma.user.findMany({
+      // 1. Ambil semua CS aktif sesuai timnya yang sedang ON
+      const availableCS = await prisma.user.findMany({
         where: { 
           role: { slug: { equals: "cs", mode: "insensitive" } },
-          teamType: targetTeamType
-        },
-        orderBy: { id: "asc" }
+          teamType: targetTeamType,
+          aktif: true,
+          isLeadActive: true
+        }
       });
 
-      if (allCS.length > 0) {
+      // Filter berdasarkan Jadwal Shift (WIB)
+      const currentTimeStr = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Jakarta',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(new Date());
+
+      const onShiftCS = availableCS.filter(user => {
+        const start = user.shiftStart || "00:00";
+        const end = user.shiftEnd || "23:59";
+        if (start <= end) {
+          return currentTimeStr >= start && currentTimeStr <= end;
+        } else {
+          // Jam lembur melewati tengah malam (misal 22:00 - 04:00)
+          return currentTimeStr >= start || currentTimeStr <= end;
+        }
+      });
+
+      if (onShiftCS.length > 0) {
+        onShiftCS.sort((a, b) => a.id.localeCompare(b.id)); // Konsistensi urutan
         // 2. Hitung total lead untuk tim spesifik ini guna menentukan giliran
         const teamLeadCount = await prisma.lead.count({
           where: { cs: { teamType: targetTeamType } }
         });
-        // 3. Tentukan giliran di dalam tim
-        const nextCsIndex = teamLeadCount % allCS.length;
-        finalCsId = allCS[nextCsIndex].id;
+        // 3. Tentukan giliran di dalam tim yang sedang ON
+        const nextCsIndex = teamLeadCount % onShiftCS.length;
+        finalCsId = onShiftCS[nextCsIndex].id;
       }
     }
 

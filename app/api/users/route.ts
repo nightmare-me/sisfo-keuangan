@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Single create
-  const { name, email, password, roleId, teamType } = body;
+  const { name, email, password, roleId, teamType, shiftStart, shiftEnd, isLeadActive } = body;
   if (!name || !email || !password || !roleId) {
     return NextResponse.json({ error: "Semua field diperlukan" }, { status: 400 });
   }
@@ -114,7 +114,13 @@ export async function POST(request: NextRequest) {
 
   const hashedPassword = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
-    data: { name, email, password: hashedPassword, roleId, teamType: teamType || null },
+    data: { 
+      name, email, password: hashedPassword, roleId, 
+      teamType: teamType || null,
+      shiftStart: shiftStart || "08:00",
+      shiftEnd: shiftEnd || "16:00",
+      isLeadActive: isLeadActive ?? true
+    },
     include: { role: true }
   });
 
@@ -131,12 +137,14 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { id, name, email, roleId, teamType, aktif, password } = body;
+  const { id, name, email, roleId, teamType, aktif, password, shiftStart, shiftEnd, isLeadActive } = body;
 
   const updateData: any = { name, email, aktif };
   if (roleId) updateData.roleId = roleId;
   if (teamType !== undefined) updateData.teamType = teamType || null;
+  if (shiftStart !== undefined) updateData.shiftStart = shiftStart;
+  if (shiftEnd !== undefined) updateData.shiftEnd = shiftEnd;
+  if (isLeadActive !== undefined) updateData.isLeadActive = isLeadActive;
   if (password) {
     updateData.password = await bcrypt.hash(password, 12);
   }

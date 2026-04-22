@@ -149,6 +149,7 @@ p {
 }
 
 @media (max-width: 1024px) {
+  .layout { flex-direction: column; }
   .page-container { padding: 20px 24px; }
   .topbar { padding: 0 24px; }
   .main-content { margin-left: 0; }

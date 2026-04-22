@@ -743,8 +743,18 @@ table tbody tr:hover {
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
-@media (max-width: 768px) {
+/* Dashboard Responsive Grids */
+.executive-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.panel-grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+.panel-grid-2-reverse { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }
+
+@media (max-width: 1024px) {
   .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+  .executive-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .panel-grid-2, .panel-grid-2-reverse { grid-template-columns: 1fr; gap: 16px; }
+}
+@media (max-width: 600px) {
+  .executive-grid { grid-template-columns: 1fr 1fr; }
 }
 
 /* SKELETON LOADER */

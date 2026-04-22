@@ -258,7 +258,7 @@ export default function DashboardPage() {
             <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--brand-primary-light)' }}>Executive Summary</h3>
             <Sparkles size={20} className="animate-pulse" style={{ color: 'var(--warning)' }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+          <div className="executive-grid">
             <div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Total Laba Bersih</div>
               <div style={{ fontSize: 24, fontWeight: 800 }}>{data?.kpi ? formatCurrency(data.kpi.labaHariIni) : "Rp 0"}</div>
@@ -289,7 +289,7 @@ export default function DashboardPage() {
           <div className="section-title" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: 18, fontWeight: 700 }}>
             <Wallet size={20} /> Metrik Keuangan
           </div>
-          <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+          <div className="kpi-grid" style={{ marginBottom: 24 }}>
             <div className="kpi-card">
               <div className="kpi-icon" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981" }}><Wallet size={20} /></div>
               <div className="kpi-label">Pemasukan</div>
@@ -318,7 +318,7 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24 }}>
+          <div className="panel-grid-2">
             <div className="card">
               <div className="card-header"><div className="card-title">Performa Keuangan</div></div>
               <div style={{ height: 280 }}>
@@ -361,7 +361,7 @@ export default function DashboardPage() {
           <div className="section-title" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10, fontSize: 18, fontWeight: 700 }}>
             <Users size={20} /> Performa Customer Service
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24 }}>
+          <div className="panel-grid-2-reverse">
             {/* Personal CS Stats */}
             <div className="card shadow-glow" style={{ borderLeft: '4px solid var(--brand-primary-light)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
@@ -435,7 +435,7 @@ export default function DashboardPage() {
             <GraduationCap size={20} /> Metrik Akademik & Pengajar
           </div>
           
-          <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+          <div className="kpi-grid" style={{ marginBottom: 24 }}>
             <div className="kpi-card">
               <div className="kpi-icon" style={{ background: "rgba(59,130,246,0.1)", color: "#3b82f6" }}><Users size={20} /></div>
               <div className="kpi-label">Siswa Aktif</div>
@@ -458,7 +458,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24 }}>
+          <div className="panel-grid-2">
              <div className="card">
                <div className="card-header"><div className="card-title">Tren Murid Baru</div></div>
                <div style={{ height: 280 }}>

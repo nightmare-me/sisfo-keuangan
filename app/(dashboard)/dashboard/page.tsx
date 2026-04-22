@@ -228,13 +228,13 @@ export default function DashboardPage() {
 
       {/* Period Selector (Only for Admin/Finance/Academic) */}
       {(isFinance || isAkademik) && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)', padding: '10px 16px', borderRadius: 'var(--radius-full)', marginBottom: 32, border: '1px solid var(--ghost-border)' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ background: 'var(--surface-container-low)', padding: '12px 16px', borderRadius: 'var(--radius-xl)', marginBottom: 32, border: '1px solid var(--ghost-border)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: period === 'CUSTOM' ? 12 : 0 }}>
             {["TODAY", "YESTERDAY", "WEEK", "MONTH", "CUSTOM"].map(p => (
               <button 
                 key={p} 
                 className={`btn ${period === p ? "btn-primary" : "btn-secondary"}`}
-                style={{ padding: '6px 20px', fontSize: 13, borderRadius: 'var(--radius-full)' }}
+                style={{ padding: '6px 16px', fontSize: 13, borderRadius: 'var(--radius-full)', flex: '0 0 auto' }}
                 onClick={() => setPeriod(p)}
               >
                 {p === "TODAY" ? "Hari Ini" : p === "YESTERDAY" ? "Kemarin" : p === "WEEK" ? "Minggu Ini" : p === "MONTH" ? "Bulan Ini" : "Custom"}
@@ -242,10 +242,10 @@ export default function DashboardPage() {
             ))}
           </div>
           {period === "CUSTOM" && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <input type="date" className="form-control" style={{ padding: '4px 12px', fontSize: 13, width: 150 }} value={customRange.from} onChange={e => setCustomRange({...customRange, from: e.target.value})} />
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>s/d</span>
-              <input type="date" className="form-control" style={{ padding: '4px 12px', fontSize: 13, width: 150 }} value={customRange.to} onChange={e => setCustomRange({...customRange, to: e.target.value})} />
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+              <input type="date" className="form-control" style={{ padding: '6px 12px', fontSize: 13, flex: '1 1 140px', minWidth: 120 }} value={customRange.from} onChange={e => setCustomRange({...customRange, from: e.target.value})} />
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>s/d</span>
+              <input type="date" className="form-control" style={{ padding: '6px 12px', fontSize: 13, flex: '1 1 140px', minWidth: 120 }} value={customRange.to} onChange={e => setCustomRange({...customRange, to: e.target.value})} />
             </div>
           )}
         </div>
@@ -261,22 +261,22 @@ export default function DashboardPage() {
           <div className="executive-grid">
             <div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Total Laba Bersih</div>
-              <div style={{ fontSize: 24, fontWeight: 800 }}>{data?.kpi ? formatCurrency(data.kpi.labaHariIni) : "Rp 0"}</div>
+              <div style={{ fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 800, wordBreak: 'break-word' }}>{data?.kpi ? formatCurrency(data.kpi.labaHariIni) : "Rp 0"}</div>
               <div style={{ fontSize: 11, color: 'var(--success)', marginTop: 4 }}>Sehat & Stabil</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Konversi Closing</div>
-              <div style={{ fontSize: 24, fontWeight: 800 }}>{(csData?.personal?.conversionRate || 0).toFixed(1)}%</div>
+              <div style={{ fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 800 }}>{(csData?.personal?.conversionRate || 0).toFixed(1)}%</div>
               <div style={{ fontSize: 11, color: 'var(--brand-primary-light)', marginTop: 4 }}>Average Team</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Siswa Baru (30 Hari)</div>
-              <div style={{ fontSize: 24, fontWeight: 800 }}>{akademikData?.trendData.reduce((acc, curr) => acc + curr.murid, 0) || 0}</div>
+              <div style={{ fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 800 }}>{akademikData?.trendData.reduce((acc, curr) => acc + curr.murid, 0) || 0}</div>
               <div style={{ fontSize: 11, color: 'var(--success)', marginTop: 4 }}>Bertumbuh</div>
             </div>
             <div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Retention Rate</div>
-              <div style={{ fontSize: 24, fontWeight: 800 }}>88%</div>
+              <div style={{ fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 800 }}>88%</div>
               <div style={{ fontSize: 11, color: 'var(--brand-primary-light)', marginTop: 4 }}>Target: 90%</div>
             </div>
           </div>
@@ -383,41 +383,41 @@ export default function DashboardPage() {
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Leads (30 Hari)</div>
                       <div style={{ fontSize: 18, fontWeight: 700 }}>{csData?.personal?.leads30Days || 0}</div>
                    </div>
-                   <div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Closing (30 Hari)</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--brand-primary-light)' }}>{csData?.personal?.closing30Days || 0}</div>
-                   </div>
-                </div>
-              </div>
-            </div>
+                    <div>
+                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>Closing (30 Hari)</div>
+                       <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--brand-primary-light)' }}>{csData?.personal?.closing30Days || 0}</div>
+                    </div>
+                 </div>
+               </div>
+             </div>
 
             {/* Leaderboard */}
-            <div className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                  <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Trophy size={18} style={{ color: 'var(--warning)' }} /> Leaderboard CS
                  </div>
                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>30 Hari Terakhir</span>
               </div>
-              <div className="table-wrapper">
-                 <table style={{ width: "100%", fontSize: 13 }}>
+              <div className="table-wrapper" style={{ overflowX: 'auto' }}>
+                 <table style={{ width: "100%", fontSize: 13, minWidth: 280 }}>
                     <thead>
                        <tr>
-                          <th>Rank</th>
+                          <th style={{ width: 40 }}>Rank</th>
                           <th>Nama CS</th>
-                          <th style={{ textAlign: 'center' }}>Closing</th>
-                          <th style={{ textAlign: 'right' }}>Total Revenue</th>
+                          <th style={{ textAlign: 'center', width: 60 }}>Closing</th>
+                          <th style={{ textAlign: 'right' }}>Revenue</th>
                        </tr>
                     </thead>
                     <tbody>
                        {(csData?.leaderboard || []).map((item, idx) => (
                           <tr key={idx} style={idx === 0 ? { background: 'rgba(245,158,11,0.05)' } : {}}>
-                             <td style={{ width: 50, padding: '12px 8px' }}>
-                                {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}`}
+                             <td style={{ width: 40, padding: '10px 6px' }}>
+                               {idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx + 1}`}
                              </td>
-                             <td style={{ fontWeight: idx === 0 ? 700 : 500 }}>{item.name}</td>
+                             <td style={{ fontWeight: idx === 0 ? 700 : 500, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</td>
                              <td style={{ textAlign: 'center' }}>{item.closingCount}</td>
-                             <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--on-surface)' }}>{formatCurrency(item.totalRevenue)}</td>
+                             <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--on-surface)', fontSize: 12 }}>{formatCurrency(item.totalRevenue)}</td>
                           </tr>
                        ))}
                     </tbody>

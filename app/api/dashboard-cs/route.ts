@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = session.user.id;
+  const userId = (session?.user as any)?.id;
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
   const last30DaysStart = startOfDay(subDays(new Date(), 30));

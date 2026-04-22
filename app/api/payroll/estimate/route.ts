@@ -6,12 +6,12 @@ import { startOfMonth, endOfMonth } from "date-fns";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  if (!(session?.user as any)?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const userId = session.user.id;
+    const userId = (session?.user as any)?.id;
     const now = new Date();
     const start = startOfMonth(now);
     const end = endOfMonth(now);

@@ -17,11 +17,11 @@ import Link from "next/link";
 
 export default async function SiswaDashboard() {
   const session = await auth();
-  if (!session || session.user.roleSlug !== "siswa") {
+  if (!session || (session?.user as any)?.roleSlug !== "siswa") {
     redirect("/login");
   }
 
-  const siswaId = session.user.id;
+  const siswaId = (session?.user as any)?.id;
 
   // 1. Ambil Data Murid & Pendaftaran
   const siswa = await prisma.siswa.findUnique({

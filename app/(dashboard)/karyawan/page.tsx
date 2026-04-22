@@ -163,7 +163,7 @@ export default function KaryawanPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Data Karyawan</h1>
           <p className="body-lg" style={{ margin: 0 }}>Manajemen profil finansial, struktur gaji, dan bonus tim</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {selectedIds.length > 0 && (
             <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
               <Trash2 size={16} /> Hapus ({selectedIds.length})

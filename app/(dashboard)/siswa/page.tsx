@@ -186,7 +186,7 @@ export default function SiswaPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Manajemen Siswa</h1>
           <p className="body-lg" style={{ margin: 0 }}>Kelola data profiling dan status akademik {total} siswa</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {(session?.user as any)?.role === "ADMIN" && (
             <button className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
               <Trash2 size={16} /> Hapus Semua

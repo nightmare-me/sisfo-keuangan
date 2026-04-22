@@ -137,7 +137,7 @@ export default function InventarisPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Daftar Inventaris</h1>
           <p className="body-lg" style={{ margin: 0 }}>Monitoring stok perlengkapan dan manajemen aset lembaga operasional</p>
         </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
             {isAdmin && (
               <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
                 <Trash2 size={16} /> Hapus Semua

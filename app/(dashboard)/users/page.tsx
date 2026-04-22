@@ -291,7 +291,7 @@ export default function UsersPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Manajemen Personil</h1>
           <p className="body-lg" style={{ margin: 0 }}>Otorisasi akun dan pengaturan hak akses tim Speaking Partner</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {selfRole?.toUpperCase() === "ADMIN" && (
             <>
               <button className="btn btn-secondary btn-sm" onClick={downloadCsvTemplate} style={{ borderRadius: 'var(--radius-full)' }}>

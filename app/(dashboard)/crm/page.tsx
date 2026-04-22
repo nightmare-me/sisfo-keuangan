@@ -57,6 +57,7 @@ export default function CRMPage() {
   const [loading, setLoading] = useState(true);
   const [waTemplates, setWaTemplates] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [convertingLead, setConvertingLead] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -239,25 +240,32 @@ export default function CRMPage() {
 
   async function submitConvert(e: React.FormEvent) {
     e.preventDefault();
-    if (isReadOnly) return;
+    if (isReadOnly || convertingLead) return;
 
-    const res = await fetch("/api/crm/convert", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        leadId: selectedLead.id,
-        hargaFinal: parseFloat(convertForm.hargaFinal),
-        metodeBayar: convertForm.metodeBayar,
-        tanggalLunas: convertForm.tanggalLunas,
-      }),
-    });
+    setConvertingLead(true);
+    try {
+      const res = await fetch("/api/crm/convert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadId: selectedLead.id,
+          hargaFinal: parseFloat(convertForm.hargaFinal),
+          metodeBayar: convertForm.metodeBayar,
+          tanggalLunas: convertForm.tanggalLunas,
+        }),
+      });
 
-    if (res.ok) {
-      setShowConvertModal(false);
-      fetchData();
-    } else {
-      const err = await res.json();
-      alert("❌ Gagal convert: " + (err.details || err.error || "Unknown error"));
+      if (res.ok) {
+        setShowConvertModal(false);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert("❌ Gagal convert: " + (err.details || err.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      alert("❌ Error: " + err.message);
+    } finally {
+      setConvertingLead(false);
     }
   }
 
@@ -688,8 +696,10 @@ export default function CRMPage() {
                    </div>
                 </div>
                 <div className="modal-footer" style={{ borderTop: '1px solid var(--ghost-border)', paddingTop: 24 }}>
-                   <button type="button" className="btn btn-secondary" onClick={() => setShowConvertModal(false)}>Batal</button>
-                   <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Sudah Bayar & Jadikan Siswa</button>
+                   <button type="button" className="btn btn-secondary" onClick={() => setShowConvertModal(false)} disabled={convertingLead}>Batal</button>
+                   <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={convertingLead}>
+                     {convertingLead ? "Memproses..." : "Sudah Bayar & Jadikan Siswa"}
+                   </button>
                 </div>
              </form>
           </div>

@@ -70,7 +70,7 @@ export default function InvoicePage() {
    return (
       <div className="invoice-outer-container">
          <div className="no-print" style={{ maxWidth: '800px', margin: '0 auto 20px auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Link href="/crm/invoice" className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Link href="/crm" className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                <ArrowLeft size={16} /> Kembali
             </Link>
             <div style={{ display: 'flex', gap: 12 }}>

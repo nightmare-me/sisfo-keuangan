@@ -183,13 +183,14 @@ export default function StaffLivePage() {
         
         {/* 2. KOTAK KIRI: TAMBAH RECORD */}
         <aside className="card" style={{ 
-          padding: '24px', 
+          padding: '20px', 
           borderRadius: 24,
           background: 'var(--surface-container-lowest)',
           border: '1px solid var(--ghost-border)',
           boxShadow: 'var(--shadow-lg)',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          overflow: 'hidden'
         }}>
           <h3 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, margin: 0, fontSize: 20, fontWeight: 700 }}>
              <div style={{ padding: 10, background: 'var(--primary-container)', borderRadius: 12, color: 'var(--primary)' }}>
@@ -277,11 +278,12 @@ export default function StaffLivePage() {
 
         {/* 3. KOTAK KANAN: OMSET YANG DIHASILKAN TALENT */}
         <section className="card" style={{ 
-          padding: '24px', 
+          padding: '20px', 
           borderRadius: 24,
           background: 'var(--surface-container-lowest)',
           border: '1px solid var(--ghost-border)',
-          boxShadow: 'var(--shadow-lg)'
+          boxShadow: 'var(--shadow-lg)',
+          overflow: 'hidden'
         }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0, fontSize: 20, fontWeight: 700 }}>
@@ -295,13 +297,13 @@ export default function StaffLivePage() {
             </div>
           </div>
 
-          <div className="table-wrapper" style={{ borderRadius: 20, overflow: 'hidden', border: '1px solid var(--ghost-border)' }}>
+          <div className="table-wrapper" style={{ borderRadius: 20, overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
             <table style={{ margin: 0 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-container-low)' }}>
-                  <th style={{ padding: '12px 16px' }}>TALENT</th>
-                  <th style={{ textAlign: 'center', padding: '12px 16px' }}>CLOSING</th>
-                  <th style={{ textAlign: 'right', padding: '12px 16px' }}>TOTAL OMSET</th>
+                  <th style={{ padding: '12px' }}>TALENT</th>
+                  <th style={{ textAlign: 'center', padding: '12px' }}>CLOSING</th>
+                  <th style={{ textAlign: 'right', padding: '12px' }}>OMSET</th>
                 </tr>
               </thead>
               <tbody>
@@ -336,17 +338,17 @@ export default function StaffLivePage() {
                 ))}
               </tbody>
               {performance.length > 0 && (
-                 <tfoot>
-                   <tr style={{ background: 'var(--surface-container-low)' }}>
-                     <td colSpan={2} style={{ padding: '24px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Grand Total Performa Hari Ini</td>
-                     <td style={{ textAlign: 'right', padding: '24px' }}>
-                       <div style={{ fontSize: 24, fontWeight: 950, color: 'var(--primary)' }}>
-                         <span style={{ fontSize: 14, fontWeight: 700, marginRight: 6 }}>Rp</span>
-                         {performance.reduce((acc: number, curr: any) => acc + curr.total, 0).toLocaleString("id-ID")}
-                       </div>
-                     </td>
-                   </tr>
-                 </tfoot>
+                  <tfoot>
+                    <tr style={{ background: 'var(--surface-container-low)' }}>
+                      <td colSpan={2} style={{ padding: '16px 12px', fontWeight: 800, textTransform: 'uppercase', fontSize: 11, color: 'var(--text-muted)' }}>Grand Total</td>
+                      <td style={{ textAlign: 'right', padding: '16px 12px' }}>
+                        <div style={{ fontSize: 'clamp(16px, 4vw, 24px)', fontWeight: 950, color: 'var(--primary)' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, marginRight: 4 }}>Rp</span>
+                          {performance.reduce((acc: number, curr: any) => acc + curr.total, 0).toLocaleString("id-ID")}
+                        </div>
+                      </td>
+                    </tr>
+                  </tfoot>
               )}
             </table>
           </div>

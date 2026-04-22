@@ -179,7 +179,7 @@ export default function StaffLivePage() {
       </section>
 
       {/* BAGIAN BAWAH: DUA KOLOM */}
-      <div className="panel-grid-equal" style={{ alignItems: 'stretch' }}>
+      <div className="panel-grid-37" style={{ alignItems: 'stretch' }}>
         
         {/* 2. KOTAK KIRI: TAMBAH RECORD */}
         <aside className="card" style={{ 

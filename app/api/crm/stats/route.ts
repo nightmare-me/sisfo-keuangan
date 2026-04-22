@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     myPemasukan.forEach((p: any) => {
       totalFee += calculateCSFee(
         teamType as any,
-        p.program?.kategoriFee || 'REG_1B',
+        p.program?.kategoriFee || '',
         p.hargaFinal,
         p.isRO,
         cr,

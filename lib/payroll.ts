@@ -24,7 +24,21 @@ export function calculateCSFee(
 
   // 2. CADANGAN: Pakai rumus hardcoded (untuk back-compatibility)
   if (csCategory === 'CS_REGULAR' || csCategory === 'CS_SOSMED') {
-    // Regular Rules
+    
+    // FALLBACK PRIORITAS: Jika nama mengandung kata kunci khusus, gunakan fee tersebut
+    // (Penting jika kategoriFee di DB kosong atau salah set ke REG_1B)
+    if (program && (program as any).nama) {
+      const nama = (program as any).nama.toLowerCase();
+      if (nama.includes('semi')) return isRO ? 12500 : 15000;
+      if (nama.includes('private')) {
+        if (price > 1000000) return isRO ? 30000 : 50000;
+        return isRO ? 15000 : 25000;
+      }
+      if (nama.includes('toefl') || nama.includes('ielts')) return 12500;
+      if (nama.includes('native')) return 12500;
+    }
+
+    // Rules berdasarkan Kategori (Explicit)
     if (!isRO) {
       if (productType === '49K_DISKON') return 2000;
       if (productType === '49K') return 2500;
@@ -48,18 +62,6 @@ export function calculateCSFee(
       if (productType === 'SEMI_PRIVATE') return 12500;
       if (productType === 'PRIVATE_550' || productType === 'PRIVATE_850') return 15000;
       if (productType === 'PRIVATE_1B' || productType === 'PRIVATE_VIP' || productType === 'PRIVATE_FAMILY') return 30000;
-    }
-
-    // 3. FALLBACK: Jika masih belum ketemu, coba deteksi dari Nama Program (Anti-Konstan 10rb)
-    if (program && (program as any).nama) {
-      const nama = (program as any).nama.toLowerCase();
-      if (nama.includes('semi')) return isRO ? 12500 : 15000;
-      if (nama.includes('private')) {
-        if (price > 1000000) return isRO ? 30000 : 50000;
-        return isRO ? 15000 : 25000;
-      }
-      if (nama.includes('toefl') || nama.includes('ielts')) return 12500;
-      if (nama.includes('native')) return 12500;
     }
   }
 

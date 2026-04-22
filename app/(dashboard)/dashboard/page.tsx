@@ -100,7 +100,9 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   
   // Role & Permissions
-  const roleSlug = session?.user?.roleSlug?.toLowerCase() || "user";
+  const roleFromSession = (session?.user as any)?.roleSlug || (session?.user as any)?.role || "user";
+  const roleSlug = roleFromSession.toLowerCase();
+  
   const isAdmin = roleSlug === "admin" || roleSlug === "ceo" || roleSlug === "coo";
   const isFinance = roleSlug === "finance" || isAdmin;
   const isAkademik = roleSlug === "akademik" || isAdmin;

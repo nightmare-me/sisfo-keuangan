@@ -32,9 +32,14 @@ export default function SubRolePage() {
         fetch("/api/admin/roles"),
         fetch("/api/admin/permissions")
       ]);
-      setSubRoles(await srRes.json());
-      setRoles(await rRes.json());
-      setPermissions(await pRes.json());
+      const [srData, rData, pData] = await Promise.all([
+        srRes.json(),
+        rRes.json(),
+        pRes.json()
+      ]);
+      setSubRoles(Array.isArray(srData) ? srData : []);
+      setRoles(Array.isArray(rData) ? rData : []);
+      setPermissions(Array.isArray(pData) ? pData : []);
     } catch (error) {
       toast.error("Gagal mengambil data");
     } finally {

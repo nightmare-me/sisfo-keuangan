@@ -96,7 +96,7 @@ export default function StaffPayrollPage() {
 
   return (
     <div className="page-container">
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40 }}>
+      <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 40 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--primary)", marginBottom: 8 }}>
              <Wallet size={16} />
@@ -111,7 +111,7 @@ export default function StaffPayrollPage() {
           )}
         </div>
 
-        <div className="card glass" style={{ padding: '8px 16px', display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div className="card glass" style={{ padding: '8px 16px', display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
            <select className="form-control" value={bulan} onChange={e => setBulan(parseInt(e.target.value))}>
              {BULAN_LIST.map((b, i) => <option key={i} value={i+1}>{b}</option>)}
            </select>

@@ -218,7 +218,7 @@ export default function AdsPage() {
           </div>
         </div>
         {/* Summary Breakdown & Chart */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 2fr", gap:32, marginBottom:48 }}>
+        <div className="panel-grid-2-reverse" style={{ marginBottom: 48 }}>
           <div className="card" style={{ margin: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="card-header" style={{ marginBottom: 24 }}>
               <div className="card-title" style={{ fontSize: '1.2rem' }}>Pecahan per Platform</div>

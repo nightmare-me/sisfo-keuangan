@@ -172,7 +172,7 @@ export default function LaporanPage() {
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
       {/* Header Ala Dashboard */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 48, flexShrink: 0 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
              <BarChart2 size={18} />
@@ -237,7 +237,7 @@ export default function LaporanPage() {
         </div>
 
         {loading ? (
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16 }}>
+          <div className="form-grid-3">
             {[1,2,3,4,5,6].map(i=><div key={i} className="skeleton" style={{ height:100,borderRadius:16 }} />)}
           </div>
         ) : !data ? null : (
@@ -265,7 +265,7 @@ export default function LaporanPage() {
                 <Layers size={18} style={{ color: "var(--primary)" }} />
                 <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Breakdown Sumber Pemasukan</h3>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16 }}>
+              <div className="kpi-grid">
                 {[
                   { label: "Regular (Murid Baru)", key: "REGULAR", color: "#6366f1", icon: "🌱" },
                   { label: "Repeat Order (RO)", key: "RO", color: "#10b981", icon: "🔁" },
@@ -292,7 +292,7 @@ export default function LaporanPage() {
             </div>
 
             {/* Charts Row */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
+            <div className="form-grid-2" style={{ marginBottom:16 }}>
               {/* Pemasukan per Program */}
               <div className="card">
                 <div className="card-header"><div className="card-title">💰 Pemasukan per Program</div></div>

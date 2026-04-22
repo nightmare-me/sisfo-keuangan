@@ -2,21 +2,19 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📱 Update Terbaru: Mobile-Responsive Optimization (v4.2) 🚀 (HOT!)
+## 🛠️ Update Sistem: CRM Stability & Smart Payroll (v4.3) 🚀 (TERBARU!)
 
-### 1. Mobile-First Dashboard Architecture 📱
-*   **Adaptive Layout System**: Seluruh modul (CRM, Payroll, Ads, Laporan) kini 100% responsif dengan navigasi yang nyaman di smartphone & tablet.
-*   **Intelligent Date Filters**: Desain ulang filter periode yang otomatis menyesuaikan tata letak pada layar sempit tanpa memakan ruang berlebih.
-*   **Safe-Scroll Tables**: Implementasi *horizontal scrolling* pada tabel data besar untuk mencegah layout "gepeng" atau terpotong pada perangkat mobile.
+### 1. Robust CRM Conversion Logic 🔐
+*   **Double-Click Prevention**: Penambahan *loading state* pada modal konversi lunas untuk mencegah error "Lead sudah lunas" akibat pengiriman data ganda.
+*   **Navigation Integrity**: Perbaikan link navigasi pada halaman Invoice agar kembali ke dashboard yang tepat tanpa error 404.
 
-### 2. Flexible UI Grid Engine ⚙️
-*   **Dynamic Utility Classes**: Penambahan sistem grid baru (`panel-grid-equal`, `panel-grid-37`) untuk kontrol proporsi konten yang presisi di PC namun tetap rapi saat menumpuk di Mobile.
-*   **Responsive Metrics Cards**: Visualisasi metrik utama (Executive Summary) menggunakan *dynamic font-scaling* (`clamp()`) agar teks tetap terbaca jelas di berbagai ukuran layar.
-*   **Header Wrapping Logic**: Memastikan tombol aksi (Export, Tambah Data, Filter) tidak pernah terpotong berkat sistem *flex-wrap* otomatis.
+### 2. Smart CS Fee Engine 💰
+*   **Keyword-Based Detection**: Mesin gaji kini otomatis mendeteksi kata kunci (misal: "Semi", "Private") untuk menentukan fee yang lebih adil meskipun kategori produk belum diatur.
+*   **Database First Priority**: Tetap mendukung kustomisasi penuh; jika fee diatur manual di menu Program, sistem akan memprioritaskan angka tersebut daripada deteksi otomatis.
 
 ---
 
-## 🚀 Fitur Sebelumnya: Student Portal & Role Transparency (v4.1) 🎓
+## 📱 Update Sebelumnya: Mobile-Responsive Optimization (v4.2) 🚀
 
 ## 🚀 Fitur Sebelumnya: Premium Invoice System (v3.8) 📄
 

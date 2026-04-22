@@ -279,7 +279,7 @@ export default function CRMPage() {
               </button>
             )}
             {!isReadOnly && (
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                 <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowShareLinksModal(true)}>
                   <Share2 size={16} /> Bagikan Link
                 </button>
@@ -295,12 +295,7 @@ export default function CRMPage() {
         </div>
 
         {/* Dashboard Cards (Sesuai Gambar) */}
-        <div className="kpi-grid" style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(6, 1fr)", 
-          gap: 12, 
-          marginBottom: 12 
-        }}>
+        <div className="kpi-grid" style={{ gap: 12, marginBottom: 12 }}>
           <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "var(--primary)", marginBottom: 8, width: 40, height: 40 }}><Users size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Total Order / Lead</div>

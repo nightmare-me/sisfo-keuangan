@@ -165,7 +165,7 @@ export default function PengeluaranPage() {
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
       {/* Header Ala Dashboard */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 48, flexShrink: 0 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--danger)", marginBottom: 8 }}>
              <TrendingDown size={18} />
@@ -174,7 +174,7 @@ export default function PengeluaranPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Pengeluaran Operasional</h1>
           <p className="body-lg" style={{ margin: 0 }}>Kelola dan lacak pengeluaran operasional lembaga</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {isAdmin && (
             <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
               <Trash2 size={16} /> Hapus Semua

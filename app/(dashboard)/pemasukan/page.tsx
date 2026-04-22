@@ -235,7 +235,7 @@ export default function PemasukanPage() {
   return (
     <div className="page-container" style={{ display: "flex", flexDirection: "column", height: "100vh", paddingBottom: 0 }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32, flexShrink: 0 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 32, flexShrink: 0 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
              <Wallet size={18} />
@@ -244,7 +244,7 @@ export default function PemasukanPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4 }}>Data Pemasukan</h1>
           <p className="text-muted">Kelola seluruh arus kas masuk, invoice, dan bonus tim.</p>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
              {role === "ADMIN" && (
                 <button className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
                   <Trash2 size={14} /> Hapus Semua

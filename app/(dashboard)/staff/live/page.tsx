@@ -104,7 +104,7 @@ export default function StaffLivePage() {
         border: '1px solid var(--ghost-border)',
         boxShadow: 'var(--shadow-lg)'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
            <h3 style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0, fontSize: 20, fontWeight: 700 }}>
              <div style={{ padding: 10, background: 'var(--primary-container)', borderRadius: 12, color: 'var(--primary)' }}>
                <History size={20} />
@@ -175,7 +175,7 @@ export default function StaffLivePage() {
       </section>
 
       {/* BAGIAN BAWAH: DUA KOLOM */}
-      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: 32, alignItems: 'stretch' }}>
+      <div className="panel-grid-2" style={{ alignItems: 'stretch' }}>
         
         {/* 2. KOTAK KIRI: TAMBAH RECORD */}
         <aside className="card" style={{ 
@@ -279,7 +279,7 @@ export default function StaffLivePage() {
           border: '1px solid var(--ghost-border)',
           boxShadow: 'var(--shadow-lg)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 0, fontSize: 20, fontWeight: 700 }}>
                <div style={{ padding: 10, background: 'var(--success-container)', borderRadius: 12, color: 'var(--success)' }}>
                  <Save size={20} />

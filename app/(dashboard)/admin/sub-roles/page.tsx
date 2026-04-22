@@ -85,7 +85,7 @@ export default function SubRolePage() {
 
   return (
     <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
         <div>
           <h1 className="headline-lg">Manajemen Sub-Role</h1>
           <p className="body-md">Atur kelompok izin (permissions) kustom untuk karyawan Anda.</p>
@@ -149,7 +149,7 @@ export default function SubRolePage() {
             </div>
             
             <form onSubmit={handleSubmit} style={{ padding: '24px 0' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div className="form-grid-2" style={{ marginBottom: 16 }}>
                 <div className="form-group">
                   <label>Nama Sub-Role</label>
                   <input 

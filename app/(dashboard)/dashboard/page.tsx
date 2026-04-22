@@ -228,8 +228,8 @@ export default function DashboardPage() {
 
       {/* Period Selector (Only for Admin/Finance/Academic) */}
       {(isFinance || isAkademik) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)', padding: '10px 16px', borderRadius: 'var(--radius-full)', marginBottom: 32, border: '1px solid var(--ghost-border)' }}>
-          <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)', padding: '10px 16px', borderRadius: 'var(--radius-full)', marginBottom: 32, border: '1px solid var(--ghost-border)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {["TODAY", "YESTERDAY", "WEEK", "MONTH", "CUSTOM"].map(p => (
               <button 
                 key={p} 

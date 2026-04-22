@@ -249,7 +249,7 @@ export default function KelasPage() {
       {/* ── Kolom kiri: Daftar Kelas ── */}
       <div className="page-container" style={{ flex: selectedKelas ? "0 0 450px" : "1", transition: "flex 0.4s cubic-bezier(0.4, 0, 0.2, 1)", display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0, borderRight: selectedKelas ? '1px solid var(--ghost-border)' : 'none' }}>
         {/* Header Ala Dashboard */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
                <BookOpen size={18} />

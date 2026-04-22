@@ -116,7 +116,7 @@ export default function PengajarPage() {
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
       {/* Header Ala Dashboard */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40, flexShrink: 0 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40, flexShrink: 0 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
              <Briefcase size={18} />
@@ -257,7 +257,7 @@ export default function PengajarPage() {
                   <strong>Catatan Akademik:</strong> Tim Akademik berwenang mendaftarkan akun pengajar. Data finansial (Gaji Pokok) akan diatur kemudian oleh Tim Finance.
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                <div className="form-grid-2" style={{ gap: 24 }}>
                   {/* Column 1: Akun */}
                   <section>
                     <h4 style={{ marginBottom: 16, fontSize: 14, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Detail Akun</h4>
@@ -295,7 +295,7 @@ export default function PengajarPage() {
                        <div className="form-group" style={{ marginBottom: 12 }}>
                          <input type="text" className="form-control" placeholder="Nama Bank" value={form.bankName} onChange={e => setForm({...form, bankName: e.target.value})} />
                        </div>
-                       <div style={{ display: 'grid', gridTemplateColumns: '2fr 3fr', gap: 8 }}>
+                       <div className="form-grid-2" style={{ gap: 8 }}>
                          <input type="text" className="form-control" placeholder="Nomor Rekening" value={form.rekeningNomor} onChange={e => setForm({...form, rekeningNomor: e.target.value})} />
                          <input type="text" className="form-control" placeholder="Nama di Rekening" value={form.rekeningNama} onChange={e => setForm({...form, rekeningNama: e.target.value})} />
                        </div>

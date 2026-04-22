@@ -154,7 +154,7 @@ export default function RolesPage() {
 
   return (
     <div className="page-container">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
             <Shield size={18} />
@@ -175,7 +175,7 @@ export default function RolesPage() {
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 24, alignItems: 'start' }}>
+      <div className="panel-grid-2" style={{ alignItems: 'start' }}>
         <div className="card glass" style={{ padding: 0, position: 'sticky', top: 24 }}>
           <div style={{ padding: '20px', borderBottom: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, fontWeight: 700, opacity: 0.6 }}>DAFTAR ROLE</span>

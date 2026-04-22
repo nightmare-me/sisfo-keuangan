@@ -179,7 +179,7 @@ export default function AdsPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Spent Ads</h1>
           <p className="body-lg" style={{ margin: 0 }}>Lacak pengeluaran iklan harian per platform</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {isAdmin && (
             <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
               <Trash2 size={16} /> Hapus Semua

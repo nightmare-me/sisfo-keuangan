@@ -161,7 +161,7 @@ export default function ProgramPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Katalog Program</h1>
           <p className="body-lg" style={{ margin: 0 }}>Kelola standar harga, durasi, dan klasifikasi produk layanan</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => setShowNonaktif(v => !v)}

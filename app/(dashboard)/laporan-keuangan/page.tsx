@@ -181,7 +181,7 @@ export default function LaporanPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Laporan Keuangan</h1>
           <p className="body-lg" style={{ margin: 0 }}>Analisis mendalam laba/rugi dan performa bisnis</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           <button className="btn btn-secondary btn-sm" style={{ borderRadius: 'var(--radius-full)' }} onClick={exportExcel} disabled={exporting || loading}>
             <TableIcon size={16} /> Export Excel
           </button>
@@ -193,47 +193,40 @@ export default function LaporanPage() {
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
         {/* Filter Section */}
-        <div className="card" style={{ padding: '24px 32px', marginBottom: 48 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 32 }}>
-            <div className="tabs" style={{ background: 'var(--surface-container-low)', padding: 6, borderRadius: 100 }}>
-              {PERIOD_OPTIONS.map(opt => (
-                <button 
-                  key={opt.value} 
-                  className={`tab ${period === opt.value ? "active" : ""}`} 
-                  onClick={() => setPeriod(opt.value)}
-                  style={{ 
-                    padding: '8px 24px', 
-                    borderRadius: 100, 
-                    fontSize: 13, 
-                    fontWeight: 600,
-                    border: 'none',
-                    background: period === opt.value ? 'white' : 'transparent',
-                    boxShadow: period === opt.value ? 'var(--shadow-sm)' : 'none',
-                    color: period === opt.value ? 'var(--primary)' : 'var(--text-muted)'
-                  }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            {period === "custom" && (
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <Calendar size={18} style={{ color: "var(--primary)" }} />
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="date" className="form-control" value={from} onChange={e => setFrom(e.target.value)} style={{ padding: '8px 16px', borderRadius: 100, fontSize: 13 }} />
-                  <span style={{ color: "var(--text-muted)", fontSize: 13 }}>to</span>
-                  <input type="date" className="form-control" value={to} onChange={e => setTo(e.target.value)} style={{ padding: '8px 16px', borderRadius: 100, fontSize: 13 }} />
-                </div>
-              </div>
-            )}
-
+        <div style={{ background: 'var(--surface-container-low)', padding: '12px 16px', borderRadius: 'var(--radius-xl)', marginBottom: 32, border: '1px solid var(--ghost-border)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: period === 'custom' ? 12 : 0 }}>
+            {PERIOD_OPTIONS.map(opt => (
+              <button 
+                key={opt.value} 
+                className={`btn ${period === opt.value ? "btn-primary" : "btn-secondary"}`} 
+                onClick={() => setPeriod(opt.value)}
+                style={{ 
+                  padding: '6px 16px', 
+                  borderRadius: 100, 
+                  fontSize: 13, 
+                  fontWeight: 600,
+                  flex: '0 0 auto'
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
             <div style={{ flex: 1 }} />
-
             <button className="btn btn-secondary btn-sm" onClick={fetchData} style={{ borderRadius: 'var(--radius-full)' }}>
                <RefreshCw size={14} /> Refresh Data
             </button>
           </div>
+
+          {period === "custom" && (
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flex: '1 1 100%' }}>
+                <Calendar size={18} style={{ color: "var(--primary)" }} />
+                <input type="date" className="form-control" value={from} onChange={e => setFrom(e.target.value)} style={{ padding: '8px 16px', borderRadius: 100, fontSize: 13, flex: 1 }} />
+                <span style={{ color: "var(--text-muted)", fontSize: 13 }}>to</span>
+                <input type="date" className="form-control" value={to} onChange={e => setTo(e.target.value)} style={{ padding: '8px 16px', borderRadius: 100, fontSize: 13, flex: 1 }} />
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (

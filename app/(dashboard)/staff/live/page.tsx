@@ -111,19 +111,23 @@ export default function StaffLivePage() {
              </div>
              Daftar Talent Live Harian
            </h3>
-           <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--surface-container-low)', padding: 8, borderRadius: 16 }}>
-              <button className="btn btn-secondary btn-icon" style={{ borderRadius: 12 }} onClick={() => setDate(subDays(new Date(date), 1).toISOString().slice(0, 10))}>
-                <ChevronLeft size={16} />
-              </button>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, padding: '0 8px', fontSize: 14 }}>
-                <Calendar size={16} className="text-primary" />
-                {formatDate(date, "eeee, dd MMMM yyyy")}
+           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, background: 'var(--surface-container-low)', padding: 8, borderRadius: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button className="btn btn-secondary btn-icon" style={{ borderRadius: 12 }} onClick={() => setDate(subDays(new Date(date), 1).toISOString().slice(0, 10))}>
+                  <ChevronLeft size={16} />
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, padding: '0 8px', fontSize: 13, whiteSpace: 'nowrap' }}>
+                  <Calendar size={16} className="text-primary" />
+                  {formatDate(date, "eeee, dd MMMM yyyy")}
+                </div>
+                <button className="btn btn-secondary btn-icon" style={{ borderRadius: 12 }} onClick={() => setDate(addDays(new Date(date), 1).toISOString().slice(0, 10))}>
+                  <ChevronRight size={16} />
+                </button>
               </div>
-              <button className="btn btn-secondary btn-icon" style={{ borderRadius: 12 }} onClick={() => setDate(addDays(new Date(date), 1).toISOString().slice(0, 10))}>
-                <ChevronRight size={16} />
-              </button>
-              <div style={{ width: 1, height: 20, background: 'var(--ghost-border)', margin: '0 4px' }} />
-              <button className="btn btn-secondary btn-sm" style={{ borderRadius: 10 }} onClick={() => setDate(new Date().toISOString().slice(0, 10))}>Hari Ini</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 0 auto', justifyContent: 'flex-end' }}>
+                <div style={{ width: 1, height: 20, background: 'var(--ghost-border)', margin: '0 4px' }} className="mobile-hide" />
+                <button className="btn btn-secondary btn-sm" style={{ borderRadius: 10 }} onClick={() => setDate(new Date().toISOString().slice(0, 10))}>Hari Ini</button>
+              </div>
            </div>
         </div>
 
@@ -175,12 +179,12 @@ export default function StaffLivePage() {
       </section>
 
       {/* BAGIAN BAWAH: DUA KOLOM */}
-      <div className="panel-grid-2" style={{ alignItems: 'stretch' }}>
+      <div className="panel-grid-2" style={{ alignItems: 'stretch', gap: 24 }}>
         
         {/* 2. KOTAK KIRI: TAMBAH RECORD */}
         <aside className="card" style={{ 
-          padding: 32, 
-          borderRadius: 32,
+          padding: '24px', 
+          borderRadius: 24,
           background: 'var(--surface-container-lowest)',
           border: '1px solid var(--ghost-border)',
           boxShadow: 'var(--shadow-lg)',
@@ -273,8 +277,8 @@ export default function StaffLivePage() {
 
         {/* 3. KOTAK KANAN: OMSET YANG DIHASILKAN TALENT */}
         <section className="card" style={{ 
-          padding: 32, 
-          borderRadius: 32,
+          padding: '24px', 
+          borderRadius: 24,
           background: 'var(--surface-container-lowest)',
           border: '1px solid var(--ghost-border)',
           boxShadow: 'var(--shadow-lg)'
@@ -295,9 +299,9 @@ export default function StaffLivePage() {
             <table style={{ margin: 0 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-container-low)' }}>
-                  <th style={{ padding: '16px 24px' }}>TALENT</th>
-                  <th style={{ textAlign: 'center', padding: '16px 24px' }}>CLOSING</th>
-                  <th style={{ textAlign: 'right', padding: '16px 24px' }}>TOTAL OMSET</th>
+                  <th style={{ padding: '12px 16px' }}>TALENT</th>
+                  <th style={{ textAlign: 'center', padding: '12px 16px' }}>CLOSING</th>
+                  <th style={{ textAlign: 'right', padding: '12px 16px' }}>TOTAL OMSET</th>
                 </tr>
               </thead>
               <tbody>

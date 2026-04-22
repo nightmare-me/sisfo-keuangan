@@ -126,14 +126,14 @@ export default function GajiPage() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Gaji Pengajar</h1>
           <p className="body-lg" style={{ margin: 0 }}>{isPengajar ? "Riwayat honorarium dan status pembayaran Anda" : "Kalkulasi honorarium dan pengelolaan pembayaran tutor pengajar"}</p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {role === "ADMIN" && (
             <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
               <Trash2 size={16} /> Hapus Histori
             </button>
           )}
           {canEdit && (
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowTarifModal(true)}>
                 <Settings size={18} /> Atur Tarif
               </button>

@@ -1,10 +1,12 @@
 "use client";
 
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { getInitials, hasPermission } from "@/lib/utils";
 import { 
+  Menu,
   LayoutDashboard, 
   Users, 
   BookOpen, 
@@ -82,6 +84,7 @@ const navItems: NavGroup[] = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [isOpen, setIsOpen] = useState(false);
   const role = (session?.user as any)?.role;
   const name = session?.user?.name ?? "User";
 
@@ -95,51 +98,66 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">
-             <GraduationCap size={24} color="white" />
+    <>
+      <div className="mobile-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--primary-container)', color: 'var(--on-primary-container)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <GraduationCap size={18} />
           </div>
-          <div className="sidebar-brand-text">
-            <strong>Speaking Partner</strong>
-            <span>Dashboard System</span>
-          </div>
+          <strong style={{ fontSize: '1rem', color: 'var(--on-surface)' }}>Speaking Partner</strong>
         </div>
+        <button className="btn-icon" onClick={() => setIsOpen(!isOpen)} style={{ background: 'none', border: 'none', color: 'var(--on-surface)' }}>
+          <Menu size={24} />
+        </button>
       </div>
 
-      <nav className="sidebar-nav">
-        {navItems.map((group) => {
-          const filteredItems = group.items.filter((item) => {
-            // Pengecekan via permission
-            if (item.permission) {
-              return hasPermission(session, item.permission);
-            }
-            return true;
-          });
+      <div className={`sidebar-overlay ${isOpen ? 'sidebar-open' : ''}`} onClick={() => setIsOpen(false)} />
 
-          if (filteredItems.length === 0) return null;
-
-          return (
-            <div key={group.group}>
-              <div className="nav-section-label">{group.group}</div>
-              {filteredItems.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`nav-item ${isActive ? "active" : ""}`}
-                  >
-                    {item.icon}
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
+      <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+        <div className="sidebar-brand">
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">
+               <GraduationCap size={24} color="white" />
             </div>
-          );
-        })}
-      </nav>
+            <div className="sidebar-brand-text">
+              <strong>Speaking Partner</strong>
+              <span>Dashboard System</span>
+            </div>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav">
+          {navItems.map((group) => {
+            const filteredItems = group.items.filter((item) => {
+              if (item.permission) {
+                return hasPermission(session, item.permission);
+              }
+              return true;
+            });
+
+            if (filteredItems.length === 0) return null;
+
+            return (
+              <div key={group.group}>
+                <div className="nav-section-label">{group.group}</div>
+                {filteredItems.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={`nav-item ${isActive ? "active" : ""}`}
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
 
       <div className="sidebar-footer">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -167,5 +185,6 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }

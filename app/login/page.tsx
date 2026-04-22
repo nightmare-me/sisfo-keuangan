@@ -23,12 +23,19 @@ export default function LoginPage() {
       redirect: false,
     });
 
-    setLoading(false);
-
     if (result?.error) {
-      setError("Email atau password tidak terdaftar.");
+      setError("Email/ID atau password salah.");
+      setLoading(false);
     } else {
-      router.push("/dashboard");
+      // Ambil session untuk cek role
+      const res = await fetch("/api/auth/session");
+      const session = await res.json();
+      
+      if (session?.user?.roleSlug === "siswa") {
+        router.push("/siswa/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
     }
   }
 
@@ -58,12 +65,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label className="form-label">Email Address</label>
+            <label className="form-label">Email or Student ID</label>
             <div className="input-with-icon">
               <input
-                type="email"
+                type="text"
                 className="form-control"
-                placeholder="name@speakingpartner.id"
+                placeholder="Email or SP-202X-XXXXX"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

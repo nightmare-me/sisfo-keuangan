@@ -23,7 +23,8 @@ import {
   Briefcase, 
   TrendingUp, 
   Clock,
-  Contact
+  Contact,
+  ShieldCheck
 } from "lucide-react";
 
 interface NavItem {
@@ -69,7 +70,8 @@ const navItems: NavGroup[] = [
   ]},
   { group: "SISTEM", items: [
     { href: "/users", label: "Manajemen User", icon: <UserCog size={16} />, permission: "user:view" },
-    { href: "/karyawan", label: "Data Karyawan", icon: <Contact size={16} />, permission: "user:view" }, // Use user:view for now to ensure it shows up for admins
+    { href: "/karyawan", label: "Data Karyawan", icon: <Contact size={16} />, permission: "user:view" },
+    { href: "/admin/sub-roles", label: "Manajemen Sub-Role", icon: <ShieldCheck size={16} />, permission: "settings:view" },
     { href: "/settings/roles", label: "Pengaturan Role", icon: <Package size={16} />, permission: "settings:view" },
     { href: "/logs", label: "Audit Log", icon: <History size={16} />, permission: "audit:view" },
     { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, permission: "archive:view" },

@@ -34,6 +34,8 @@ model User {
   refundsAsFin    Refund[]         @relation("FinanceRefund")
   spentAds        SpentAds[]
   role            Role?            @relation(fields: [roleId], references: [id])
+  subRoleId       String?
+  subRole         SubRole?         @relation(fields: [subRoleId], references: [id])
 }
 
 model KaryawanProfile {
@@ -110,8 +112,10 @@ model Siswa {
   noSiswa       String         @unique
   nama          String
   telepon       String?
-  email         String?
+  email         String?          @unique
+  password      String?
   alamat        String?
+  lastLogin     DateTime?
   tanggalLahir  DateTime?
   tanggalDaftar DateTime       @default(now())
   status        StatusSiswa    @default(AKTIF)
@@ -417,6 +421,7 @@ model Role {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   users       User[]
+  subRoles    SubRole[]
   permissions Permission[] @relation("PermissionToRole")
 }
 
@@ -428,6 +433,19 @@ model Permission {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   roles       Role[]   @relation("PermissionToRole")
+  subRoles    SubRole[] @relation("PermissionToSubRole")
+}
+
+model SubRole {
+  id          String       @id @default(cuid())
+  roleId      String
+  name        String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  role        Role         @relation(fields: [roleId], references: [id])
+  users       User[]
+  permissions Permission[] @relation("PermissionToSubRole")
 }
 
 enum TipeKelas {

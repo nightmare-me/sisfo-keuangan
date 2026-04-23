@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth"; // Ensure this path is correct
-import path from "path";
-import fs from "fs/promises";
+import { put } from "@vercel/blob";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,28 +18,17 @@ export async function POST(request: NextRequest) {
     }
 
     const uploadedUrls: string[] = [];
-    const uploadDir = path.join(process.cwd(), "public/uploads/nota");
-
-    // Ensure directory exists
-    try {
-      await fs.access(uploadDir);
-    } catch {
-      await fs.mkdir(uploadDir, { recursive: true });
-    }
 
     for (const file of files) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // Generate unique filename
       const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      const filename = `${uniqueSuffix}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-      const filePath = path.join(uploadDir, filename);
+      const filename = `nota/${uniqueSuffix}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
 
-      await fs.writeFile(filePath, buffer);
+      // Upload to Vercel Blob
+      const blob = await put(filename, file, {
+        access: 'public',
+      });
       
-      const fileUrl = `/uploads/nota/${filename}`;
-      uploadedUrls.push(fileUrl);
+      uploadedUrls.push(blob.url);
     }
 
     return NextResponse.json({ 

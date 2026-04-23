@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
 
     const allPrograms = await prisma.program.findMany();
     const allSiswa = await prisma.siswa.findMany({ include: { pemasukan: true } });
+    const allUsers = await prisma.user.findMany({ where: { role: { slug: "cs" } } });
     let successCount = 0;
     
     // Helper fuzzy header matching
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
         const rawProgram = getValue(item, ["program", "produk", "product"]);
         const rawPreferensi = getValue(item, ["preferensi", "jadwal", "preference"]);
         const rawTanggal = getValue(item, ["tanggal", "date", "tgl"]);
+        const rawCS = getValue(item, ["cs", "nama_cs", "marketing", "sales"]);
 
         if (!rawNama) continue;
 
@@ -76,6 +78,13 @@ export async function POST(request: NextRequest) {
             data: { nama: pName, harga: 0, tipe: "REGULAR", deskripsi: "Auto-Import" }
           });
           allPrograms.push(targetProgram);
+        }
+
+        // SMART ASSIGNMENT: Jika ada nama CS di CSV, pakai itu. Jika tidak, pakai yang sedang login (jika CS)
+        let finalCSId = role === "CS" ? userId : null;
+        if (rawCS) {
+          const targetCS = allUsers.find((u: any) => u.name?.toLowerCase().includes(String(rawCS).toLowerCase()));
+          if (targetCS) finalCSId = targetCS.id;
         }
 
         // SMART CHECK: Apakah orang ini sudah bayar?
@@ -102,7 +111,7 @@ export async function POST(request: NextRequest) {
             programId: targetProgram?.id,
             nominalTagihan: targetProgram?.harga || 0,
             preferensiJadwal: rawPreferensi ? String(rawPreferensi) : null,
-            csId: role === "CS" ? userId : undefined,
+            csId: finalCSId,
             status: hasPayment ? "PAID" : "NEW",
             tanggalLead: parseDate(rawTanggal),
             sumber: "IMPORT_CSV",

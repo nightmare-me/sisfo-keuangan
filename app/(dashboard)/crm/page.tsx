@@ -30,6 +30,7 @@ import {
   ChevronRight,
   ShieldCheck
 } from "lucide-react";
+import Papa from "papaparse";
 
 const COLUMNS = [
   { id: "NEW", title: "Baru Masuk", color: "#6366f1", icon: <UserPlus size={18} /> },
@@ -812,40 +813,40 @@ export default function CRMPage() {
                       const reader = new FileReader();
                       reader.onload = async (event) => {
                         const text = event.target?.result as string;
-                        const lines = text.split("\n").filter(l => l.trim());
-                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-                        
-                        const jsonData = lines.slice(1).map(line => {
-                          const values = line.split(",").map(v => v.trim());
-                          const obj: any = {};
-                          headers.forEach((h, i) => {
-                            obj[h] = values[i];
-                          });
-                          return obj;
-                        });
-
-                        if (confirm(`Impor ${jsonData.length} data leads?`)) {
-                          setLoading(true);
-                          try {
-                            const res = await fetch("/api/crm/import", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(jsonData)
-                            });
-                            if (res.ok) {
-                              alert("Berhasil mengimpor data leads!");
-                              setShowImportModal(false);
-                              fetchData();
-                            } else {
-                              const err = await res.json();
-                              alert("Gagal impor: " + err.error);
+                        Papa.parse(text, {
+                          header: true,
+                          skipEmptyLines: true,
+                          complete: async (results) => {
+                            const jsonData = results.data;
+                            if (jsonData.length === 0) {
+                              alert("File CSV kosong atau tidak valid.");
+                              return;
                             }
-                          } catch (err) {
-                            alert("Terjadi kesalahan saat mengunggah.");
-                          } finally {
-                            setLoading(false);
+                            
+                            if (confirm(`Impor ${jsonData.length} data calon siswa?`)) {
+                              setLoading(true);
+                              try {
+                                const res = await fetch("/api/crm/import", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify(jsonData)
+                                });
+                                if (res.ok) {
+                                  alert("Berhasil mengimpor data leads!");
+                                  setShowImportModal(false);
+                                  fetchData();
+                                } else {
+                                  const err = await res.json();
+                                  alert("Gagal impor: " + (err.error || "Cek format file"));
+                                }
+                              } catch (err) {
+                                alert("Terjadi kesalahan saat mengunggah.");
+                              } finally {
+                                setLoading(false);
+                              }
+                            }
                           }
-                        }
+                        });
                       };
                       reader.readAsText(file);
                     }} />

@@ -19,7 +19,7 @@ import "./register.css";
 
 function RegisterContent() {
   const searchParams = useSearchParams();
-  const teamParam = searchParams.get("team")?.toUpperCase() || "REGULAR"; // REGULAR, RO, TOEFL, LIVE, SOSMED
+  const teamParam = searchParams.get("team")?.toUpperCase() || "REGULAR"; // REGULAR, RO, TOEFL, LIVE, SOSMED, AFFILIATE
   
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,7 @@ function RegisterContent() {
           filtered = data.filter((p: any) => p.nama.toLowerCase().includes("toefl"));
         } else if (teamParam === "LIVE") {
           filtered = data.filter((p: any) => p.nama.toLowerCase().includes("live"));
-        } else if (teamParam === "RO") {
+        } else if (teamParam === "RO" || teamParam === "AFFILIATE") {
           filtered = data;
         } else {
           // Regular / SOSMED: Sembunyikan produk yang ada kata TOEFL atau LIVE agar tidak salah pilih
@@ -73,7 +73,7 @@ function RegisterContent() {
       body: JSON.stringify({ 
         ...form, 
         whatsapp: wa,
-        sumber: teamParam === "SOSMED" ? "SOSMED" : undefined
+        sumber: teamParam === "SOSMED" ? "SOSMED" : teamParam === "AFFILIATE" ? "AFFILIATE" : undefined
       }),
     });
 
@@ -133,6 +133,7 @@ function RegisterContent() {
              teamParam === "RO" ? "Pendaftaran Siswa Lanjutan (RO)" :
              teamParam === "TOEFL" ? "Pendaftaran Tes TOEFL" :
              teamParam === "SOSMED" ? "Pendaftaran Partner Sosmed" :
+             teamParam === "AFFILIATE" ? "Pendaftaran Partner Affiliate" :
              "Pendaftaran Kelas Live"}
           </h1>
           <p>Tingkatkan rasa percaya diri bicaramu dengan kurikulum terbaik di Speaking Partner.</p>

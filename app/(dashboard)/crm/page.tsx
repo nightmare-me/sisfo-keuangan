@@ -1007,6 +1007,7 @@ export default function CRMPage() {
                   { label: "Link Jalur REGULAR", team: "", color: "var(--primary)" },
                   { label: "Link Jalur SOSMED (Viral)", team: "SOSMED", color: "#ec4899" },
                   { label: "Link Jalur RO (Repeat Order)", team: "RO", color: "#8b5cf6" },
+                  { label: "Link Jalur AFFILIATE", team: "AFFILIATE", color: "#10b981" },
                   { label: "Link Jalur TES TOEFL", team: "TOEFL", color: "#f59e0b" },
                   { label: "Link Jalur KELAS LIVE", team: "LIVE", color: "#ef4444" },
                 ].map((link, idx) => {

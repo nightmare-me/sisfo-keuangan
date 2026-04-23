@@ -483,6 +483,7 @@ export default function UsersPage() {
                                 <option value="CS_LIVE">CS Live</option>
                                 <option value="CS_TOEFL">CS Test TOEFL</option>
                                 <option value="CS_RO">CS Repeat Order (RO)</option>
+                                <option value="CS_AFFILIATE">CS Affiliate</option>
                               </select>
                             </div>
                           )}

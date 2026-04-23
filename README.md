@@ -2,7 +2,15 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🧾 Fitur Baru: Arsip Nota Terintegrasi (v4.4) 📸
+## 🤝 Fitur Baru: Jalur Pendaftaran Affiliate & Dev Utilities (v4.5) 🚀
+*   **Affiliate Registration Path**: Pendaftaran khusus dengan parameter URL `?team=AFFILIATE` yang otomatis mendistribusikan *leads* ke tim "CS Affiliate".
+*   **Static Fee Calculation**: Penyesuaian mesin payroll agar mengabaikan harga produk khusus untuk tim CS Affiliate dan memberikan *fee flat* sebesar Rp 25.000 per closing.
+*   **Source Breakdown Integration**: Laporan Keuangan (Executive Insights) kini secara *real-time* mendeteksi dan mengkalkulasi persentase omset yang dihasilkan dari jalur Affiliate.
+*   **Development Utilities**: Penambahan *script* `wipe-dummy.ts` untuk menghapus seluruh data transaksi uji coba secara aman tanpa menghapus konfigurasi dasar (*roles*, *users*, dan program).
+
+---
+
+## 🧾 Fitur Sebelumnya: Arsip Nota Terintegrasi (v4.4) 📸
 *   **One-Gate Entry**: Fitur unggah foto/scan nota kini terintegrasi langsung dan diwajibkan saat mencatat pengeluaran di modul Pengeluaran.
 *   **Smart Indicators**: Tabel pengeluaran secara otomatis mendeteksi dan memberi *badge* peringatan ("Tanpa Nota") untuk pengeluaran lama atau import CSV yang belum dilengkapi dokumen fisik.
 *   **Print-Ready Digital Archive**: Modul Arsip Nota berfungsi ganda sebagai *viewer* visual dan *generator* dokumen cetak (PDF) berukuran A4 yang secara otomatis menata tata letak banyak struk dalam satu halaman.

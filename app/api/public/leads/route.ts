@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
         targetTeamType = "CS_RO";
       } else if (sumber === "SOSMED") {
         targetTeamType = "CS_SOSMED";
+      } else if (sumber === "AFFILIATE") {
+        targetTeamType = "CS_AFFILIATE";
       } else if (lowerName.includes("tes toefl")) {
         targetTeamType = "CS_TOEFL";
       } else if (lowerName.includes("live")) {

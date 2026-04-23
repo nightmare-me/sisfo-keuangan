@@ -2,7 +2,7 @@
  * Payroll & Fee Calculation Engine
  */
 
-export type CSCategory = 'CS_REGULAR' | 'CS_LIVE' | 'CS_TOEFL' | 'CS_RO' | 'CS_SOSMED';
+export type CSCategory = 'CS_REGULAR' | 'CS_LIVE' | 'CS_TOEFL' | 'CS_RO' | 'CS_SOSMED' | 'CS_AFFILIATE';
 export type AdvCategory = 'ADV_REGULAR' | 'ADV_PART_TIME' | 'ADV_PROJECT';
 
 /**
@@ -20,6 +20,10 @@ export function calculateCSFee(
   if (program) {
     const dbFee = isRO ? (program.feeClosingRO || 0) : (program.feeClosing || 0);
     if (dbFee > 0) return dbFee;
+  }
+
+  if (csCategory === 'CS_AFFILIATE') {
+    return 25000;
   }
 
   // 2. CADANGAN: Pakai rumus hardcoded (untuk back-compatibility)

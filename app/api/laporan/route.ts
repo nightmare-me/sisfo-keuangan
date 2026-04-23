@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const sourceBreakdown = { RO: 0, TOEFL: 0, LIVE: 0, SOSMED: 0, REGULAR: 0 };
+    const sourceBreakdown = { RO: 0, TOEFL: 0, LIVE: 0, SOSMED: 0, REGULAR: 0, AFFILIATE: 0 };
     const perProgramMap: Record<string, { total: number, count: number }> = {};
     const perCSMap: Record<string, { total: number, count: number }> = {};
     const perMetodeMap: Record<string, { total: number, count: number }> = {};
@@ -162,6 +162,7 @@ export async function GET(request: NextRequest) {
       
       if (p.isRO) sourceBreakdown.RO += netAmount;
       else if (teamType === "CS_SOSMED") sourceBreakdown.SOSMED += netAmount;
+      else if (teamType === "CS_AFFILIATE") sourceBreakdown.AFFILIATE += netAmount;
       else if (isSharing) sourceBreakdown.TOEFL += netAmount;
       else if (nama.includes("LIVE")) sourceBreakdown.LIVE += netAmount;
       else sourceBreakdown.REGULAR += netAmount;

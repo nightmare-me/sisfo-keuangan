@@ -130,6 +130,23 @@ export async function POST(request: NextRequest) {
             }
           });
 
+          // AUTO-LUNAS LEAD (Sinkronisasi dengan CRM)
+          // Cari lead terakhir yang belum lunas untuk siswa ini
+          const pendingLead = await tx.lead.findFirst({
+            where: {
+              siswaId: targetSiswa.id,
+              status: { not: "LUNAS" }
+            },
+            orderBy: { createdAt: "desc" }
+          });
+
+          if (pendingLead) {
+            await tx.lead.update({
+              where: { id: pendingLead.id },
+              data: { status: "LUNAS" }
+            });
+          }
+
           await tx.invoice.create({
             data: {
               pemasukanId: pemasukan.id,

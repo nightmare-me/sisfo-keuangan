@@ -36,11 +36,30 @@ export async function POST(request: NextRequest) {
         if (!targetSiswa) continue;
 
         // Matching Program
-        const pName = item.program?.toLowerCase().trim();
-        const targetProgram = allPrograms.find((p: any) => 
-          p.nama.toLowerCase().includes(pName) || 
-          pName?.includes(p.nama.toLowerCase())
+        const pName = item.program?.trim();
+        let targetProgram = allPrograms.find((p: any) => 
+          p.nama.toLowerCase() === pName?.toLowerCase() ||
+          p.nama.toLowerCase().includes(pName?.toLowerCase() || "") || 
+          pName?.toLowerCase().includes(p.nama.toLowerCase())
         );
+
+        // AUTO-CREATE PROGRAM jika tidak ditemukan
+        if (!targetProgram && pName) {
+           try {
+             targetProgram = await prisma.program.create({
+               data: {
+                 nama: pName,
+                 harga: parseFloat(item.harga_normal || 0),
+                 deskripsi: "Otomatis dibuat dari Import CSV",
+                 tipe: "REGULAR"
+               }
+             });
+             // Tambahkan ke list allPrograms agar baris berikutnya bisa matching
+             allPrograms.push(targetProgram);
+           } catch (e) {
+             console.error("Auto-create program failed:", e);
+           }
+        }
 
         // Matching CS (Pencarian otomatis CS berdasarkan nama di CSV)
         let finalCSId = role === "CS" ? userId : undefined;

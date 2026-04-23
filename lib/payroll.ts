@@ -16,6 +16,11 @@ export function calculateCSFee(
   cr: number = 0, // For CS Live
   program?: { feeClosing?: number, feeClosingRO?: number }
 ): number {
+  // 0. KHUSUS CS_RO: Selalu gunakan persentase 5% (Sesuai kebijakan terbaru)
+  if (csCategory === 'CS_RO' || (isRO && csCategory !== 'CS_TOEFL')) {
+    return price * 0.05;
+  }
+
   // 1. PRIORITAS: Pakai nominal fee dari Database jika > 0
   if (program) {
     const dbFee = isRO ? (program.feeClosingRO || 0) : (program.feeClosing || 0);

@@ -66,7 +66,11 @@ export async function GET(request: NextRequest) {
     const toeflAdsSpent = adsAll._sum.jumlah || 0; // Sementara ambil total ads atau filter jika ada kategori
 
     // Hitung jatah Adv untuk pengeluaran TOEFL
-    const toeflTeam = await prisma.user.findMany({ where: { teamType: "ADV_TOEFL" as any }, include: { adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } } } });
+    const toeflTeam = await prisma.user.findMany({ 
+      where: { teamType: { has: "ADV_TOEFL" } }, 
+      include: { adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } } } 
+    });
+    
     toeflTeam.forEach((adv: any) => {
        adv.adPerformances.forEach((perf: any) => {
          toeflFeeAdv += calculateAdvFee("ADV_TOEFL" as any, perf.cpl, perf.leads);

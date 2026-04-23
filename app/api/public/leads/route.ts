@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       const availableCS = await prisma.user.findMany({
         where: { 
           role: { slug: { equals: "cs", mode: "insensitive" } },
-          teamType: targetTeamType,
+          teamType: { has: targetTeamType },
           aktif: true,
           isLeadActive: true
         }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         onShiftCS.sort((a: any, b: any) => a.id.localeCompare(b.id)); // Konsistensi urutan
         // 2. Hitung total lead untuk tim spesifik ini guna menentukan giliran
         const teamLeadCount = await prisma.lead.count({
-          where: { cs: { teamType: targetTeamType } }
+          where: { cs: { teamType: { has: targetTeamType } } }
         });
         // 3. Tentukan giliran di dalam tim yang sedang ON
         const nextCsIndex = teamLeadCount % onShiftCS.length;

@@ -51,7 +51,7 @@ export default function UsersPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({ 
-    name: "", email: "", password: "", roleId: "", teamType: "", aktif: true,
+    name: "", email: "", password: "", roleId: "", teamType: [] as string[], aktif: true,
     shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
   });
 
@@ -102,7 +102,7 @@ export default function UsersPage() {
       email: user.email, 
       password: "", 
       roleId: user.roleId, 
-      teamType: user.teamType || "", 
+      teamType: Array.isArray(user.teamType) ? user.teamType : (user.teamType ? [user.teamType] : []), 
       aktif: user.aktif,
       shiftStart: user.shiftStart || "08:00",
       shiftEnd: user.shiftEnd || "16:00",
@@ -115,7 +115,7 @@ export default function UsersPage() {
   function openAdd() {
     setEditUser(null);
     setForm({ 
-      name: "", email: "", password: "", roleId: roles.find(r => r.slug === 'cs')?.id || "", teamType: "", aktif: true,
+      name: "", email: "", password: "", roleId: roles.find(r => r.slug === 'cs')?.id || "", teamType: [], aktif: true,
       shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
     });
     setMode("single");
@@ -389,7 +389,15 @@ export default function UsersPage() {
                       <span className={`badge ${ROLE_BADGE[user.role] ?? "badge-muted"}`} title={user.role} style={{ width: 'fit-content' }}>
                         {user.roleName}
                       </span>
-                      {user.teamType && <div style={{ fontSize: 10, fontWeight: 700, color: "var(--secondary)" }}>{user.teamType.replace(/_/g, ' ')}</div>}
+                      {user.teamType && user.teamType.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                          {user.teamType.map((t: string) => (
+                            <span key={t} style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'var(--primary-bg)', color: 'var(--primary)' }}>
+                              {t.replace(/CS_|ADV_/, '').replace(/_/g, ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td style={{ fontWeight: 500 }}>{user.email}</td>
@@ -474,17 +482,32 @@ export default function UsersPage() {
                       return (
                         <>
                           {selectedRole?.slug === 'cs' && (
-                            <div className="form-group">
-                              <label className="form-label">Kategori Tim</label>
-                              <select className="form-control" value={form.teamType} onChange={e => setForm(f => ({ ...f, teamType: e.target.value }))}>
-                                <option value="">Pilih Kategori...</option>
-                                <option value="CS_REGULAR">CS Regular</option>
-                                <option value="CS_SOSMED">CS Sosmed</option>
-                                <option value="CS_LIVE">CS Live</option>
-                                <option value="CS_TOEFL">CS Test TOEFL</option>
-                                <option value="CS_RO">CS Repeat Order (RO)</option>
-                                <option value="CS_AFFILIATE">CS Affiliate</option>
-                              </select>
+                            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                              <label className="form-label">Kategori Tim (Bisa pilih lebih dari satu)</label>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10, padding: 12, background: 'var(--surface-container-low)', borderRadius: 8 }}>
+                                {[
+                                  { val: "CS_REGULAR", label: "CS Regular" },
+                                  { val: "CS_SOSMED", label: "CS Sosmed" },
+                                  { val: "CS_LIVE", label: "CS Live" },
+                                  { val: "CS_TOEFL", label: "CS Test TOEFL" },
+                                  { val: "CS_RO", label: "CS Repeat Order" },
+                                  { val: "CS_AFFILIATE", label: "CS Affiliate" },
+                                ].map(t => (
+                                  <label key={t.val} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+                                    <input 
+                                      type="checkbox" 
+                                      checked={form.teamType.includes(t.val)} 
+                                      onChange={e => {
+                                        const newTeams = e.target.checked 
+                                          ? [...form.teamType, t.val] 
+                                          : form.teamType.filter(x => x !== t.val);
+                                        setForm(f => ({ ...f, teamType: newTeams }));
+                                      }}
+                                    />
+                                    {t.label}
+                                  </label>
+                                ))}
+                              </div>
                             </div>
                           )}
                           {selectedRole?.slug === 'cs' && (
@@ -505,18 +528,33 @@ export default function UsersPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
                                    <input type="checkbox" id="chkLeadActive" checked={form.isLeadActive} onChange={e => setForm(f => ({ ...f, isLeadActive: e.target.checked }))} />
                                    <label htmlFor="chkLeadActive" style={{ fontSize: 13, fontWeight: 600 }}>Siap Menerima Lead</label>
-                                </div>
+                                 </div>
                              </div>
                           )}
                           {selectedRole?.slug === 'advertiser' && (
-                            <div className="form-group">
+                            <div className="form-group" style={{ gridColumn: 'span 2' }}>
                               <label className="form-label">Kategori Tim</label>
-                              <select className="form-control" value={form.teamType} onChange={e => setForm(f => ({ ...f, teamType: e.target.value }))}>
-                                <option value="">Pilih Kategori...</option>
-                                <option value="ADV_REGULAR">Adv Regular</option>
-                                <option value="ADV_PART_TIME">Adv Part Time</option>
-                                <option value="ADV_PROJECT">Adv Project</option>
-                              </select>
+                              <div style={{ display: 'flex', gap: 20, padding: 12, background: 'var(--surface-container-low)', borderRadius: 8 }}>
+                                {[
+                                  { val: "ADV_REGULAR", label: "Adv Regular" },
+                                  { val: "ADV_PART_TIME", label: "Adv Part Time" },
+                                  { val: "ADV_PROJECT", label: "Adv Project" },
+                                ].map(t => (
+                                  <label key={t.val} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+                                    <input 
+                                      type="checkbox" 
+                                      checked={form.teamType.includes(t.val)} 
+                                      onChange={e => {
+                                        const newTeams = e.target.checked 
+                                          ? [...form.teamType, t.val] 
+                                          : form.teamType.filter(x => x !== t.val);
+                                        setForm(f => ({ ...f, teamType: newTeams }));
+                                      }}
+                                    />
+                                    {t.label}
+                                  </label>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </>

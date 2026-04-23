@@ -63,8 +63,14 @@ export async function GET(request: NextRequest) {
     const teamType = user?.teamType || 'CS_REGULAR';
     
     myPemasukan.forEach((p: any) => {
+      let feeCategory = "CS_REGULAR";
+      const progName = p.program?.nama?.toLowerCase() || "";
+      if (p.isRO) feeCategory = "CS_RO";
+      else if (progName.includes("toefl") || progName.includes("ielts")) feeCategory = "CS_TOEFL";
+      else if (progName.includes("live")) feeCategory = "CS_LIVE";
+
       totalFee += calculateCSFee(
-        teamType as any,
+        feeCategory as any,
         p.program?.kategoriFee || '',
         p.hargaFinal,
         p.isRO,

@@ -14,7 +14,7 @@ model User {
   aktif           Boolean          @default(true)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  teamType        String?
+  teamType        String[]         @default([])
   shiftStart      String?          @default("08:00")
   shiftEnd        String?          @default("16:00")
   isLeadActive    Boolean          @default(true)

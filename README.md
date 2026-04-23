@@ -18,7 +18,21 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 
 ---
 
-## 🛠️ Update Sistem: CRM Stability & Smart Payroll (v4.3) 🚀
+## 🛠️ Update Sistem: Multi-Path CS & Contextual Payroll (v4.4) 🚀 (TERBARU!)
+
+### 1. Multi-Team Support (Plan A) 👥
+*   **Flexible Assignments**: Satu CS kini bisa ditugaskan ke banyak jalur sekaligus (misal: Regular + TOEFL + Live).
+*   **Checkbox UI**: Pembaruan menu Pengaturan User dengan sistem centang untuk pengelolaan tim yang lebih mudah dan visual.
+*   **Smart Round Robin**: Logika pembagian jatah lead otomatis kini mendukung CS yang berada di banyak tim secara bersamaan.
+
+### 2. Contextual Fee Engine 💸
+*   **Dynamic Rule Selection**: Fee tidak lagi dipatok kaku pada profil CS, melainkan otomatis menyesuaikan dengan **jalur pendaftaran siswa** (closing TOEFL dapat fee TOEFL, closing RO dapat fee RO).
+*   **Multi-Skill Fairness**: CS yang memiliki banyak keahlian akan dibayar sesuai dengan tingkat kesulitan masing-masing produk yang mereka *close*.
+
+---
+
+## 🛠️ Update Sebelumnya: CRM Stability & Smart Payroll (v4.3) 🚀
+
 *   **Double-Click Prevention**: Penambahan *loading state* pada modal konversi lunas untuk mencegah error "Lead sudah lunas" akibat pengiriman data ganda.
 *   **Navigation Integrity**: Perbaikan link navigasi pada halaman Invoice agar kembali ke dashboard yang tepat tanpa error 404.
 

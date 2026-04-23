@@ -104,8 +104,16 @@ export async function GET(request: NextRequest) {
       // B. Hitung Fee CS (Jika Role CS)
       if (roleSlug === "cs") {
         emp.pemasukan.forEach((p: any) => {
+          // Tentukan kategori fee berdasarkan konteks pendaftaran/program
+          let feeCategory = "CS_REGULAR";
+          const progName = p.program?.nama?.toLowerCase() || "";
+          
+          if (p.isRO) feeCategory = "CS_RO";
+          else if (progName.includes("toefl") || progName.includes("ielts")) feeCategory = "CS_TOEFL";
+          else if (progName.includes("live")) feeCategory = "CS_LIVE";
+
           totalFee += calculateCSFee(
-            (emp.teamType || "CS_REGULAR") as any,
+            feeCategory as any,
             p.program?.kategoriFee || "",
             p.hargaFinal,
             p.isRO,

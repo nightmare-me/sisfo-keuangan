@@ -5,54 +5,59 @@ import bcrypt from "bcryptjs";
 import { recordLog } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
-  const session = await auth();
-  const sessionRoleSlug = (session?.user as any)?.role;
+  try {
+    const session = await auth();
+    const sessionRoleSlug = (session?.user as any)?.role;
 
-  const { searchParams } = new URL(request.url);
-  const filterRoleSlug = searchParams.get("role");
+    const { searchParams } = new URL(request.url);
+    const filterRoleSlug = searchParams.get("role");
 
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Pengecekan akses: Hanya admin atau role dengan permission user:manage yang boleh lihat semua
-  const hasUserManage = (session.user as any).permissions?.includes('user:manage');
+    // Pengecekan akses: Hanya admin atau role dengan permission user:manage yang boleh lihat semua
+    const hasUserManage = (session.user as any).permissions?.includes('user:manage');
 
-  if (!hasUserManage && sessionRoleSlug?.toLowerCase() !== 'admin') {
-    // Non-privileged: hanya boleh cari user tertentu (biasanya untuk filter CS)
-    if (filterRoleSlug) {
-      const users = await prisma.user.findMany({
-        where: { role: { slug: filterRoleSlug.toLowerCase() }, aktif: true },
-        include: { role: true },
-        orderBy: { name: "asc" },
-      });
-      
-      const formatted = users.map((u: any) => ({
-        ...u,
-        role: u.role?.slug?.toUpperCase() || "USER",
-        roleName: u.role?.name || "No Role"
-      }));
+    if (!hasUserManage && sessionRoleSlug?.toLowerCase() !== 'admin') {
+      // Non-privileged: hanya boleh cari user tertentu (biasanya untuk filter CS)
+      if (filterRoleSlug) {
+        const users = await prisma.user.findMany({
+          where: { role: { slug: filterRoleSlug.toLowerCase() }, aktif: true },
+          include: { role: true },
+          orderBy: { name: "asc" },
+        });
+        
+        const formatted = users.map((u: any) => ({
+          ...u,
+          role: u.role?.slug?.toUpperCase() || "USER",
+          roleName: u.role?.name || "No Role"
+        }));
 
-      return NextResponse.json(formatted);
+        return NextResponse.json(formatted);
+      }
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Admin/Privileged: semua user (atau filter role)
+    const where: any = filterRoleSlug ? { role: { slug: filterRoleSlug.toLowerCase() } } : {};
+
+    const users = await prisma.user.findMany({
+      where,
+      include: { role: true },
+      orderBy: { createdAt: "desc" },
+    });
+    
+    // Map output agar match format lama tapi dengan data role baru
+    const formattedUsers = users.map((u: any) => ({
+      ...u,
+      role: u.role?.slug?.toUpperCase() || "USER",
+      roleName: u.role?.name || "No Role"
+    }));
+
+    return NextResponse.json(formattedUsers);
+  } catch (error: any) {
+    console.error("USERS_GET_ERROR:", error);
+    return NextResponse.json({ error: "Internal Server Error", message: error.message }, { status: 500 });
   }
-
-  // Admin/Privileged: semua user (atau filter role)
-  const where: any = filterRoleSlug ? { role: { slug: filterRoleSlug.toLowerCase() } } : {};
-
-  const users = await prisma.user.findMany({
-    where,
-    include: { role: true },
-    orderBy: { createdAt: "desc" },
-  });
-  
-  // Map output agar match format lama tapi dengan data role baru
-  const formattedUsers = users.map((u: any) => ({
-    ...u,
-    role: u.role?.slug?.toUpperCase() || "USER",
-    roleName: u.role?.name || "No Role"
-  }));
-
-  return NextResponse.json(formattedUsers);
 }
 
 export async function POST(request: NextRequest) {
@@ -92,7 +97,7 @@ export async function POST(request: NextRequest) {
           data: { 
             name, email, password: hashedPassword, 
             roleId: roleObj.id, 
-            teamType: teamType || null 
+            teamType: Array.isArray(teamType) ? teamType : (teamType ? [teamType] : [])
           } 
         });
         results.success++;
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest) {
   const user = await prisma.user.create({
     data: { 
       name, email, password: hashedPassword, roleId, 
-      teamType: teamType || null,
+      teamType: Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []),
       shiftStart: shiftStart || "08:00",
       shiftEnd: shiftEnd || "16:00",
       isLeadActive: isLeadActive ?? true
@@ -142,7 +147,9 @@ export async function PUT(request: NextRequest) {
 
   const updateData: any = { name, email, aktif };
   if (roleId) updateData.roleId = roleId;
-  if (teamType !== undefined) updateData.teamType = teamType || null;
+  if (teamType !== undefined) {
+    updateData.teamType = Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []);
+  }
   if (shiftStart !== undefined) updateData.shiftStart = shiftStart;
   if (shiftEnd !== undefined) updateData.shiftEnd = shiftEnd;
   if (isLeadActive !== undefined) updateData.isLeadActive = isLeadActive;

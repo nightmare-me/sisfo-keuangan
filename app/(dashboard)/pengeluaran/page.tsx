@@ -84,10 +84,26 @@ export default function PengeluaranPage() {
     if (filter.kategori) p.set("kategori", filter.kategori);
     if (filter.metodeBayar) p.set("metodeBayar", filter.metodeBayar);
     setLoading(true);
-    fetch(`/api/pengeluaran?${p}`).then(r=>r.json()).then(d=>{
-      setData(d.data??[]); setSummary(d.summary??{}); setByKategori(d.byKategori??[]);
-      setLoading(false);
-    });
+    fetch(`/api/pengeluaran?${p}`)
+      .then(async r => {
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          throw new Error(err.error || "Gagal memuat data");
+        }
+        return r.json();
+      })
+      .then(d => {
+        setData(d.data ?? []);
+        setSummary(d.summary ?? { totalPengeluaran: 0, jumlahTransaksi: 0 });
+        setByKategori(d.byKategori ?? []);
+      })
+      .catch(err => {
+        console.error("Fetch Data Error:", err);
+        // alert(err.message);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }
 
   function fetchCategories() {

@@ -3,60 +3,68 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { searchParams } = new URL(request.url);
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-  const kategori = searchParams.get("kategori");
-  const metodeBayar = searchParams.get("metodeBayar");
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const limit = parseInt(searchParams.get("limit") ?? "20");
+    const { searchParams } = new URL(request.url);
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
+    const kategori = searchParams.get("kategori");
+    const metodeBayar = searchParams.get("metodeBayar");
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "200"); // Ditambah limitnya agar data tidak terpotong
 
-  const where: any = {};
-  if (from && to) where.tanggal = { gte: new Date(from), lte: new Date(to) };
-  if (kategori) where.kategori = kategori;
-  if (metodeBayar) where.metodeBayar = metodeBayar;
+    const where: any = {};
+    if (from && to) where.tanggal = { gte: new Date(from), lte: new Date(to) };
+    else if (from) where.tanggal = { gte: new Date(from) };
+    else if (to) where.tanggal = { lte: new Date(to) };
 
-  const [data, total, summary] = await Promise.all([
-    prisma.pengeluaran.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { tanggal: "desc" },
-      include: { 
-        user: { select: { name: true } },
-        arsipNota: { select: { id: true, urlFile: true } }
-      },
-    }),
-    prisma.pengeluaran.count({ where }),
-    prisma.pengeluaran.aggregate({
+    if (kategori) where.kategori = kategori;
+    if (metodeBayar) where.metodeBayar = metodeBayar;
+
+    const [data, total, summary] = await Promise.all([
+      prisma.pengeluaran.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { tanggal: "desc" },
+        include: { 
+          user: { select: { name: true } },
+          arsipNota: { select: { id: true, urlFile: true } }
+        },
+      }),
+      prisma.pengeluaran.count({ where }),
+      prisma.pengeluaran.aggregate({
+        where,
+        _sum: { jumlah: true },
+        _count: true,
+      }),
+    ]);
+
+    // Group by kategori
+    const byKategori = await prisma.pengeluaran.groupBy({
+      by: ["kategori"],
       where,
       _sum: { jumlah: true },
       _count: true,
-    }),
-  ]);
+    });
 
-  // Group by kategori
-  const byKategori = await prisma.pengeluaran.groupBy({
-    by: ["kategori"],
-    where,
-    _sum: { jumlah: true },
-    _count: true,
-  });
-
-  return NextResponse.json({
-    data,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
-    summary: {
-      totalPengeluaran: summary._sum.jumlah ?? 0,
-      jumlahTransaksi: summary._count,
-    },
-    byKategori,
-  });
+    return NextResponse.json({
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      summary: {
+        totalPengeluaran: summary._sum.jumlah ?? 0,
+        jumlahTransaksi: summary._count,
+      },
+      byKategori,
+    });
+  } catch (error: any) {
+    console.error("GET Pengeluaran Error:", error);
+    return NextResponse.json({ error: "Gagal memuat data", details: error.message }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {

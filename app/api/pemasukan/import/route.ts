@@ -47,125 +47,128 @@ export async function POST(request: NextRequest) {
       }
     };
 
+    const allSiswa = await prisma.siswa.findMany();
+    const allPrograms = await prisma.program.findMany();
+    const allUsers = await prisma.user.findMany({ where: { role: { slug: "cs" } } });
+
     let successCount = 0;
-    
+    let failCount = 0;
+
+    // Helper to find value in item with fuzzy header
+    const getValue = (item: any, keys: string[]) => {
+      const itemKeys = Object.keys(item);
+      for (const k of keys) {
+        const found = itemKeys.find(ik => 
+          ik.toLowerCase().replace(/[\s_]/g, '') === k.toLowerCase().replace(/[\s_]/g, '')
+        );
+        if (found) return item[found];
+      }
+      // Last resort: check if key is in the string at all
+      for (const k of keys) {
+        const found = itemKeys.find(ik => ik.toLowerCase().includes(k.toLowerCase()));
+        if (found) return item[found];
+      }
+      return null;
+    };
+
     for (const item of data) {
       try {
-        if (!item.nama_siswa || !item.tanggal) continue;
+        const rawNamaSiswa = getValue(item, ["nama_siswa", "nama", "siswa", "student"]);
+        const rawProgram = getValue(item, ["program", "produk", "product"]);
+        const rawNominal = getValue(item, ["nominal", "harga", "total", "bayar", "amount", "price"]);
+        const rawTanggal = getValue(item, ["tanggal", "date", "tgl"]);
+        const rawCS = getValue(item, ["cs", "nama_cs", "marketing", "sales"]);
+        const rawRO = getValue(item, ["ro", "repeat_order", "repeat"]);
+        const rawKeterangan = getValue(item, ["keterangan", "note", "keterangan_tambahan"]);
+        const rawMetode = getValue(item, ["metode", "metode_bayar", "payment"]);
 
-        // Matching Student
-        const sName = item.nama_siswa.trim();
+        if (!rawNamaSiswa) {
+          failCount++;
+          continue;
+        }
+
+        const sName = String(rawNamaSiswa).trim();
         let targetSiswa = allSiswa.find((s: any) => s.nama.toLowerCase() === sName.toLowerCase());
         
-        // AUTO-CREATE SISWA jika tidak ditemukan
         if (!targetSiswa && sName) {
-           try {
-             targetSiswa = await prisma.siswa.create({
-               data: {
-                 nama: sName,
-                 noSiswa: generateSiswaNumber(),
-                 status: "AKTIF"
-               }
-             });
-             // Tambahkan ke list agar baris berikutnya jika ada nama yang sama bisa matching
-             allSiswa.push(targetSiswa);
-           } catch (e) {
-             console.error("Auto-create siswa failed:", e);
-           }
+           targetSiswa = await prisma.siswa.create({
+             data: { nama: sName, noSiswa: generateSiswaNumber(), status: "AKTIF" }
+           });
+           allSiswa.push(targetSiswa);
         }
         
         if (!targetSiswa) continue;
 
-        // Matching Program
-        const pName = item.program?.trim();
+        const pName = String(rawProgram || "").trim();
         let targetProgram = allPrograms.find((p: any) => 
-          p.nama.toLowerCase() === pName?.toLowerCase() ||
-          p.nama.toLowerCase().includes(pName?.toLowerCase() || "") || 
-          pName?.toLowerCase().includes(p.nama.toLowerCase())
+          p.nama.toLowerCase() === pName.toLowerCase() ||
+          p.nama.toLowerCase().includes(pName.toLowerCase()) ||
+          pName.toLowerCase().includes(p.nama.toLowerCase())
         );
 
-        // AUTO-CREATE PROGRAM jika tidak ditemukan
         if (!targetProgram && pName) {
-           try {
-             targetProgram = await prisma.program.create({
-               data: {
-                 nama: pName,
-                 harga: parseFloat(item.harga_normal || 0),
-                 deskripsi: "Otomatis dibuat dari Import CSV",
-                 tipe: "REGULAR"
-               }
-             });
-             // Tambahkan ke list allPrograms agar baris berikutnya bisa matching
-             allPrograms.push(targetProgram);
-           } catch (e) {
-             console.error("Auto-create program failed:", e);
-           }
+           targetProgram = await prisma.program.create({
+             data: { nama: pName, harga: parseFloat(String(rawNominal || 0)) || 0, tipe: "REGULAR", deskripsi: "Otomatis" }
+           });
+           allPrograms.push(targetProgram);
         }
 
-        // Matching CS (Pencarian otomatis CS berdasarkan nama di CSV)
         let finalCSId = role === "CS" ? userId : undefined;
-        if (item.nama_cs) {
-           const targetCS = allCS.find((u: any) => u.name?.toLowerCase().includes(item.nama_cs.toLowerCase()));
+        if (rawCS) {
+           const targetCS = allUsers.find((u: any) => u.name?.toLowerCase().includes(String(rawCS).toLowerCase()));
            if (targetCS) finalCSId = targetCS.id;
         }
 
-        const hargaNormal = parseFloat(item.harga_normal || 0);
-        const diskon = parseFloat(item.diskon || 0);
-        const hargaFinal = Math.max(0, hargaNormal - diskon);
+        const nominal = parseFloat(String(rawNominal || 0)) || 0;
 
-        // Start Transaction for each row
         await prisma.$transaction(async (tx: any) => {
           const pemasukan = await tx.pemasukan.create({
             data: {
-              tanggal: parseDate(item.tanggal),
+              tanggal: parseDate(String(rawTanggal || "")),
               siswaId: targetSiswa.id,
               programId: targetProgram?.id,
               csId: finalCSId,
-              hargaNormal,
-              diskon,
-              hargaFinal,
-              isRO: item.ro === "1" || item.ro === 1 || String(item.ro).toLowerCase() === "true",
-              metodeBayar: ["CASH", "TRANSFER", "QRIS"].includes(item.metode?.toUpperCase()) ? item.metode.toUpperCase() : "CASH",
-              keterangan: item.keterangan || "Imported massal",
+              hargaNormal: nominal,
+              diskon: 0,
+              hargaFinal: nominal,
+              isRO: String(rawRO).toLowerCase() === "true" || rawRO === "1" || rawRO === 1,
+              metodeBayar: ["CASH", "TRANSFER", "QRIS"].includes(String(rawMetode || "").toUpperCase()) ? String(rawMetode).toUpperCase() : "CASH",
+              keterangan: String(rawKeterangan || "Imported massal"),
             }
           });
 
-          // AUTO-LUNAS LEAD (Sinkronisasi dengan CRM)
-          // Cari lead terakhir yang belum lunas untuk siswa ini
           const pendingLead = await tx.lead.findFirst({
-            where: {
-              siswaId: targetSiswa.id,
-              status: { not: "LUNAS" }
-            },
+            where: { siswaId: targetSiswa.id, status: { not: "LUNAS" } },
             orderBy: { createdAt: "desc" }
           });
 
           if (pendingLead) {
-            await tx.lead.update({
-              where: { id: pendingLead.id },
-              data: { status: "LUNAS" }
-            });
+            await tx.lead.update({ where: { id: pendingLead.id }, data: { status: "LUNAS" } });
           }
 
           await tx.invoice.create({
             data: {
               pemasukanId: pemasukan.id,
               noInvoice: generateInvoiceNumber(),
-              total: hargaFinal,
-              totalFinal: hargaFinal,
+              siswaId: targetSiswa.id,
+              tanggal: parseDate(String(rawTanggal || "")),
+              total: nominal,
+              totalFinal: nominal,
               statusBayar: "LUNAS"
             }
           });
         });
-
         successCount++;
       } catch (err) {
-        console.error("Income import item error:", err);
+        failCount++;
+        console.error("Row import error:", err);
       }
     }
 
     return NextResponse.json({ 
       success: true, 
+      count: successCount, 
+      failed: failCount,
       message: `Berhasil mengimpor ${successCount} data pemasukan & invoice.` 
     });
 

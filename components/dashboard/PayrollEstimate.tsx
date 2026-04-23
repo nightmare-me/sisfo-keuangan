@@ -19,7 +19,7 @@ export default function PayrollEstimate() {
   }, []);
 
   if (loading) return <div className="skeleton" style={{ height: 160, borderRadius: 24 }} />;
-  if (!data || data.items?.length === 0) return null;
+  if (!data || !Array.isArray(data.items) || data.items.length === 0) return null;
 
   return (
     <div className="card glass" style={{ 

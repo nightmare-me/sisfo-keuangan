@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         keterangan,
         tanggal: pengeluaranDate,
         metodeBayar: "CASH", // Defaulting to CASH, can be updated later if needed
-        dibuatOleh: session.user.id,
+        dibuatOleh: (session.user as any).id,
         arsipNota: {
           create: urls.map((url: string) => ({
             urlFile: url,

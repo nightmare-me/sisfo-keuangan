@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
               hargaNormal,
               diskon,
               hargaFinal,
-              isRO: !!item.ro,
+              isRO: item.ro === "1" || item.ro === 1 || String(item.ro).toLowerCase() === "true",
               metodeBayar: ["CASH", "TRANSFER", "QRIS"].includes(item.metode?.toUpperCase()) ? item.metode.toUpperCase() : "CASH",
               keterangan: item.keterangan || "Imported massal",
             }

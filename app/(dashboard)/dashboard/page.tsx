@@ -335,20 +335,30 @@ export default function DashboardPage() {
             </div>
             <div className="card" style={{ overflow: 'hidden' }}>
               <div className="card-title" style={{ marginBottom: 16 }}>Transaksi Terkini</div>
-              <div className="table-wrapper" style={{ maxHeight: 280, overflowY: "auto", overflowX: 'hidden' }}>
-                <table style={{ fontSize: 12, width: "100%" }}>
-                  <tbody>
-                    {(data?.transaksiTerkini || []).slice(0, 6).map(t => (
-                      <tr key={t.id}>
-                        <td style={{ padding: '10px 0' }}>
-                          <div style={{ fontWeight: 600 }}>{t.siswa?.nama}</div>
-                          <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{t.program?.nama}</div>
-                        </td>
-                        <td style={{ textAlign: "right", fontWeight: 800, color: "var(--success)" }}>{formatCurrency(t.hargaFinal)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="table-wrapper" style={{ maxHeight: 280, overflowY: "auto", overflowX: 'hidden', padding: '8px 0' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {(data?.transaksiTerkini || []).slice(0, 6).map((t, idx, arr) => (
+                    <div key={t.id} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      padding: '12px 20px',
+                      borderBottom: idx === arr.length - 1 ? 'none' : '1px solid var(--ghost-border)',
+                      transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--on-surface)' }}>{t.siswa?.nama}</div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{t.program?.nama}</div>
+                      </div>
+                      <div style={{ textAlign: "right", fontWeight: 800, color: "var(--success)", fontSize: 13 }}>
+                        {formatCurrency(t.hargaFinal)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

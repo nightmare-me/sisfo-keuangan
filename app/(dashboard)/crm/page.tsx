@@ -312,12 +312,12 @@ export default function CRMPage() {
           <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "var(--success)", marginBottom: 8, width: 40, height: 40 }}><CheckCircle2 size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Total Terbayar</div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'PAID').length}</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'PAID' || l.status === 'LUNAS').length}</div>
           </div>
           <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "var(--warning)", marginBottom: 8, width: 40, height: 40 }}><TrendingUp size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Rasio Bayar</div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.length > 0 ? ((leads.filter(l => l.status === 'PAID').length / leads.length) * 100).toFixed(0) : 0}%</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.length > 0 ? (((leads.filter(l => l.status === 'PAID' || l.status === 'LUNAS').length) / leads.length) * 100).toFixed(0) : 0}%</div>
           </div>
           <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "var(--danger)", marginBottom: 8, width: 40, height: 40 }}><Clock size={20} /></div>
@@ -421,7 +421,7 @@ export default function CRMPage() {
                     </td>
                     <td>
                         <span className={`badge ${
-                          lead.status === 'PAID' ? 'badge-success' : 
+                          (lead.status === 'PAID' || lead.status === 'LUNAS') ? 'badge-success' : 
                           lead.status === 'REFUNDED' ? 'badge-danger' :
                           lead.status === 'CANCELLED' ? 'badge-muted' :
                           lead.status === 'PENDING' ? 'badge-warning' : 
@@ -429,7 +429,7 @@ export default function CRMPage() {
                           'badge-muted'
                         }`}>
                           {
-                            lead.status === 'PAID' ? 'Selesai' : 
+                            (lead.status === 'PAID' || lead.status === 'LUNAS') ? 'Selesai' : 
                             lead.status === 'REFUNDED' ? 'Refunded' :
                             lead.status === 'CANCELLED' ? 'Cancelled' :
                             lead.status === 'PENDING' ? 'Menunggu' : 
@@ -500,9 +500,9 @@ export default function CRMPage() {
                        </div>
                     </td>
                     <td>
-                       <span className={`badge ${lead.status === 'PAID' ? 'badge-success' : 'badge-danger'}`} style={{ opacity: 0.8 }}>
-                         {lead.status === 'PAID' ? 'PAID' : 'UNPAID'}
-                       </span>
+                        <span className={`badge ${(lead.status === 'PAID' || lead.status === 'LUNAS') ? 'badge-success' : 'badge-danger'}`} style={{ opacity: 0.8 }}>
+                          {(lead.status === 'PAID' || lead.status === 'LUNAS') ? 'PAID' : 'UNPAID'}
+                        </span>
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

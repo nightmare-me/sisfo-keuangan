@@ -2,13 +2,16 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🤝 Fitur Baru: Jalur Pendaftaran Affiliate & Dev Utilities (v4.5) 🚀
-*   **Affiliate Registration Path**: Pendaftaran khusus dengan parameter URL `?team=AFFILIATE` yang otomatis mendistribusikan *leads* ke tim "CS Affiliate".
-*   **Static Fee Calculation**: Penyesuaian mesin payroll agar mengabaikan harga produk khusus untuk tim CS Affiliate dan memberikan *fee flat* sebesar Rp 25.000 per closing.
-*   **Source Breakdown Integration**: Laporan Keuangan (Executive Insights) kini secara *real-time* mendeteksi dan mengkalkulasi persentase omset yang dihasilkan dari jalur Affiliate.
-*   **Development Utilities**: Penambahan *script* `wipe-dummy.ts` untuk menghapus seluruh data transaksi uji coba secara aman tanpa menghapus konfigurasi dasar (*roles*, *users*, dan program).
+## 🛠️ Update: Smart CRM Sync & Precision Payroll (v4.19) 🚀 (TERBARU!)
+*   **Smart CRM Two-Way Sync**: Sinkronisasi otomatis dua arah. Import Pemasukan otomatis melunaskan Lead, dan Import CRM otomatis mendeteksi riwayat bayar siswa untuk status "LUNAS" instan.
+*   **Robust CSV Engine v3**: Dukungan *Auto-Delimiter* (Koma/Titik Koma) untuk Excel Indonesia, *Fuzzy Header Matching* (Indo/English), dan pemulihan nomor WhatsApp dari format ilmiah Excel (`6,29E+12`).
+*   **Precision Payroll (CS RO)**: Fee CS RO dikunci pada 5% omset bersih. Sistem secara otomatis membuang "Kode Unik" transaksi dengan pembulatan ke bawah ke ribuan terdekat sebelum perhitungan komisi.
+*   **Global Dashboard Stats**: Angka "Siswa Aktif" dan "Total Terbayar" kini menggunakan kalkulasi *real-time* dari seluruh database, bukan hanya data yang tampil di halaman.
+*   **Sync Terminology**: Penyeragaman status `PAID` dan `LUNAS` lintas modul (CRM & Keuangan) untuk visibilitas data yang konsisten.
 
 ---
+
+## 🤝 Fitur Sebelumnya: Jalur Pendaftaran Affiliate & Dev Utilities (v4.5) 🚀
 
 ## 🧾 Fitur Sebelumnya: Arsip Nota Terintegrasi (v4.4) 📸
 *   **One-Gate Entry**: Fitur unggah foto/scan nota kini terintegrasi langsung dan diwajibkan saat mencatat pengeluaran di modul Pengeluaran.

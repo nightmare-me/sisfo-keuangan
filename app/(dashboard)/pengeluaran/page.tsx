@@ -154,7 +154,7 @@ export default function PengeluaranPage() {
         body: JSON.stringify(body) 
       });
       const resJson = await res.json().catch(()=>({}));
-      if (!res.ok) throw new Error(resJson.error || resJson.details || "Gagal menyimpan pengeluaran");
+      if (!res.ok) throw new Error(`${resJson.error || "Error"}: ${resJson.details || "Gagal menyimpan pengeluaran"}`);
 
       setSaving(false); setShowModal(false);
       resetForm();

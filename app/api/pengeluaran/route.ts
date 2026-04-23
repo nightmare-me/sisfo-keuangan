@@ -72,7 +72,13 @@ export async function POST(request: NextRequest) {
 
   const pengeluaran = await prisma.pengeluaran.create({
     data: {
-      tanggal: tanggal ? new Date(tanggal) : new Date(),
+      tanggal: (() => {
+        if (!tanggal) return new Date();
+        const d = new Date(tanggal);
+        const now = new Date();
+        d.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+        return d;
+      })(),
       jumlah,
       kategori: kategori ?? "LAINNYA",
       metodeBayar: metodeBayar ?? "CASH",
@@ -103,7 +109,13 @@ export async function PUT(request: NextRequest) {
   const pengeluaran = await prisma.pengeluaran.update({
     where: { id },
     data: {
-      tanggal: tanggal ? new Date(tanggal) : undefined,
+      tanggal: (() => {
+        if (!tanggal) return undefined;
+        const d = new Date(tanggal);
+        const now = new Date();
+        d.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+        return d;
+      })(),
       jumlah,
       kategori,
       metodeBayar,

@@ -61,7 +61,8 @@ export default function ArsipNotaPage() {
     if (data.length === 0) return;
     setExporting(true);
     try {
-      const { default: XLSX } = await import("xlsx");
+      const xlsxModule = await import("xlsx");
+      const XLSX = xlsxModule.default || xlsxModule;
       const wb = XLSX.utils.book_new();
       
       const exportData = [
@@ -85,9 +86,9 @@ export default function ArsipNotaPage() {
         filename += `_${filter.startDate}_sd_${filter.endDate}`;
       }
       XLSX.writeFile(wb, `${filename}.xlsx`);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Gagal mengekspor file excel.");
+      alert(`Gagal mengekspor file excel: ${e.message}`);
     } finally {
       setExporting(false);
     }

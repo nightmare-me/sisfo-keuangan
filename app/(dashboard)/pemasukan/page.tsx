@@ -22,6 +22,7 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, SUPER_ROLES } from "@/lib/utils";
+import Papa from "papaparse";
 
 interface Pemasukan {
   id: string;
@@ -500,17 +501,15 @@ export default function PemasukanPage() {
                       const reader = new FileReader();
                       reader.onload = async (event) => {
                         const text = event.target?.result as string;
-                        const lines = text.split("\n").filter(l => l.trim());
-                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-                        
-                        const jsonData = lines.slice(1).map(line => {
-                          const values = line.split(",").map(v => v.trim());
-                          const obj: any = {};
-                          headers.forEach((h, i) => {
-                            obj[h] = values[i];
-                          });
-                          return obj;
-                        });
+                        Papa.parse(text, {
+                          header: true,
+                          skipEmptyLines: true,
+                          complete: async (results) => {
+                            const jsonData = results.data;
+                            if (jsonData.length === 0) {
+                              alert("File CSV kosong atau tidak valid.");
+                              return;
+                            }
 
                         if (confirm(`Impor ${jsonData.length} data transaksi?`)) {
                           setCsvLoading(true);
@@ -534,9 +533,10 @@ export default function PemasukanPage() {
                             setCsvLoading(false);
                           }
                         }
-                      };
-                      reader.readAsText(file);
-                    }} />
+                      });
+                    };
+                    reader.readAsText(file);
+                  }} />
                   </label>
                 </div>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Format UTF-8</p>

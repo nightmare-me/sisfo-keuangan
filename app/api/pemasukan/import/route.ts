@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { generateInvoiceNumber } from "@/lib/utils";
+import { generateInvoiceNumber, generateSiswaNumber } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -31,8 +31,26 @@ export async function POST(request: NextRequest) {
         if (!item.nama_siswa || !item.tanggal) continue;
 
         // Matching Student
-        const sName = item.nama_siswa.toLowerCase().trim();
-        const targetSiswa = allSiswa.find((s: any) => s.nama.toLowerCase() === sName);
+        const sName = item.nama_siswa.trim();
+        let targetSiswa = allSiswa.find((s: any) => s.nama.toLowerCase() === sName.toLowerCase());
+        
+        // AUTO-CREATE SISWA jika tidak ditemukan
+        if (!targetSiswa && sName) {
+           try {
+             targetSiswa = await prisma.siswa.create({
+               data: {
+                 nama: sName,
+                 noSiswa: generateSiswaNumber(),
+                 status: "AKTIF"
+               }
+             });
+             // Tambahkan ke list agar baris berikutnya jika ada nama yang sama bisa matching
+             allSiswa.push(targetSiswa);
+           } catch (e) {
+             console.error("Auto-create siswa failed:", e);
+           }
+        }
+        
         if (!targetSiswa) continue;
 
         // Matching Program

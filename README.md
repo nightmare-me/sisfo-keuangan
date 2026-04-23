@@ -2,9 +2,15 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🛠️ Update Sistem: CRM Stability & Smart Payroll (v4.3) 🚀 (TERBARU!)
+## 🧾 Fitur Baru: Arsip Nota Terintegrasi (v4.4) 📸
+*   **One-Gate Entry**: Fitur unggah foto/scan nota kini terintegrasi langsung dan diwajibkan saat mencatat pengeluaran di modul Pengeluaran.
+*   **Smart Indicators**: Tabel pengeluaran secara otomatis mendeteksi dan memberi *badge* peringatan ("Tanpa Nota") untuk pengeluaran lama atau import CSV yang belum dilengkapi dokumen fisik.
+*   **Print-Ready Digital Archive**: Modul Arsip Nota berfungsi ganda sebagai *viewer* visual dan *generator* dokumen cetak (PDF) berukuran A4 yang secara otomatis menata tata letak banyak struk dalam satu halaman.
+*   **Excel Export**: Fungsi pengunduhan laporan lengkap (termasuk *link* gambar nota) berformat `.xlsx` untuk rekapitulasi audit eksternal.
 
-### 1. Robust CRM Conversion Logic 🔐
+---
+
+## 🛠️ Update Sistem: CRM Stability & Smart Payroll (v4.3) 🚀
 *   **Double-Click Prevention**: Penambahan *loading state* pada modal konversi lunas untuk mencegah error "Lead sudah lunas" akibat pengiriman data ganda.
 *   **Navigation Integrity**: Perbaikan link navigasi pada halaman Invoice agar kembali ke dashboard yang tepat tanpa error 404.
 

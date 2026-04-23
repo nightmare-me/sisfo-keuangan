@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { tanggal: "desc" },
-      include: { user: { select: { name: true } } },
+      include: { 
+        user: { select: { name: true } },
+        arsipNota: { select: { id: true, urlFile: true } }
+      },
     }),
     prisma.pengeluaran.count({ where }),
     prisma.pengeluaran.aggregate({
@@ -61,7 +64,7 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { jumlah, kategori, metodeBayar, keterangan, tanggal } = body;
+  const { jumlah, kategori, metodeBayar, keterangan, tanggal, urls } = body;
 
   if (!jumlah || jumlah <= 0) {
     return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
@@ -75,7 +78,11 @@ export async function POST(request: NextRequest) {
       metodeBayar: metodeBayar ?? "CASH",
       keterangan,
       dibuatOleh: (session.user as any).id,
+      arsipNota: urls && Array.isArray(urls) && urls.length > 0 ? {
+        create: urls.map((url: string) => ({ urlFile: url }))
+      } : undefined
     },
+    include: { arsipNota: true }
   });
 
   return NextResponse.json(pengeluaran, { status: 201 });
@@ -86,7 +93,7 @@ export async function PUT(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, jumlah, kategori, metodeBayar, keterangan, tanggal } = body;
+  const { id, jumlah, kategori, metodeBayar, keterangan, tanggal, urls } = body;
 
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
   if (!jumlah || jumlah <= 0) {
@@ -101,7 +108,11 @@ export async function PUT(request: NextRequest) {
       kategori,
       metodeBayar,
       keterangan,
+      arsipNota: urls && Array.isArray(urls) && urls.length > 0 ? {
+        create: urls.map((url: string) => ({ urlFile: url }))
+      } : undefined
     },
+    include: { arsipNota: true }
   });
 
   return NextResponse.json(pengeluaran);

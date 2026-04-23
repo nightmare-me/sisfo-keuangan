@@ -835,3 +835,27 @@ table tbody tr:hover {
   margin-bottom: 16px;
   align-items: center;
 }
+
+/* ===== PRINT STYLES ===== */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print, .sidebar, .topbar, .mobile-header {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body, .main-content, .layout, .page-container {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    width: 100% !important;
+  }
+  @page {
+    margin: 1cm;
+  }
+}

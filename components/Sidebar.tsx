@@ -49,6 +49,7 @@ const navItems: NavGroup[] = [
   { group: "KEUANGAN", items: [
     { href: "/pemasukan", label: "Pemasukan", icon: <Wallet size={16} />, permission: "finance_in:view" },
     { href: "/pengeluaran", label: "Pengeluaran", icon: <FileText size={16} />, permission: "finance_out:view" },
+    { href: "/arsip-nota", label: "Arsip Nota", icon: <FileText size={16} />, permission: "finance_out:view" },
     { href: "/ads", label: "Spent Ads", icon: <Megaphone size={16} />, permission: "ads_spent:view" },
     { href: "/ads/performance", label: "Performa Iklan", icon: <TrendingUp size={16} />, permission: "ads_performance:view" },
     { href: "/laporan-keuangan", label: "Laporan Keuangan", icon: <PieChart size={16} />, permission: "report:view" },

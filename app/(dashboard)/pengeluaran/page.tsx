@@ -17,10 +17,13 @@ import {
   Edit2,
   PieChart,
   Upload,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Camera,
+  X
 } from "lucide-react";
 
 const METODE = ["CASH", "TRANSFER"];
+const PIE_COLORS = ["#6366f1","#10b981","#f59e0b","#ef4444","#3b82f6","#8b5cf6","#ec4899","#14b8a6"];
 
 export default function PengeluaranPage() {
   const { data: session } = useSession();
@@ -37,6 +40,9 @@ export default function PengeluaranPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [existingNotes, setExistingNotes] = useState<any[]>([]);
   const [kategoriList, setKategoriList] = useState<any[]>([]);
   const [showCatModal, setShowCatModal] = useState(false);
   const [newCat, setNewCat] = useState({ nama: "", color: "#ef4444" });
@@ -57,12 +63,18 @@ export default function PengeluaranPage() {
       keterangan: item.keterangan || "",
       tanggal: new Date(item.tanggal).toISOString().slice(0, 10),
     });
+    setExistingNotes(item.arsipNota || []);
+    setSelectedFiles([]);
+    setPreviewUrls([]);
     setShowModal(true);
   }
 
   function resetForm() {
     setEditId(null);
     setForm({ jumlah:"", kategori:"LAINNYA", metodeBayar:"CASH", keterangan:"", tanggal: new Date().toISOString().slice(0,10) });
+    setSelectedFiles([]);
+    setPreviewUrls([]);
+    setExistingNotes([]);
   }
 
   function fetchData() {
@@ -94,20 +106,63 @@ export default function PengeluaranPage() {
     fetchCategories();
   }, [filter]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true);
-    const method = editId ? "PUT" : "POST";
-    const body = { ...form, jumlah: parseFloat(form.jumlah) };
-    if (editId) (body as any).id = editId;
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setSelectedFiles(prev => [...prev, ...files]);
+      const newUrls = files.map(f => URL.createObjectURL(f));
+      setPreviewUrls(prev => [...prev, ...newUrls]);
+    }
+  }
 
-    await fetch("/api/pengeluaran",{ 
-      method, 
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(body) 
-    });
-    setSaving(false); setShowModal(false);
-    resetForm();
-    fetchData();
+  function removeFile(index: number) {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault(); 
+    
+    if (!editId && selectedFiles.length === 0) {
+      alert("Wajib menyertakan minimal 1 foto nota untuk pengeluaran baru!");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let uploadedUrls: string[] = [];
+      if (selectedFiles.length > 0) {
+        const formData = new FormData();
+        selectedFiles.forEach(f => formData.append("file", f));
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Gagal upload gambar");
+        uploadedUrls = uploadData.urls;
+      }
+
+      const method = editId ? "PUT" : "POST";
+      const body: any = { 
+        ...form, 
+        jumlah: parseFloat(form.jumlah),
+        urls: uploadedUrls.length > 0 ? uploadedUrls : undefined
+      };
+      if (editId) body.id = editId;
+
+      const res = await fetch("/api/pengeluaran",{ 
+        method, 
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(body) 
+      });
+      const resJson = await res.json().catch(()=>({}));
+      if (!res.ok) throw new Error(resJson.error || resJson.details || "Gagal menyimpan pengeluaran");
+
+      setSaving(false); setShowModal(false);
+      resetForm();
+      fetchData();
+    } catch (err: any) {
+      alert(err.message || "Terjadi kesalahan");
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -219,14 +274,14 @@ export default function PengeluaranPage() {
           <div className="card" style={{ marginBottom:16 }}>
             <div className="card-header"><div className="card-title">Breakdown per Kategori</div></div>
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              {byKategori.sort((a,b)=>(b._sum.jumlah??0)-(a._sum.jumlah??0)).map(k=>(
+              {byKategori.sort((a,b)=>(b._sum.jumlah??0)-(a._sum.jumlah??0)).map((k, i)=>(
                 <div key={k.kategori}>
                   <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
                     <span style={{ fontSize:13, fontWeight:600 }}>{k.kategori}</span>
-                    <span style={{ fontSize:13, fontWeight:700, color:"var(--danger)" }}>{formatCurrency(k._sum.jumlah??0)}</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:PIE_COLORS[i%PIE_COLORS.length] }}>{formatCurrency(k._sum.jumlah??0)}</span>
                   </div>
                   <div style={{ height:6, background:"var(--bg-elevated)", borderRadius:3, overflow:"hidden" }}>
-                    <div style={{ height:"100%", background:"var(--danger)", borderRadius:3, width:`${((k._sum.jumlah??0)/maxKategori*100)}%`, transition:"width 0.5s" }} />
+                    <div style={{ height:"100%", background:PIE_COLORS[i%PIE_COLORS.length], borderRadius:3, width:`${((k._sum.jumlah??0)/maxKategori*100)}%`, transition:"width 0.5s" }} />
                   </div>
                 </div>
               ))}
@@ -304,10 +359,13 @@ export default function PengeluaranPage() {
                     <input type="checkbox" checked={selectedIds.includes(item.id)} onChange={() => toggleSelect(item.id)} />
                   </td>
                   <td style={{ fontSize:14, color:"var(--text-muted)", whiteSpace:"nowrap" }}>{formatDateTime(item.tanggal)}</td>
-                  <td>
+                  <td style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span className="badge badge-danger" style={{ padding: '6px 14px', borderRadius: 100 }}>
                       {item.kategori}
                     </span>
+                    {(!item.arsipNota || item.arsipNota.length === 0) && (
+                      <span className="badge badge-warning" style={{ fontSize: 10, padding: '4px 8px', borderRadius: 100 }} title="Tanpa Nota">Tanpa Nota</span>
+                    )}
                   </td>
                   <td style={{ color:"var(--text-secondary)", fontSize:14 }}>{item.keterangan||"—"}</td>
                   <td>
@@ -344,6 +402,42 @@ export default function PengeluaranPage() {
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
+                {/* Bagian Upload Nota */}
+                <div style={{ border: '2px dashed var(--ghost-border)', borderRadius: 12, padding: 24, textAlign: 'center', background: 'var(--surface-container-lowest)', marginBottom: 24 }}>
+                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: previewUrls.length > 0 || existingNotes.length > 0 ? 20 : 0 }}>
+                    <label className="btn btn-secondary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)' }}>
+                      <Camera size={16} style={{ marginRight: 8 }} /> Ambil Foto / Kamera
+                      <input type="file" accept="image/*" capture="environment" multiple style={{ display: 'none' }} onChange={handleFileChange} />
+                    </label>
+                    <label className="btn btn-secondary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)' }}>
+                      <Upload size={16} style={{ marginRight: 8 }} /> Upload Gambar
+                      <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFileChange} />
+                    </label>
+                  </div>
+                  
+                  {(previewUrls.length > 0 || existingNotes.length > 0) && (
+                    <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 10, justifyContent: (previewUrls.length + existingNotes.length) > 2 ? 'flex-start' : 'center' }}>
+                      {existingNotes.map((nota, idx) => (
+                        <div key={`exist-${idx}`} style={{ position: 'relative', width: 100, height: 120, flexShrink: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--ghost-border)' }}>
+                          <img src={nota.urlFile} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', color: 'white', fontSize: 10, padding: 4 }}>Tersimpan</div>
+                        </div>
+                      ))}
+                      {previewUrls.map((url, idx) => (
+                        <div key={`new-${idx}`} style={{ position: 'relative', width: 100, height: 120, flexShrink: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--ghost-border)' }}>
+                          <img src={url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button type="button" onClick={() => removeFile(idx)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {previewUrls.length === 0 && existingNotes.length === 0 && (
+                     <p style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 600 }}>*Wajib menyertakan minimal 1 foto nota</p>
+                  )}
+                </div>
+
                 <div className="form-grid-2">
                   <div className="form-group">
                     <label className="form-label required">Kategori</label>

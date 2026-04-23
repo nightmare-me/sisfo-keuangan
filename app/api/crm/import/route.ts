@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const allPrograms = await prisma.program.findMany();
+    const allSiswa = await prisma.siswa.findMany({ include: { pemasukan: true } });
     let successCount = 0;
     
     // Helper fuzzy header matching
@@ -34,14 +35,14 @@ export async function POST(request: NextRequest) {
       return null;
     };
 
-    // Helper format WA (Recover from 6.28E+12)
+    // Helper format WA (Recover from 6.28E+12 with comma or dot)
     const formatWA = (val: any) => {
       if (!val) return "";
-      let str = String(val).trim();
+      let str = String(val).trim().replace(",", "."); // Handle Indo decimal in scientific
       
-      // Handle scientific notation (Excel E+12)
       if (str.includes("E+") || str.includes("e+")) {
-        str = Number(str).toLocaleString('fullwide', {useGrouping:false});
+        const num = Number(str);
+        if (!isNaN(num)) str = num.toLocaleString('fullwide', {useGrouping:false});
       }
       
       let cleaned = str.replace(/\D/g, "");
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
 
         if (!rawNama) continue;
 
+        const sName = String(rawNama).trim();
         const wa = formatWA(rawWA);
         const pName = String(rawProgram || "").trim();
         
@@ -69,13 +71,18 @@ export async function POST(request: NextRequest) {
           pName.toLowerCase().includes(p.nama.toLowerCase())
         );
 
-        // Auto-create program if not found
         if (!targetProgram && pName) {
           targetProgram = await prisma.program.create({
             data: { nama: pName, harga: 0, tipe: "REGULAR", deskripsi: "Auto-Import" }
           });
           allPrograms.push(targetProgram);
         }
+
+        // SMART CHECK: Apakah orang ini sudah bayar?
+        const existingSiswa = allSiswa.find(s => s.nama.toLowerCase() === sName.toLowerCase());
+        const hasPayment = existingSiswa?.pemasukan?.some(p => 
+          p.programId === targetProgram?.id || !targetProgram
+        );
 
         const parseDate = (d: any) => {
           if (!d) return new Date();
@@ -90,12 +97,13 @@ export async function POST(request: NextRequest) {
 
         await prisma.lead.create({
           data: {
-            nama: String(rawNama).trim(),
+            nama: sName,
             whatsapp: wa,
             programId: targetProgram?.id,
+            nominalTagihan: targetProgram?.harga || 0,
             preferensiJadwal: rawPreferensi ? String(rawPreferensi) : null,
             csId: role === "CS" ? userId : undefined,
-            status: "NEW",
+            status: hasPayment ? "PAID" : "NEW",
             tanggalLead: parseDate(rawTanggal),
             sumber: "IMPORT_CSV",
           }

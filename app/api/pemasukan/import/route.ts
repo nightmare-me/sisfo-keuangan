@@ -24,6 +24,29 @@ export async function POST(request: NextRequest) {
       select: { id: true, name: true },
     });
 
+    const parseDate = (dateStr: string) => {
+      if (!dateStr || dateStr.trim() === "") return new Date();
+      
+      try {
+        // Handle DD/MM/YYYY
+        if (dateStr.includes("/")) {
+          const parts = dateStr.split("/");
+          if (parts.length === 3) {
+            const d = parts[0].padStart(2, "0");
+            const m = parts[1].padStart(2, "0");
+            const y = parts[2];
+            const parsed = new Date(`${y}-${m}-${d}`);
+            if (!isNaN(parsed.getTime())) return parsed;
+          }
+        }
+        
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? new Date() : d;
+      } catch (e) {
+        return new Date();
+      }
+    };
+
     let successCount = 0;
     
     for (const item of data) {
@@ -94,7 +117,7 @@ export async function POST(request: NextRequest) {
         await prisma.$transaction(async (tx: any) => {
           const pemasukan = await tx.pemasukan.create({
             data: {
-              tanggal: new Date(item.tanggal),
+              tanggal: parseDate(item.tanggal),
               siswaId: targetSiswa.id,
               programId: targetProgram?.id,
               csId: finalCSId,

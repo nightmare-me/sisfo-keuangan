@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       where.pemasukan = { some: { csId } };
     }
 
-    const [data, total] = await Promise.all([
+    const [data, total, aktifCount, nonaktifCount, alumniCount] = await Promise.all([
       prisma.siswa.findMany({
         where,
         skip: (page - 1) * limit,
@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
             include: { kelas: { include: { program: true } } },
             where: { aktif: true },
           },
-          // Ambil data pembayaran secara sederhana
           pemasukan: {
             take: 5,
             orderBy: { createdAt: "desc" },
@@ -58,9 +57,22 @@ export async function GET(request: NextRequest) {
         },
       }),
       prisma.siswa.count({ where }),
+      prisma.siswa.count({ where: { status: "AKTIF" } }),
+      prisma.siswa.count({ where: { status: "TIDAK_AKTIF" } }),
+      prisma.siswa.count({ where: { status: "ALUMNI" } }),
     ]);
 
-    return NextResponse.json({ data, total, page, totalPages: Math.ceil(total / limit) });
+    return NextResponse.json({ 
+      data, 
+      total, 
+      page, 
+      totalPages: Math.ceil(total / limit),
+      summary: {
+        aktif: aktifCount,
+        nonaktif: nonaktifCount,
+        alumni: alumniCount
+      }
+    });
   } catch (error: any) {
     console.error("SISWA_API_ERROR:", error);
     return NextResponse.json({ error: "Internal Server Error", message: error.message }, { status: 500 });

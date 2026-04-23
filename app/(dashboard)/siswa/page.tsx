@@ -64,6 +64,7 @@ export default function SiswaPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [summary, setSummary] = useState({ aktif: 0, nonaktif: 0, alumni: 0 });
 
   function fetchData() {
     const p = new URLSearchParams({ page: String(page), limit: "20" });
@@ -72,7 +73,12 @@ export default function SiswaPage() {
     // CS hanya melihat siswa yang pernah mereka tangani (via pemasukan)
     if (isCS && userId) p.set("csId", userId);
     setLoading(true);
-    fetch(`/api/siswa?${p}`).then(r => r.json()).then(d => { setData(d.data ?? []); setTotal(d.total ?? 0); setLoading(false); });
+    fetch(`/api/siswa?${p}`).then(r => r.json()).then(d => { 
+      setData(d.data ?? []); 
+      setTotal(d.total ?? 0); 
+      setSummary(d.summary ?? { aktif: 0, nonaktif: 0, alumni: 0 });
+      setLoading(false); 
+    });
   }
 
   useEffect(()=>{ fetchData(); },[search, statusFilter, page]);
@@ -220,17 +226,17 @@ export default function SiswaPage() {
           <div className="kpi-card" onClick={()=>setStatusFilter(statusFilter==="AKTIF"?"":"AKTIF")} style={{ cursor:'pointer', "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
             <div className="kpi-icon" style={{ color: "var(--success)" }}><CheckCircle size={24} /></div>
             <div className="kpi-label">Siswa Aktif</div>
-            <div className="kpi-value">{data.filter(d=>d.status==="AKTIF").length}</div>
+            <div className="kpi-value">{summary.aktif}</div>
           </div>
           <div className="kpi-card" onClick={()=>setStatusFilter(statusFilter==="TIDAK_AKTIF"?"":"TIDAK_AKTIF")} style={{ cursor:'pointer', "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)" } as any}>
             <div className="kpi-icon" style={{ color: "var(--danger)" }}><XCircle size={24} /></div>
             <div className="kpi-label">Tidak Aktif</div>
-            <div className="kpi-value">{data.filter(d=>d.status==="TIDAK_AKTIF").length}</div>
+            <div className="kpi-value">{summary.nonaktif}</div>
           </div>
           <div className="kpi-card" onClick={()=>setStatusFilter(statusFilter==="ALUMNI"?"":"ALUMNI")} style={{ cursor:'pointer', "--kpi-color": "var(--secondary)", "--kpi-bg": "var(--surface-container-low)" } as any}>
             <div className="kpi-icon" style={{ color: "var(--secondary)" }}><GraduationCap size={24} /></div>
             <div className="kpi-label">Total Alumni</div>
-            <div className="kpi-value">{data.filter(d=>d.status==="ALUMNI").length}</div>
+            <div className="kpi-value">{summary.alumni}</div>
           </div>
         </div>
 

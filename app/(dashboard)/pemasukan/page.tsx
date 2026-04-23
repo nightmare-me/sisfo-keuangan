@@ -533,10 +533,11 @@ export default function PemasukanPage() {
                             setCsvLoading(false);
                           }
                           }
-                        });
-                      };
-                      reader.readAsText(file);
-                    }} />
+                        }
+                      });
+                    };
+                    reader.readAsText(file);
+                  }} />
                   </label>
                 </div>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Format UTF-8</p>

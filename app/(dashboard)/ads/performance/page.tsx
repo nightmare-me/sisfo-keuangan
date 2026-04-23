@@ -149,7 +149,11 @@ export default function AdsPerformancePage() {
                   {isAdmin && (
                     <td>
                       <div style={{ fontWeight: 600 }}>{p.adv?.name}</div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{p.adv?.teamType?.replace('ADV_', '')}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                        {Array.isArray(p.adv?.teamType) 
+                          ? p.adv.teamType.map((t: string) => t.replace('ADV_', '')).join(', ') 
+                          : (p.adv?.teamType as any)?.replace('ADV_', '')}
+                      </div>
                     </td>
                   )}
                   <td>{formatCurrency(p.spent)}</td>

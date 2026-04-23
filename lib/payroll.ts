@@ -16,9 +16,13 @@ export function calculateCSFee(
   cr: number = 0, // For CS Live
   program?: { feeClosing?: number, feeClosingRO?: number }
 ): number {
-  // 0. KHUSUS CS_RO: Selalu gunakan persentase 5% (Sesuai kebijakan terbaru)
+  // 0. PEMBERSIHAN KODE UNIK (Rounding down ke ribuan terdekat)
+  // Contoh: 200.536 menjadi 200.000
+  const basePrice = Math.floor(price / 1000) * 1000;
+
+  // 0. KHUSUS CS_RO: Selalu gunakan persentase 5% dari basePrice
   if (csCategory === 'CS_RO' || (isRO && csCategory !== 'CS_TOEFL')) {
-    return price * 0.05;
+    return basePrice * 0.05;
   }
 
   // 1. PRIORITAS: Pakai nominal fee dari Database jika > 0
@@ -79,7 +83,7 @@ export function calculateCSFee(
       return cr > 0.5 ? 2500 : 2000;
     }
     if (productType.includes('FAST') || productType.includes('PRIVATE')) {
-      return price * 0.05;
+      return basePrice * 0.05;
     }
   }
 
@@ -95,7 +99,7 @@ export function calculateCSFee(
       if (lowerName.includes("master")) return 5000;
     }
 
-    return price * 0.10; // Lain-lain: 10% x Harga Produk
+    return basePrice * 0.10; // Lain-lain: 10% x Harga Produk
   }
 
   if (csCategory === 'CS_RO') {

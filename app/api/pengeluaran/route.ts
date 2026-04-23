@@ -60,74 +60,84 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json();
-  const { jumlah, kategori, metodeBayar, keterangan, tanggal, urls } = body;
+    const body = await request.json();
+    const { jumlah, kategori, metodeBayar, keterangan, tanggal, urls } = body;
 
-  if (!jumlah || jumlah <= 0) {
-    return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
+    if (!jumlah || jumlah <= 0) {
+      return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
+    }
+
+    const pengeluaran = await prisma.pengeluaran.create({
+      data: {
+        tanggal: (() => {
+          if (!tanggal) return new Date();
+          const d = new Date(tanggal);
+          const now = new Date();
+          d.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+          return d;
+        })(),
+        jumlah,
+        kategori: kategori ?? "LAINNYA",
+        metodeBayar: metodeBayar ?? "CASH",
+        keterangan,
+        dibuatOleh: (session.user as any).id,
+        arsipNota: urls && Array.isArray(urls) && urls.length > 0 ? {
+          create: urls.map((url: string) => ({ urlFile: url }))
+        } : undefined
+      },
+      include: { arsipNota: true }
+    });
+
+    return NextResponse.json(pengeluaran, { status: 201 });
+  } catch (error: any) {
+    console.error("POST Pengeluaran Error:", error);
+    return NextResponse.json({ error: "Gagal menyimpan", details: error.message }, { status: 500 });
   }
-
-  const pengeluaran = await prisma.pengeluaran.create({
-    data: {
-      tanggal: (() => {
-        if (!tanggal) return new Date();
-        const d = new Date(tanggal);
-        const now = new Date();
-        d.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
-        return d;
-      })(),
-      jumlah,
-      kategori: kategori ?? "LAINNYA",
-      metodeBayar: metodeBayar ?? "CASH",
-      keterangan,
-      dibuatOleh: (session.user as any).id,
-      arsipNota: urls && Array.isArray(urls) && urls.length > 0 ? {
-        create: urls.map((url: string) => ({ urlFile: url }))
-      } : undefined
-    },
-    include: { arsipNota: true }
-  });
-
-  return NextResponse.json(pengeluaran, { status: 201 });
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json();
-  const { id, jumlah, kategori, metodeBayar, keterangan, tanggal, urls } = body;
+    const body = await request.json();
+    const { id, jumlah, kategori, metodeBayar, keterangan, tanggal, urls } = body;
 
-  if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
-  if (!jumlah || jumlah <= 0) {
-    return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
+    if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+    if (!jumlah || jumlah <= 0) {
+      return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
+    }
+
+    const pengeluaran = await prisma.pengeluaran.update({
+      where: { id },
+      data: {
+        tanggal: (() => {
+          if (!tanggal) return undefined;
+          const d = new Date(tanggal);
+          const now = new Date();
+          d.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
+          return d;
+        })(),
+        jumlah,
+        kategori,
+        metodeBayar,
+        keterangan,
+        arsipNota: urls && Array.isArray(urls) && urls.length > 0 ? {
+          create: urls.map((url: string) => ({ urlFile: url }))
+        } : undefined
+      },
+      include: { arsipNota: true }
+    });
+
+    return NextResponse.json(pengeluaran);
+  } catch (error: any) {
+    console.error("PUT Pengeluaran Error:", error);
+    return NextResponse.json({ error: "Gagal menyimpan", details: error.message }, { status: 500 });
   }
-
-  const pengeluaran = await prisma.pengeluaran.update({
-    where: { id },
-    data: {
-      tanggal: (() => {
-        if (!tanggal) return undefined;
-        const d = new Date(tanggal);
-        const now = new Date();
-        d.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
-        return d;
-      })(),
-      jumlah,
-      kategori,
-      metodeBayar,
-      keterangan,
-      arsipNota: urls && Array.isArray(urls) && urls.length > 0 ? {
-        create: urls.map((url: string) => ({ urlFile: url }))
-      } : undefined
-    },
-    include: { arsipNota: true }
-  });
-
-  return NextResponse.json(pengeluaran);
 }
 
 export async function DELETE(request: NextRequest) {

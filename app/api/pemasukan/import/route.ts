@@ -167,7 +167,16 @@ export async function POST(request: NextRequest) {
           });
         });
         successCount++;
-      } catch (err) {
+      } catch (err: any) {
+        if (failCount === 0) {
+          const fs = require('fs');
+          const errorLog = {
+            error: err.message,
+            stack: err.stack,
+            item: item
+          };
+          fs.appendFileSync('c:\\Users\\Muis M\\.gemini\antigravity\\scratch\\sisfo-keuangan\\scratch\\import_debug.log', "\n\nFIRST ERROR:\n" + JSON.stringify(errorLog, null, 2));
+        }
         failCount++;
         console.error("Row import error:", err);
       }

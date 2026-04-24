@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-04-24T05:43:01.516Z",
+  "firstRowKeys": [
+    "tanggal",
+    "nama_siswa",
+    "program",
+    "harga_normal",
+    "diskon",
+    "metode",
+    "nama_cs",
+    "ro",
+    "keterangan"
+  ],
+  "firstRowValues": {
+    "tanggal": "21/04/2026",
+    "nama_siswa": "Leni putri handayani",
+    "program": "49K LANJUTAN",
+    "harga_normal": "49000",
+    "diskon": "0",
+    "metode": "TRANSFER",
+    "nama_cs": "Elsa",
+    "ro": "1",
+    "keterangan": ""
+  },
+  "totalRows": 2355
+}

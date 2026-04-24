@@ -554,10 +554,14 @@ export default function PengeluaranPage() {
                       reader.onload = async (event) => {
                         const text = event.target?.result as string;
                         const lines = text.split("\n").filter(l => l.trim());
-                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-                        
+                        // Smart Delimiter Detection
+                        const commaCount = (lines[0].match(/,/g) || []).length;
+                        const semicolonCount = (lines[0].match(/;/g) || []).length;
+                        const delimiter = semicolonCount > commaCount ? ";" : ",";
+
+                        const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
                         const jsonData = lines.slice(1).map(line => {
-                          const values = line.split(",").map(v => v.trim());
+                          const values = line.split(delimiter).map(v => v.trim());
                           const obj: any = {};
                           headers.forEach((h, i) => {
                             obj[h] = values[i];

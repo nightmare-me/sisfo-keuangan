@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     if (!userId) return NextResponse.json({ error: "UserId required" }, { status: 400 });
 
     // Update User fields first
+    const { namaPanggilan, noHp } = body;
     await prisma.user.update({
       where: { id: userId },
       data: { namaPanggilan, noHp }
@@ -65,27 +66,27 @@ export async function POST(request: NextRequest) {
 
     const existing = await prisma.karyawanProfile.findUnique({ where: { userId } });
     
-    let nik = data.nik || existing?.nik;
-    if (nik === "SP-***** (Generated)") nik = null;
-
-    if (!nik) {
+    let nip = data.nip || existing?.nip;
+    if (!nip) {
       const lastProfile = await prisma.karyawanProfile.findFirst({
         where: { 
-          nik: { 
+          nip: { 
             startsWith: "SP-",
             not: null 
           } 
         },
-        orderBy: { nik: "desc" }
+        orderBy: { nip: "desc" }
       });
 
       let nextNum = 1;
-      if (lastProfile?.nik) {
-        const currentNum = parseInt(lastProfile.nik.replace("SP-", ""));
+      if (lastProfile?.nip) {
+        const currentNum = parseInt(lastProfile.nip.replace("SP-", ""));
         if (!isNaN(currentNum)) nextNum = currentNum + 1;
       }
-      nik = `SP-${nextNum.toString().padStart(5, "0")}`;
+      nip = `SP-${nextNum.toString().padStart(5, "0")}`;
     }
+
+    const nik = data.nik || existing?.nik;
 
     const formattedData = {
       ...data,
@@ -102,8 +103,8 @@ export async function POST(request: NextRequest) {
 
     const profile = await prisma.karyawanProfile.upsert({
       where: { userId },
-      update: { ...formattedData, nik },
-      create: { ...formattedData, userId, nik }
+      update: { ...formattedData, nip, nik },
+      create: { ...formattedData, userId, nip, nik }
     });
 
     return NextResponse.json(profile);

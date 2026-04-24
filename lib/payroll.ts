@@ -4,6 +4,7 @@
 
 export type CSCategory = 'CS_REGULAR' | 'CS_LIVE' | 'CS_TOEFL' | 'CS_RO' | 'CS_SOSMED' | 'CS_AFFILIATE';
 export type AdvCategory = 'ADV_REGULAR' | 'ADV_PART_TIME' | 'ADV_PROJECT';
+export type PayrollConfig = Record<string, number>;
 
 /**
  * Calculate CS Fee based on product and category
@@ -14,15 +15,17 @@ export function calculateCSFee(
   price: number,
   isRO: boolean = false,
   cr: number = 0, // For CS Live
-  program?: { feeClosing?: number, feeClosingRO?: number }
+  program?: { feeClosing?: number, feeClosingRO?: number },
+  config?: PayrollConfig
 ): number {
   // 0. PEMBERSIHAN KODE UNIK (Rounding down ke ribuan terdekat)
   // Contoh: 200.536 menjadi 200.000
   const basePrice = Math.floor(price / 1000) * 1000;
 
-  // 0. KHUSUS CS_RO: Selalu gunakan persentase 5% dari basePrice
+  // 0. KHUSUS CS_RO: Gunakan persentase dari Config atau default 5%
   if (csCategory === 'CS_RO' || (isRO && csCategory !== 'CS_TOEFL')) {
-    return basePrice * 0.05;
+    const roRate = config?.FEE_CS_RO_PERCENT || 0.05;
+    return basePrice * roRate;
   }
 
   // 1. PRIORITAS: Pakai nominal fee dari Database jika > 0
@@ -32,7 +35,7 @@ export function calculateCSFee(
   }
 
   if (csCategory === 'CS_AFFILIATE') {
-    return 25000;
+    return config?.FEE_AFFILIATE_FIXED || 25000;
   }
 
   // 2. CADANGAN: Pakai rumus hardcoded (untuk back-compatibility)
@@ -171,17 +174,18 @@ export function calculateBonusMultimediaEksternal(nettProfit: number): number {
 /**
  * Calculate TOEFL Profit Sharing for a user based on their position
  */
-export function calculateSharingTOEFL(toeflProfit: number, posisi: string): number {
-  const teamShare = toeflProfit * 0.5; // Tim TOEFL gets 50%
+export function calculateSharingTOEFL(toeflProfit: number, posisi: string, config?: PayrollConfig): number {
+  const teamShareRate = config?.SHARING_TOEFL_TEAM_PERCENT || 0.5;
+  const teamShare = toeflProfit * teamShareRate; 
   
   const rates: Record<string, number> = {
-    'CEO': 0.825,
-    'COO': 0.05,
-    'SPV AKADEMIK': 0.05,
-    'SPV ADV': 0.025,
-    'SPV MULTIMEDIA': 0.02,
-    'ASSISTANT CEO': 0.02,
-    'FINANCE': 0.01
+    'CEO': config?.RATE_SHARING_CEO || 0.825,
+    'COO': config?.RATE_SHARING_COO || 0.05,
+    'SPV AKADEMIK': config?.RATE_SHARING_SPV_AKADEMIK || 0.05,
+    'SPV ADV': config?.RATE_SHARING_SPV_ADV || 0.025,
+    'SPV MULTIMEDIA': config?.RATE_SHARING_SPV_MULTIMEDIA || 0.02,
+    'ASSISTANT CEO': config?.RATE_SHARING_ASSISTANT_CEO || 0.02,
+    'FINANCE': config?.RATE_SHARING_FINANCE || 0.01
   };
 
   const rate = rates[posisi.toUpperCase()] || 0;
@@ -191,14 +195,14 @@ export function calculateSharingTOEFL(toeflProfit: number, posisi: string): numb
 /**
  * Calculate Revenue-based Bonus (from Gross Profit)
  */
-export function calculateBonusGrossProfit(grossProfit: number, posisi: string): number {
+export function calculateBonusGrossProfit(grossProfit: number, posisi: string, config?: PayrollConfig): number {
   const rates: Record<string, number> = {
-    'CEO': 0.015,
-    'ASSISTANT CEO': 0.015,
-    'COO': 0.03,
-    'FINANCE': 0.01,
-    'SPV ADV': 0.015,
-    'SPV MULTIMEDIA': 0.015
+    'CEO': config?.BONUS_GROSS_CEO || 0.015,
+    'ASSISTANT CEO': config?.BONUS_GROSS_ASSISTANT_CEO || 0.015,
+    'COO': config?.BONUS_GROSS_COO || 0.03,
+    'FINANCE': config?.BONUS_GROSS_FINANCE || 0.01,
+    'SPV ADV': config?.BONUS_GROSS_SPV_ADV || 0.015,
+    'SPV MULTIMEDIA': config?.BONUS_GROSS_SPV_MULTIMEDIA || 0.015
   };
 
   const rate = rates[posisi.toUpperCase()] || 0;
@@ -208,6 +212,7 @@ export function calculateBonusGrossProfit(grossProfit: number, posisi: string): 
 /**
  * Calculate Salary from Live Hours
  */
-export function calculateGajiLive(totalJam: number): number {
-  return totalJam * 13500;
+export function calculateGajiLive(totalJam: number, config?: PayrollConfig): number {
+  const rate = config?.GAJI_LIVE_PER_JAM || 13500;
+  return totalJam * rate;
 }

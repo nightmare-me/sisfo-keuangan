@@ -26,6 +26,18 @@ export async function POST(request: NextRequest) {
     let skipCount = 0;
     const errors = [];
 
+    // Get the latest NIP once before starting the loop
+    const lastProfileBase = await prisma.karyawanProfile.findFirst({
+      where: { nip: { startsWith: "SP-", not: null } },
+      orderBy: { nip: "desc" }
+    });
+
+    let lastNum = 0;
+    if (lastProfileBase?.nip) {
+      const num = parseInt(lastProfileBase.nip.replace("SP-", ""));
+      if (!isNaN(num)) lastNum = num;
+    }
+
     for (const item of data) {
       try {
         const name = item.nama;
@@ -54,21 +66,40 @@ export async function POST(request: NextRequest) {
             data: {
               name,
               email,
+              namaPanggilan: item.nama_panggilan || item.namaPanggilan || null,
+              noHp: item.no_hp || item.noHp || null,
               password: hashedPassword,
               roleId: roleObj.id,
               aktif: true
             }
           });
 
+          // Get or Generate NIP
+          let nip = item.nip || undefined;
+          if (!nip) {
+            lastNum++;
+            nip = `SP-${lastNum.toString().padStart(5, "0")}`;
+          }
+
           await tx.karyawanProfile.create({
             data: {
               userId: user.id,
-              nik: String(item.nik || ""),
+              nip,
+              nik: item.nik ? String(item.nik) : null,
               posisi: item.posisi || "Pengajar",
-              bankName: item.bank,
-              rekeningNomor: String(item.no_rekening || ""),
-              rekeningNama: item.nama_rekening || name,
-              gajiPokok: 0
+              tempatLahir: item.tempat_lahir || item.tempatLahir || null,
+              tanggalLahir: (item.tanggal_lahir || item.tanggalLahir) ? new Date(item.tanggal_lahir || item.tanggalLahir) : null,
+              jenisKelamin: item.jenis_kelamin || item.jenisKelamin || null,
+              alamat: item.alamat || null,
+              statusPernikahan: item.status_pernikahan || item.statusPernikahan || null,
+              tanggalMasuk: (item.tanggal_masuk || item.tanggalMasuk) ? new Date(item.tanggal_masuk || item.tanggalMasuk) : new Date(),
+              tanggalResign: (item.tanggal_resign || item.tanggalResign) ? new Date(item.tanggal_resign || item.tanggalResign) : null,
+              kontakDarurat: item.kontak_darurat || item.kontakDarurat || null,
+              bankName: item.bank || item.bankName || null,
+              rekeningNomor: item.no_rekening || item.rekeningNomor || null,
+              rekeningNama: item.nama_rekening || item.rekeningNama || name,
+              gajiPokok: parseFloat(item.gajipokok || item.gajiPokok || 0),
+              tunjangan: parseFloat(item.tunjangan || 0)
             }
           });
         });

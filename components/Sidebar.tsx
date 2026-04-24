@@ -26,7 +26,8 @@ import {
   TrendingUp, 
   Clock,
   Contact,
-  ShieldCheck
+  ShieldCheck,
+  DollarSign
 } from "lucide-react";
 
 interface NavItem {
@@ -76,6 +77,7 @@ const navItems: NavGroup[] = [
     { href: "/karyawan", label: "Data Karyawan", icon: <Contact size={16} />, permission: "user:view" },
     { href: "/admin/sub-roles", label: "Manajemen Sub-Role", icon: <ShieldCheck size={16} />, permission: "settings:view" },
     { href: "/settings/roles", label: "Pengaturan Role", icon: <Package size={16} />, permission: "settings:view" },
+    { href: "/settings/financial", label: "Pengaturan Keuangan", icon: <DollarSign size={16} />, permission: "settings:view" },
     { href: "/logs", label: "Audit Log", icon: <History size={16} />, permission: "audit:view" },
     { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, permission: "archive:view" },
     { href: "/settings/wa", label: "Template WhatsApp", icon: <MessageCircle size={16} />, permission: "wa_template:view" },

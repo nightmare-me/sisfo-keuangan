@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
           data: { 
             name, email, password: hashedPassword, 
             roleId: roleObj.id, 
-            namaPanggilan: item.namaPanggilan || null,
-            noHp: item.noHp || null,
+            namaPanggilan: item.nama_panggilan || item.namaPanggilan || null,
+            noHp: item.no_hp || item.noHp || null,
             teamType: Array.isArray(teamType) ? teamType : (teamType ? [teamType] : [])
           } 
         });

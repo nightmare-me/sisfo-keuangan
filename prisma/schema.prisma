@@ -43,8 +43,9 @@ model User {
 model KaryawanProfile {
   id            String   @id @default(cuid())
   userId        String   @unique
-  nik              String?  @unique
-  posisi           String?
+  nip           String?  @unique
+  nik           String?  @unique
+  posisi        String?
   tempatLahir      String?
   tanggalLahir     DateTime?
   jenisKelamin     String?
@@ -558,3 +559,13 @@ model ArsipNota {
   createdAt     DateTime     @default(now())
   pengeluaran   Pengeluaran  @relation(fields: [pengeluaranId], references: [id], onDelete: Cascade)
 }
+  
+model FinancialConfig {  
+  id          String   @id @default(cuid())  
+  key         String   @unique  
+  value       Float  
+  label       String  
+  description String?  
+  category    String   @default("GENERAL")
+  updatedAt   DateTime @updatedAt
+} 

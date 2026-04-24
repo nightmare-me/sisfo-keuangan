@@ -39,6 +39,7 @@ export default function KaryawanPage() {
   const [saving, setSaving] = useState(false);
   
   const [form, setForm] = useState({
+    nip: "",
     nik: "", 
     namaPanggilan: "",
     posisi: "", 
@@ -129,6 +130,7 @@ export default function KaryawanPage() {
     setSelectedKaryawan(user);
     const p = user.karyawanProfile || {};
     setForm({
+      nip: p.nip || "",
       nik: p.nik || "",
       namaPanggilan: user.namaPanggilan || "",
       posisi: p.posisi || "",
@@ -250,7 +252,8 @@ export default function KaryawanPage() {
                   <input type="checkbox" checked={selectedIds.length === filtered.length && filtered.length > 0} onChange={toggleSelectAll} style={{ cursor: 'pointer' }} />
                 </th>
                 <th>Karyawan</th>
-                <th>NIK</th>
+                <th>NIP</th>
+                <th>NIK (KTP)</th>
                 <th>Posisi</th>
                 <th className="text-right">Gaji Pokok</th>
                 <th className="text-right">Tunjangan</th>
@@ -272,7 +275,8 @@ export default function KaryawanPage() {
                     <div style={{ fontWeight: 700 }}>{u.name}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.email}</div>
                   </td>
-                  <td><code style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>{u.karyawanProfile?.nik || "-"}</code></td>
+                  <td><code style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-bg)', padding: '2px 6px', borderRadius: 4 }}>{u.karyawanProfile?.nip || "-"}</code></td>
+                  <td><span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{u.karyawanProfile?.nik || "-"}</span></td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{u.karyawanProfile?.posisi || "-"}</div>
                     <div style={{ fontSize: 10, color: "var(--secondary)", textTransform: 'uppercase' }}>{u.role?.name}</div>
@@ -377,14 +381,18 @@ export default function KaryawanPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>
                       <Briefcase size={16} /> DATA KEPEGAWAIAN
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+                      <div className="form-group">
+                        <label className="form-label">NIP (Otomatis)</label>
+                        <input type="text" className="form-control" style={{ background: 'var(--surface-container-low)', fontWeight: 700 }} value={form.nip} onChange={e => setForm(f => ({ ...f, nip: e.target.value }))} placeholder="SP-***** (Auto)" />
+                      </div>
                       <div className="form-group">
                         <label className="form-label">NIK (Sesuai KTP)</label>
-                        <input type="text" className="form-control" placeholder="16 Digit NIK" value={form.nik} onChange={e => setForm(f => ({ ...f, nik: e.target.value }))} />
+                        <input type="text" className="form-control" placeholder="16 Digit NIK KTP" value={form.nik} onChange={e => setForm(f => ({ ...f, nik: e.target.value }))} />
                       </div>
                       <div className="form-group">
                         <label className="form-label">Posisi / Jabatan</label>
-                        <input type="text" className="form-control" placeholder="Contoh: Manager, Senior CS..." value={form.posisi} onChange={e => setForm(f => ({ ...f, posisi: e.target.value }))} />
+                        <input type="text" className="form-control" placeholder="Cth: Manager, CS..." value={form.posisi} onChange={e => setForm(f => ({ ...f, posisi: e.target.value }))} />
                       </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -508,15 +516,14 @@ export default function KaryawanPage() {
                   Gunakan format CSV berikut untuk mengimpor data masal. Baris pertama wajib judul kolom.
                 </p>
                 <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
-                  email,nama,role,nik,posisi,gajipokok,tunjangan,bank,rekeningnomor,rekeningnama
+                  email,nama,nama_panggilan,no_hp,role,nip,nik,posisi,tempat_lahir,tanggal_lahir,jenis_kelamin,status_pernikahan,alamat,tanggal_masuk,tanggal_resign,kontak_darurat,bank,rekeningnomor,rekeningnama,gajipokok,tunjangan
                 </div>
                 <button 
                   className="btn btn-sm" 
                   style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
                   onClick={() => {
-                    const csvContent = "email,nama,role,nik,posisi,gajipokok,tunjangan,bank,rekeningnomor,rekeningnama\n" +
-                                     "budi@example.com,Budi Santoso,CS,SP-00001,Customer Service,3500000,500000,BCA,123456789,Budi Santoso\n" +
-                                     "siti@example.com,Siti Aminah,Finance,SP-00002,Finance Staff,4000000,750000,Mandiri,987654321,Siti Aminah";
+                    const csvContent = "email,nama,nama_panggilan,no_hp,role,nip,nik,posisi,tempat_lahir,tanggal_lahir,jenis_kelamin,status_pernikahan,alamat,tanggal_masuk,tanggal_resign,kontak_darurat,bank,rekeningnomor,rekeningnama,gajipokok,tunjangan\n" +
+                                     "budi@example.com,Budi Santoso,Budi,0812345678,CS,SP-00001,1234567890123456,Customer Service,Jakarta,1990-01-01,LAKI-LAKI,MENIKAH,Jl. Merdeka No.1,2023-01-01,,Ibu Siti (0813),BCA,123456789,Budi Santoso,3500000,500000\n";
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
@@ -545,10 +552,14 @@ export default function KaryawanPage() {
                       reader.onload = async (event) => {
                         const text = event.target?.result as string;
                         const lines = text.split("\n").filter(l => l.trim());
-                        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-                        
                         const jsonData = lines.slice(1).map(line => {
-                          const values = line.split(",").map(v => v.trim());
+                          // Smart Delimiter Detection
+                          const commaCount = (line.match(/,/g) || []).length;
+                          const semicolonCount = (line.match(/;/g) || []).length;
+                          const delimiter = semicolonCount > commaCount ? ";" : ",";
+                          
+                          const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+                          const values = line.split(delimiter).map(v => v.trim());
                           const obj: any = {};
                           headers.forEach((h, i) => {
                             obj[h] = values[i];

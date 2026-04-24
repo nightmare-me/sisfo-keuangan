@@ -22,6 +22,18 @@ export async function POST(request: NextRequest) {
     // Pre-cache all roles for matching
     const allRoles = await prisma.role.findMany();
 
+    // Get the latest NIP once before starting the loop to avoid race conditions
+    const lastProfileBase = await prisma.karyawanProfile.findFirst({
+      where: { nip: { startsWith: "SP-", not: null } },
+      orderBy: { nip: "desc" }
+    });
+
+    let lastNum = 0;
+    if (lastProfileBase?.nip) {
+      const num = parseInt(lastProfileBase.nip.replace("SP-", ""));
+      if (!isNaN(num)) lastNum = num;
+    }
+
     for (const item of data) {
       try {
         const email = item.email?.toLowerCase().trim();
@@ -43,41 +55,56 @@ export async function POST(request: NextRequest) {
             data: {
               email,
               name: item.nama || "Karyawan Baru",
+              namaPanggilan: item.nama_panggilan || null,
+              noHp: item.no_hp || null,
               password: hashedPassword,
               roleId: targetRole?.id || allRoles[0]?.id || "",
               aktif: true
             }
           });
-        } else if (targetRole) {
-          // Update role if user already exists
+        } else {
+          // Update user if already exists
           await prisma.user.update({
             where: { id: user.id },
-            data: { roleId: targetRole.id }
+            data: { 
+              roleId: targetRole?.id || undefined,
+              namaPanggilan: item.nama_panggilan || undefined,
+              noHp: item.no_hp || undefined,
+            }
           });
         }
 
+        // Get or Generate NIP
+        let nip = item.nip || undefined;
+        if (!nip) {
+          lastNum++;
+          nip = `SP-${lastNum.toString().padStart(5, "0")}`;
+        }
+
         // Upsert KaryawanProfile
+        const profileData: any = {
+          nip,
+          nik: item.nik || undefined,
+          posisi: item.posisi || undefined,
+          tempatLahir: item.tempat_lahir || undefined,
+          tanggalLahir: item.tanggal_lahir ? new Date(item.tanggal_lahir) : undefined,
+          jenisKelamin: item.jenis_kelamin || undefined,
+          alamat: item.alamat || undefined,
+          statusPernikahan: item.status_pernikahan || undefined,
+          tanggalMasuk: item.tanggal_masuk ? new Date(item.tanggal_masuk) : undefined,
+          tanggalResign: item.tanggal_resign ? new Date(item.tanggal_resign) : undefined,
+          kontakDarurat: item.kontak_darurat || undefined,
+          gajiPokok: parseFloat(item.gajipokok || 0),
+          tunjangan: parseFloat(item.tunjangan || 0),
+          bankName: item.bank || undefined,
+          rekeningNomor: item.rekeningnomor || undefined,
+          rekeningNama: item.rekeningnama || undefined,
+        };
+
         await prisma.karyawanProfile.upsert({
           where: { userId: user.id },
-          update: {
-            nik: item.nik || undefined,
-            posisi: item.posisi || undefined,
-            gajiPokok: parseFloat(item.gajipokok || 0),
-            tunjangan: parseFloat(item.tunjangan || 0),
-            bankName: item.bank || undefined,
-            rekeningNomor: item.rekeningnomor || undefined,
-            rekeningNama: item.rekeningnama || undefined,
-          },
-          create: {
-            userId: user.id,
-            nik: item.nik || null,
-            posisi: item.posisi || "Staf",
-            gajiPokok: parseFloat(item.gajipokok || 0),
-            tunjangan: parseFloat(item.tunjangan || 0),
-            bankName: item.bank || null,
-            rekeningNomor: item.rekeningnomor || null,
-            rekeningNama: item.rekeningnama || null,
-          }
+          update: profileData,
+          create: { ...profileData, userId: user.id }
         });
 
         successCount++;

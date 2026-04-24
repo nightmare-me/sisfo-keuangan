@@ -186,7 +186,8 @@ export default function PengajarPage() {
             <thead>
               <tr>
                 <th>Nama & Email</th>
-                <th>NIK</th>
+                <th>NIP</th>
+                <th>NIK (KTP)</th>
                 <th>Posisi / Spesialisasi</th>
                 <th>Informasi Bank</th>
                 <th>Status</th>
@@ -216,6 +217,7 @@ export default function PengajarPage() {
                       </div>
                     </div>
                   </td>
+                  <td><code style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-bg)', padding: '2px 6px', borderRadius: 4 }}>{t.karyawanProfile?.nip || "-"}</code></td>
                   <td style={{ fontSize: 13, fontFamily: 'monospace' }}>{t.karyawanProfile?.nik || "—"}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{t.karyawanProfile?.posisi || "Pengajar"}</div>

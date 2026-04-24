@@ -25,6 +25,13 @@ export async function GET(request: NextRequest) {
     const dayStart = startOfMonth(new Date(tahun, bulan - 1));
     const dayEnd = endOfMonth(new Date(tahun, bulan - 1));
 
+    // 0. AMBIL CONFIG KEUANGAN DARI DB
+    const dbConfigs = await prisma.financialConfig.findMany();
+    const config: Record<string, number> = {};
+    dbConfigs.forEach(c => {
+      config[c.key] = c.value;
+    });
+
     // 1. HITUNG METRIK GLOBAL (Profit)
     const [pemasukanAll, approvedRefunds, pengeluaranAll, adsAll] = await Promise.all([
       prisma.pemasukan.findMany({ 
@@ -58,7 +65,8 @@ export async function GET(request: NextRequest) {
         p.hargaFinal,
         p.isRO,
         0,
-        p.program || undefined
+        p.program || undefined,
+        config
       );
     });
 
@@ -103,7 +111,7 @@ export async function GET(request: NextRequest) {
 
       // A. Hitung Gaji Live
       const totalJam = emp.liveSessions.reduce((s: number, l: any) => s + l.durasi, 0);
-      extraGaji += calculateGajiLive(totalJam);
+      extraGaji += calculateGajiLive(totalJam, config);
 
       // B. Hitung Fee CS (Jika Role CS)
       if (roleSlug === "cs") {
@@ -122,7 +130,8 @@ export async function GET(request: NextRequest) {
             p.hargaFinal,
             p.isRO,
             0,
-            p.program || undefined
+            p.program || undefined,
+            config
           );
         });
       }
@@ -145,8 +154,8 @@ export async function GET(request: NextRequest) {
       }
 
       // F. Profit Shared Bonuses (CEO, COO, SPV, etc)
-      totalBonus += calculateBonusGrossProfit(grossProfit, posisi);
-      totalBonus += calculateSharingTOEFL(toeflProfit, posisi);
+      totalBonus += calculateBonusGrossProfit(grossProfit, posisi, config);
+      totalBonus += calculateSharingTOEFL(toeflProfit, posisi, config);
 
       const subtotal = profile.gajiPokok + profile.tunjangan + totalFee + totalBonus + extraGaji;
 

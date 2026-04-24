@@ -2,10 +2,16 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: One-Gate Ads Import (v4.28) 🚀 (TERBARU!)
-*   **Integrated Workflow**: Penggabungan alur *import* data pengeluaran iklan. Satu kali unggah CSV di menu "Spent Ads" akan mendistribusikan data ke modul "Spent Ads" (Keuangan) dan "Performa Iklan" (Advertiser).
-*   **Smart Column Detection**: Penambahan kolom `leads` dan `email_advertiser` pada template CSV. Sistem secara otomatis menghitung *Cost Per Lead* (CPL) dan kalkulasi Bonus Fee bagi advertiser jika kolom tersebut diisi.
-*   **Transaction Safety**: Menggunakan *Prisma Transaction* untuk menjamin konsistensi data antara rekap finansial perusahaan dan bonus performa karyawan.
+## 📢 Fitur Baru: Dynamic Finance & Universal Personnel (v4.50) 🚀 (TERBARU!)
+*   **Dynamic Financial Settings**: Semua parameter penggajian (Fee Live, Bonus Omset, Sharing Profit TOEFL) kini dapat dikelola langsung via UI di menu "Pengaturan Keuangan". Tidak ada lagi angka yang ditanam kaku (hardcode) di kode program.
+*   **Hard Reset Utility**: Penambahan alat pembersih database yang komprehensif untuk menghapus seluruh data transaksi, siswa, dan profil karyawan secara aman (menyisakan akun Admin) saat persiapan *go-live*.
+*   **Universal NIP/NIK Separation**: Pemisahan total antara Nomor Induk Pegawai (NIP - Otomatis) dan Nomor Induk Kependudukan (NIK/KTP - Manual) yang berlaku seragam di modul Karyawan maupun Pengajar.
+*   **Smart NIP Generator**: Sistem pelacakan urutan otomatis yang cerdas untuk menjamin keunikan NIP saat penginputan manual maupun *import* massal ribuan data sekaligus via CSV.
+*   **Unified Personnel Management**: Sinkronisasi format data, template import, dan tampilan tabel antara modul Staf Administrasi dan Pengajar untuk efisiensi manajemen SDM.
+
+---
+
+## 📢 Fitur Sebelumnya: One-Gate Ads Import (v4.28) 🚀
 
 ---
 

@@ -191,18 +191,20 @@ export default function UsersPage() {
 
   // ── CSV Import ───────────────────────────────────────────
   function downloadCsvTemplate() {
-    const header = "nama,email,password,role\n";
+    const header = "nama,nama_panggilan,no_hp,email,password,role\n";
     const examples = [
-      "Rizky Pratama,rizky@speakingpartner.id,password123,CS",
-      "Sari Dewi,sari@speakingpartner.id,password123,CS",
-      "Budi Setiawan,budi@speakingpartner.id,password123,PENGAJAR",
-      "Ani Rahayu,ani@speakingpartner.id,password123,PENGAJAR",
-      "Kasir Satu,finance1@speakingpartner.id,password123,FINANCE",
+      "Rizky Pratama,Rizky,08123456789,rizky@speakingpartner.id,password123,CS",
+      "Sari Dewi,Sari,08123456780,sari@speakingpartner.id,password123,CS",
+      "Budi Setiawan,Budi,08123456781,budi@speakingpartner.id,password123,PENGAJAR",
+      "Ani Rahayu,Ani,08123456782,ani@speakingpartner.id,password123,PENGAJAR",
+      "Kasir Satu,Kasir,08123456783,finance1@speakingpartner.id,password123,FINANCE",
     ].join("\n") + "\n";
     const notes = [
       "",
       "# PANDUAN:",
       "# - nama: nama lengkap user",
+      "# - nama_panggilan: panggilan user",
+      "# - no_hp: nomor whatsapp",
       "# - email: harus unik, digunakan untuk login",
       "# - password: minimal 6 karakter",
       "# - role: ADMIN / FINANCE / CS / PENGAJAR / AKADEMIK",
@@ -223,12 +225,23 @@ export default function UsersPage() {
       .slice(1); // skip header
 
     const users = lines.map(line => {
-      const delimiter = line.includes(";") ? ";" : ",";
-      const [name, email, password, roleRaw] = line.split(delimiter).map(c => c.trim().replace(/^"|"$/g, ""));
+      // Smart Delimiter Detection
+      const commaCount = (line.match(/,/g) || []).length;
+      const semicolonCount = (line.match(/;/g) || []).length;
+      const delimiter = semicolonCount > commaCount ? ";" : ",";
+
+      const [name, nickname, phone, email, password, roleRaw] = line.split(delimiter).map(c => c.trim().replace(/^"|"$/g, ""));
       // Cari role slug yang cocok, default ke 'cs'
       const matchedRole = roles.find(r => r.slug === (roleRaw || "").toLowerCase());
       const roleSlug = matchedRole ? matchedRole.slug : "cs";
-      return { name, email, password, roleSlug };
+      return { 
+        name, 
+        namaPanggilan: nickname, 
+        noHp: phone, 
+        email, 
+        password, 
+        roleSlug 
+      };
     }).filter(u => u.name && u.email && u.password);
 
     if (users.length === 0) { setCsvLoading(false); alert("Tidak ada data valid di CSV."); if (fileRef.current) fileRef.current.value = ""; return; }

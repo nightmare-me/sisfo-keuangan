@@ -57,27 +57,30 @@ export async function POST(request: NextRequest) {
 
     if (!userId) return NextResponse.json({ error: "UserId required" }, { status: 400 });
 
-    // Update User fields first
-    const { namaPanggilan, noHp } = body;
+    const { 
+      namaPanggilan, noHp, 
+      nip: inputNip, nik: inputNik, 
+      ...profileFields 
+    } = data;
+
+    // 1. Update User fields
     await prisma.user.update({
       where: { id: userId },
-      data: { namaPanggilan, noHp }
+      data: { 
+        namaPanggilan: namaPanggilan || undefined, 
+        noHp: noHp || undefined 
+      }
     });
 
     const existing = await prisma.karyawanProfile.findUnique({ where: { userId } });
     
-    let nip = data.nip || existing?.nip;
+    // 2. Handle NIP
+    let nip = inputNip || existing?.nip;
     if (!nip) {
       const lastProfile = await prisma.karyawanProfile.findFirst({
-        where: { 
-          nip: { 
-            startsWith: "SP-",
-            not: null 
-          } 
-        },
+        where: { nip: { startsWith: "SP-", not: null } },
         orderBy: { nip: "desc" }
       });
-
       let nextNum = 1;
       if (lastProfile?.nip) {
         const currentNum = parseInt(lastProfile.nip.replace("SP-", ""));
@@ -86,25 +89,44 @@ export async function POST(request: NextRequest) {
       nip = `SP-${nextNum.toString().padStart(5, "0")}`;
     }
 
-    const nik = data.nik || existing?.nik;
+    // 3. Handle NIK (Unique check)
+    const nik = inputNik || null;
+    if (nik) {
+      const nikExists = await prisma.karyawanProfile.findFirst({
+        where: { nik, NOT: { userId } }
+      });
+      if (nikExists) return NextResponse.json({ error: "NIK sudah digunakan oleh karyawan lain" }, { status: 400 });
+    }
 
-    const formattedData = {
-      ...data,
-      gajiPokok: parseFloat(data.gajiPokok || 0),
-      tunjangan: parseFloat(data.tunjangan || 0),
-      feeClosing: parseFloat(data.feeClosing || 0),
-      feeLead: parseFloat(data.feeLead || 0),
-      bonusTarget: parseInt(data.bonusTarget || 0),
-      bonusNominal: parseFloat(data.bonusNominal || 0),
-      tanggalLahir: data.tanggalLahir ? new Date(data.tanggalLahir) : null,
-      tanggalMasuk: data.tanggalMasuk ? new Date(data.tanggalMasuk) : null,
-      tanggalResign: data.tanggalResign ? new Date(data.tanggalResign) : null,
+    // 4. Format Numeric & Date Fields
+    const finalProfileData = {
+      posisi: profileFields.posisi || null,
+      tempatLahir: profileFields.tempatLahir || null,
+      tanggalLahir: profileFields.tanggalLahir ? new Date(profileFields.tanggalLahir) : null,
+      jenisKelamin: profileFields.jenisKelamin || null,
+      alamat: profileFields.alamat || null,
+      statusPernikahan: profileFields.statusPernikahan || null,
+      tanggalMasuk: profileFields.tanggalMasuk ? new Date(profileFields.tanggalMasuk) : null,
+      tanggalResign: profileFields.tanggalResign ? new Date(profileFields.tanggalResign) : null,
+      kontakDarurat: profileFields.kontakDarurat || null,
+      bankName: profileFields.bankName || null,
+      rekeningNomor: profileFields.rekeningNomor || null,
+      rekeningNama: profileFields.rekeningNama || null,
+      keterangan: profileFields.keterangan || null,
+      gajiPokok: parseFloat(profileFields.gajiPokok || 0),
+      tunjangan: parseFloat(profileFields.tunjangan || 0),
+      feeClosing: parseFloat(profileFields.feeClosing || 0),
+      feeLead: parseFloat(profileFields.feeLead || 0),
+      bonusTarget: parseInt(profileFields.bonusTarget || 0),
+      bonusNominal: parseFloat(profileFields.bonusNominal || 0),
+      nip,
+      nik
     };
 
     const profile = await prisma.karyawanProfile.upsert({
       where: { userId },
-      update: { ...formattedData, nip, nik },
-      create: { ...formattedData, userId, nip, nik }
+      update: finalProfileData,
+      create: { ...finalProfileData, userId }
     });
 
     return NextResponse.json(profile);

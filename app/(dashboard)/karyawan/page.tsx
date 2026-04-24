@@ -166,14 +166,17 @@ export default function KaryawanPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: selectedKaryawan.id, ...form })
       });
+      
+      const result = await res.json();
+
       if (res.ok) {
         setShowModal(false);
         fetchData();
       } else {
-        alert("Gagal menyimpan data karyawan");
+        alert(result.error || "Gagal menyimpan data karyawan");
       }
-    } catch (e) {
-      alert("Error saving data");
+    } catch (e: any) {
+      alert("Error: " + (e.message || "Gagal menyimpan data"));
     } finally {
       setSaving(false);
     }

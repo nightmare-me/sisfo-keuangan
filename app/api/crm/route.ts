@@ -15,39 +15,78 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "50");
+  const search = searchParams.get("search") || "";
+
+  const skip = (page - 1) * limit;
 
   let where: any = {};
 
-  // Jika role = CS, hanya tampilkan lead miliknya ATAU lead baru (belum diassign)
+  // Search filter
+  if (search) {
+    where.OR = [
+      { nama: { contains: search, mode: 'insensitive' } },
+      { whatsapp: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  // Role & Status logic
   if (role === "CS") {
-    where = {
-      OR: [
-        { csId: userId },
-        { status: "NEW", csId: null }
-      ]
-    };
+    const csWhere = { OR: [{ csId: userId }, { status: "NEW", csId: null }] };
+    if (where.OR) {
+      where = { AND: [where, csWhere] };
+    } else {
+      Object.assign(where, csWhere);
+    }
+    
     if (status) {
-       where = {
-         AND: [
-           { status: status },
-           { OR: [{ csId: userId }, { status: "NEW", csId: null }] }
-         ]
-       };
+      if (where.AND) {
+        where.AND.push({ status });
+      } else {
+        where.status = status;
+      }
     }
   } else if (status) {
     where.status = status;
   }
 
-  const leads = await prisma.lead.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: {
-      program: { select: { nama: true } },
-      cs: { select: { name: true } },
-    },
+  // Get data with pagination & total counts
+  const [leads, total, statusCounts] = await Promise.all([
+    prisma.lead.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        program: { select: { nama: true } },
+        cs: { select: { name: true } },
+      },
+    }),
+    prisma.lead.count({ where }),
+    prisma.lead.groupBy({
+      by: ['status'],
+      where,
+      _count: true
+    })
+  ]);
+
+  // Convert groupBy array to object { NEW: 10, PAID: 5, ... }
+  const counts: any = {};
+  statusCounts.forEach(c => {
+    counts[c.status] = c._count;
   });
 
-  return NextResponse.json(leads);
+  return NextResponse.json({
+    data: leads,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      counts
+    }
+  });
 }
 
 export async function PUT(request: NextRequest) {

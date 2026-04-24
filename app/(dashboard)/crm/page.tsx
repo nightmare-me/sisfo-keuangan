@@ -56,6 +56,14 @@ export default function CRMPage() {
   const [leads, setLeads] = useState<any[]>([]);
   const [csStats, setCsStats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
+  const [totalData, setTotalData] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [metaCounts, setMetaCounts] = useState<any>({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeStatus, setActiveStatus] = useState<string | null>(null);
+
   const [waTemplates, setWaTemplates] = useState<any[]>([]);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [convertingLead, setConvertingLead] = useState(false);
@@ -89,10 +97,25 @@ export default function CRMPage() {
   });
   const [programs, setPrograms] = useState<any[]>([]);
 
-  function fetchData() {
-    fetch(`/api/crm?v=${Date.now()}`)
+  function fetchData(p = page, l = limit, s = searchTerm, st = activeStatus) {
+    setLoading(true);
+    const params = new URLSearchParams({
+      page: p.toString(),
+      limit: l.toString(),
+      search: s,
+      v: Date.now().toString()
+    });
+    if (st) params.append("status", st);
+
+    fetch(`/api/crm?${params.toString()}`)
       .then(r => r.json())
-      .then(d => { setLeads(Array.isArray(d) ? d : []); setLoading(false); })
+      .then(d => { 
+        setLeads(Array.isArray(d.data) ? d.data : []); 
+        setTotalData(d.meta?.total || 0);
+        setTotalPages(d.meta?.totalPages || 1);
+        setMetaCounts(d.meta?.counts || {});
+        setLoading(false); 
+      })
       .catch(() => setLoading(false));
 
     fetch(`/api/crm/stats?t=${Date.now()}`)
@@ -100,8 +123,20 @@ export default function CRMPage() {
       .then(d => setCsStats(Array.isArray(d) ? d : []));
   }
 
-  useEffect(() => { 
-    fetchData(); 
+  // Debounced Search logic
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setPage(1);
+      fetchData(1, limit, searchTerm, activeStatus);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  // Effect for pagination & status changes
+  useEffect(() => {
+    fetchData(page, limit, searchTerm, activeStatus);
+  }, [page, limit, activeStatus]);
     fetch("/api/public/programs").then(r => r.json()).then(d => setPrograms(Array.isArray(d) ? d : []));
     fetch("/api/settings/wa-templates")
       .then(async r => {
@@ -308,32 +343,32 @@ export default function CRMPage() {
           <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "var(--primary)", marginBottom: 8, width: 40, height: 40 }}><Users size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Total Order / Lead</div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.length}</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{totalData}</div>
           </div>
           <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "var(--success)", marginBottom: 8, width: 40, height: 40 }}><CheckCircle2 size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Total Terbayar</div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'PAID' || l.status === 'LUNAS').length}</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{(metaCounts["PAID"] || 0) + (metaCounts["LUNAS"] || 0)}</div>
           </div>
           <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "var(--warning)", marginBottom: 8, width: 40, height: 40 }}><TrendingUp size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Rasio Bayar</div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.length > 0 ? (((leads.filter(l => l.status === 'PAID' || l.status === 'LUNAS').length) / leads.length) * 100).toFixed(0) : 0}%</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{totalData > 0 ? ((((metaCounts["PAID"] || 0) + (metaCounts["LUNAS"] || 0)) / totalData) * 100).toFixed(0) : 0}%</div>
           </div>
-          <div className="kpi-card" style={{ "--kpi-color": "var(--danger)", "--kpi-bg": "var(--danger-bg)", padding: 16 } as any}>
-            <div className="kpi-icon" style={{ color: "var(--danger)", marginBottom: 8, width: 40, height: 40 }}><Clock size={20} /></div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)", padding: 16 } as any}>
+            <div className="kpi-icon" style={{ color: "var(--warning)", marginBottom: 8, width: 40, height: 40 }}><Clock size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Menunggu Bayar</div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'PENDING').length}</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{metaCounts["PENDING"] || 0}</div>
           </div>
           <div className="kpi-card" style={{ "--kpi-color": "#ef4444", "--kpi-bg": "rgba(239, 68, 68, 0.1)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "#ef4444", marginBottom: 8, width: 40, height: 40 }}><RotateCcw size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Refunded</div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'REFUNDED').length}</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{metaCounts["REFUNDED"] || 0}</div>
           </div>
           <div className="kpi-card" style={{ "--kpi-color": "#64748b", "--kpi-bg": "rgba(100, 116, 139, 0.1)", padding: 16 } as any}>
             <div className="kpi-icon" style={{ color: "#64748b", marginBottom: 8, width: 40, height: 40 }}><Trash2 size={20} /></div>
             <div className="kpi-label" style={{ fontSize: 10 }}>Cancelled</div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>{leads.filter(l => l.status === 'CANCELLED').length}</div>
+            <div className="kpi-value" style={{ fontSize: 20 }}>{metaCounts["CANCELLED"] || 0}</div>
           </div>
         </div>
       </div>
@@ -345,8 +380,15 @@ export default function CRMPage() {
           <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--ghost-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)' }}>
              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 <div style={{ position: 'relative' }}>
-                  <Users size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                  <input type="text" className="form-control form-control-sm" placeholder="Cari nama atau WA..." style={{ paddingLeft: 36, width: 240 }} />
+                  <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input 
+                    type="text" 
+                    className="form-control form-control-sm" 
+                    placeholder="Cari nama atau WA..." 
+                    style={{ paddingLeft: 36, width: 240 }} 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
                 
                 {/* Estimasi Fee & CR untuk CS Login */}
@@ -367,7 +409,19 @@ export default function CRMPage() {
              </div>
              
              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span className="text-secondary" style={{ fontSize: 13 }}>Tampil <span style={{ fontWeight: 800 }}>{leads.length}</span> Data</span>
+                <select 
+                  className="form-control form-control-sm" 
+                  style={{ width: 140, fontSize: 12 }}
+                  value={activeStatus || ""}
+                  onChange={(e) => {
+                    setActiveStatus(e.target.value || null);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">Semua Status</option>
+                  {COLUMNS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                </select>
+                <span className="text-secondary" style={{ fontSize: 13 }}>Tampil <span style={{ fontWeight: 800 }}>{leads.length}</span> dari <span style={{ fontWeight: 800 }}>{totalData}</span> Data</span>
                 {isSuper && (
                   <div style={{ background: 'var(--surface)', padding: '6px 14px', borderRadius: 10, fontSize: 11, border: '1px solid var(--ghost-border)', display: 'flex', alignItems: 'center', gap: 8 }}>
                      <TrendingUp size={14} color="var(--primary)" />
@@ -577,6 +631,51 @@ export default function CRMPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--ghost-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Baris per halaman:</span>
+                <select 
+                  className="form-control form-control-sm" 
+                  style={{ width: 80 }}
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(parseInt(e.target.value));
+                    setPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
+             </div>
+
+             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                   Halaman <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{page}</span> dari <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{totalPages}</span>
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     disabled={page <= 1 || loading}
+                     onClick={() => setPage(prev => prev - 1)}
+                     style={{ padding: '4px 12px' }}
+                   >
+                     Sebelumnya
+                   </button>
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     disabled={page >= totalPages || loading}
+                     onClick={() => setPage(prev => prev + 1)}
+                     style={{ padding: '4px 12px' }}
+                   >
+                     Selanjutnya
+                   </button>
+                </div>
+             </div>
           </div>
         </div>
       </div>

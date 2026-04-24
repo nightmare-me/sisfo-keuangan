@@ -302,6 +302,13 @@ model Lead {
   updatedAt        DateTime   @updatedAt
   cs               User?      @relation("CSLeads", fields: [csId], references: [id])
   program          Program?   @relation(fields: [programId], references: [id])
+
+  @@index([nama])
+  @@index([whatsapp])
+  @@index([status])
+  @@index([csId])
+  @@index([createdAt])
+  @@index([programId])
 }
 
 model SesiKelas {

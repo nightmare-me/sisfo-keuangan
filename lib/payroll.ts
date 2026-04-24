@@ -112,10 +112,6 @@ export function calculateCSFee(
     return basePrice * defaultToeflRate; // Lain-lain: 10% x Harga Produk
   }
 
-  if (csCategory === 'CS_RO') {
-    return price * 0.05;
-  }
-
   return 0;
 }
 

@@ -82,6 +82,9 @@ export async function POST(request: NextRequest) {
       feeLead: parseFloat(data.feeLead || 0),
       bonusTarget: parseInt(data.bonusTarget || 0),
       bonusNominal: parseFloat(data.bonusNominal || 0),
+      tanggalLahir: data.tanggalLahir ? new Date(data.tanggalLahir) : null,
+      tanggalMasuk: data.tanggalMasuk ? new Date(data.tanggalMasuk) : null,
+      tanggalResign: data.tanggalResign ? new Date(data.tanggalResign) : null,
     };
 
     const profile = await prisma.karyawanProfile.upsert({

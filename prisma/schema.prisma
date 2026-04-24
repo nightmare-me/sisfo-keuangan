@@ -41,21 +41,31 @@ model User {
 model KaryawanProfile {
   id            String   @id @default(cuid())
   userId        String   @unique
-  nik           String?  @unique
-  posisi        String?
-  bankName      String?
-  rekeningNomor String?
-  rekeningNama  String?
-  gajiPokok     Float    @default(0)
-  tunjangan     Float    @default(0)
-  feeClosing    Float    @default(0)
-  feeLead       Float    @default(0)
-  bonusTarget   Int      @default(0)
-  bonusNominal  Float    @default(0)
-  keterangan    String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nik              String?  @unique
+  namaPanggilan    String?
+  posisi           String?
+  tempatLahir      String?
+  tanggalLahir     DateTime?
+  jenisKelamin     String?
+  noHp             String?
+  alamat           String?
+  statusPernikahan String?
+  tanggalMasuk     DateTime?
+  tanggalResign    DateTime?
+  kontakDarurat    String?
+  bankName         String?
+  rekeningNomor    String?
+  rekeningNama     String?
+  gajiPokok        Float    @default(0)
+  tunjangan        Float    @default(0)
+  feeClosing       Float    @default(0)
+  feeLead          Float    @default(0)
+  bonusTarget      Int      @default(0)
+  bonusNominal     Float    @default(0)
+  keterangan       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model LiveSession {

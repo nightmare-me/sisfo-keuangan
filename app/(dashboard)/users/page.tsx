@@ -63,8 +63,28 @@ export default function UsersPage() {
   const [payrollUser, setPayrollUser] = useState<any>(null);
   const [loadingPayroll, setLoadingPayroll] = useState(false);
   const [payrollForm, setPayrollForm] = useState({
-    nik: "", posisi: "", bankName: "", rekeningNomor: "", rekeningNama: "",
-    gajiPokok: 0, tunjangan: 0, feeClosing: 0, feeLead: 0, bonusTarget: 0, bonusNominal: 0, keterangan: ""
+    nik: "", 
+    namaPanggilan: "",
+    posisi: "", 
+    tempatLahir: "",
+    tanggalLahir: "",
+    jenisKelamin: "",
+    noHp: "",
+    alamat: "",
+    statusPernikahan: "",
+    tanggalMasuk: "",
+    tanggalResign: "",
+    kontakDarurat: "",
+    bankName: "", 
+    rekeningNomor: "", 
+    rekeningNama: "",
+    gajiPokok: 0, 
+    tunjangan: 0, 
+    feeClosing: 0, 
+    feeLead: 0, 
+    bonusTarget: 0, 
+    bonusNominal: 0, 
+    keterangan: ""
   });
 
   function fetchData() {
@@ -232,7 +252,17 @@ export default function UsersPage() {
       if (data) {
         setPayrollForm({
           nik: data.nik || "",
+          namaPanggilan: data.namaPanggilan || "",
           posisi: data.posisi || "",
+          tempatLahir: data.tempatLahir || "",
+          tanggalLahir: data.tanggalLahir ? data.tanggalLahir.split("T")[0] : "",
+          jenisKelamin: data.jenisKelamin || "",
+          noHp: data.noHp || "",
+          alamat: data.alamat || "",
+          statusPernikahan: data.statusPernikahan || "",
+          tanggalMasuk: data.tanggalMasuk ? data.tanggalMasuk.split("T")[0] : "",
+          tanggalResign: data.tanggalResign ? data.tanggalResign.split("T")[0] : "",
+          kontakDarurat: data.kontakDarurat || "",
           bankName: data.bankName || "",
           rekeningNomor: data.rekeningNomor || "",
           rekeningNama: data.rekeningNama || "",
@@ -246,7 +276,10 @@ export default function UsersPage() {
         });
       } else {
         setPayrollForm({
-          nik: "", posisi: "", bankName: "", rekeningNomor: "", rekeningNama: "",
+          nik: "", namaPanggilan: "", posisi: "", tempatLahir: "", tanggalLahir: "",
+          jenisKelamin: "", noHp: "", alamat: "", statusPernikahan: "", 
+          tanggalMasuk: "", tanggalResign: "", kontakDarurat: "",
+          bankName: "", rekeningNomor: "", rekeningNama: "",
           gajiPokok: 0, tunjangan: 0, feeClosing: 0, feeLead: 0, bonusTarget: 0, bonusNominal: 0, keterangan: ""
         });
       }
@@ -668,18 +701,90 @@ export default function UsersPage() {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     
-                    {/* Seksi Identitas & Posisi */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                      <div className="form-group">
-                        <label className="form-label">NIK (Nomor Induk Karyawan)</label>
-                        <input type="text" className="form-control" value={payrollForm.nik} placeholder="SP-***** (Generated)" readOnly style={{ background: 'var(--surface-container-low)', fontWeight: 700, color: 'var(--primary)' }} />
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tergenerate otomatis jika kosong</span>
+                    {/* Seksi Informasi Pribadi */}
+                    <div className="card" style={{ background: 'var(--surface-container-lowest)', padding: 16, border: '1px solid var(--ghost-border)', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>
+                        <Info size={16} /> DATA PRIBADI KARYAWAN
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                        <div className="form-group">
+                          <label className="form-label">Nama Panggilan</label>
+                          <input type="text" className="form-control" placeholder="Cth: Rara" value={payrollForm.namaPanggilan} onChange={e => setPayrollForm(f => ({ ...f, namaPanggilan: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Jenis Kelamin</label>
+                          <select className="form-control" value={payrollForm.jenisKelamin} onChange={e => setPayrollForm(f => ({ ...f, jenisKelamin: e.target.value }))}>
+                            <option value="">-- Pilih --</option>
+                            <option value="LAKI-LAKI">Laki-laki</option>
+                            <option value="PEREMPUAN">Perempuan</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                        <div className="form-group">
+                          <label className="form-label">Tempat Lahir</label>
+                          <input type="text" className="form-control" placeholder="Kota kelahiran" value={payrollForm.tempatLahir} onChange={e => setPayrollForm(f => ({ ...f, tempatLahir: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Tanggal Lahir</label>
+                          <input type="date" className="form-control" value={payrollForm.tanggalLahir} onChange={e => setPayrollForm(f => ({ ...f, tanggalLahir: e.target.value }))} />
+                        </div>
                       </div>
                       <div className="form-group">
-                        <label className="form-label">Posisi / Jabatan</label>
-                        <div style={{ position: 'relative' }}>
-                          <Briefcase size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                          <input type="text" className="form-control" style={{ paddingLeft: 38 }} placeholder="Contoh: Manager, Senior CS..." value={payrollForm.posisi} onChange={e => setPayrollForm(f => ({ ...f, posisi: e.target.value }))} />
+                        <label className="form-label">Status Pernikahan</label>
+                        <select className="form-control" value={payrollForm.statusPernikahan} onChange={e => setPayrollForm(f => ({ ...f, statusPernikahan: e.target.value }))}>
+                          <option value="">-- Pilih Status --</option>
+                          <option value="LAJANG">Lajang</option>
+                          <option value="MENIKAH">Menikah</option>
+                          <option value="CERAI">Cerai</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Seksi Kontak & Alamat */}
+                    <div className="card" style={{ background: 'var(--surface-container-lowest)', padding: 16, border: '1px solid var(--ghost-border)', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>
+                        <Search size={16} /> KONTAK & ALAMAT
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                        <div className="form-group">
+                          <label className="form-label">Nomor HP / WhatsApp</label>
+                          <input type="tel" className="form-control" placeholder="0812xxxx" value={payrollForm.noHp} onChange={e => setPayrollForm(f => ({ ...f, noHp: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Kontak Darurat (Nama & No)</label>
+                          <input type="text" className="form-control" placeholder="Cth: Ibu Siti (0813xxxx)" value={payrollForm.kontakDarurat} onChange={e => setPayrollForm(f => ({ ...f, kontakDarurat: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Alamat Lengkap (Domisili)</label>
+                        <textarea className="form-control" rows={2} placeholder="Jl. Anggrek No. 123..." value={payrollForm.alamat} onChange={e => setPayrollForm(f => ({ ...f, alamat: e.target.value }))}></textarea>
+                      </div>
+                    </div>
+
+                    {/* Seksi Kepegawaian */}
+                    <div className="card" style={{ background: 'var(--surface-container-lowest)', padding: 16, border: '1px solid var(--ghost-border)', borderRadius: 'var(--radius-lg)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>
+                        <Briefcase size={16} /> DATA KEPEGAWAIAN
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                        <div className="form-group">
+                          <label className="form-label">NIK (Sesuai KTP)</label>
+                          <input type="text" className="form-control" placeholder="16 Digit NIK" value={payrollForm.nik} onChange={e => setPayrollForm(f => ({ ...f, nik: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Posisi / Jabatan</label>
+                          <input type="text" className="form-control" placeholder="Contoh: Manager, Senior CS..." value={payrollForm.posisi} onChange={e => setPayrollForm(f => ({ ...f, posisi: e.target.value }))} />
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <div className="form-group">
+                          <label className="form-label">Tanggal Masuk</label>
+                          <input type="date" className="form-control" value={payrollForm.tanggalMasuk} onChange={e => setPayrollForm(f => ({ ...f, tanggalMasuk: e.target.value }))} />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Tanggal Resign (Jika Ada)</label>
+                          <input type="date" className="form-control" value={payrollForm.tanggalResign} onChange={e => setPayrollForm(f => ({ ...f, tanggalResign: e.target.value }))} />
                         </div>
                       </div>
                     </div>

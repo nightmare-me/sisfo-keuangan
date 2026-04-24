@@ -33,6 +33,13 @@ export async function POST(request: NextRequest) {
 
     const results = { success: 0, failed: 0, errors: [] as string[] };
 
+    // Helper untuk validasi tanggal
+    const safeDate = (val: any) => {
+      if (!val || String(val).trim() === "") return null;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d;
+    };
+
     for (const item of data) {
       const email = item.email?.toLowerCase().trim();
       if (!email) {
@@ -78,15 +85,15 @@ export async function POST(request: NextRequest) {
           nik: item.nik ? String(item.nik).trim() : null,
           posisi: item.posisi || null,
           tempatLahir: item.tempat_lahir || item.tempatLahir || null,
-          tanggalLahir: item.tanggal_lahir ? new Date(item.tanggal_lahir) : null,
+          tanggalLahir: safeDate(item.tanggal_lahir || item.tanggalLahir),
           jenisKelamin: item.jenis_kelamin || item.jenisKelamin || null,
           alamat: item.alamat || null,
           statusPernikahan: item.status_pernikahan || item.statusPernikahan || null,
-          tanggalMasuk: item.tanggal_masuk ? new Date(item.tanggal_masuk) : null,
-          tanggalResign: item.tanggal_resign ? new Date(item.tanggal_resign) : null,
+          tanggalMasuk: safeDate(item.tanggal_masuk || item.tanggalMasuk),
+          tanggalResign: safeDate(item.tanggal_resign || item.tanggalResign),
           kontakDarurat: item.kontak_darurat || item.kontakDarurat || null,
-          gajiPokok: parseFloat(String(item.gajipokok || item.gaji_pokok || 0).replace(/[^0-9.]/g, '')),
-          tunjangan: parseFloat(String(item.tunjangan || 0).replace(/[^0-9.]/g, '')),
+          gajiPokok: parseFloat(String(item.gajipokok || item.gaji_pokok || 0).replace(/[^0-9.]/g, '') || "0"),
+          tunjangan: parseFloat(String(item.tunjangan || 0).replace(/[^0-9.]/g, '') || "0"),
           bankName: item.bank || item.bank_name || item.bankName || null,
           rekeningNomor: item.rekeningnomor || item.rekening_nomor || item.rekeningNomor ? String(item.rekeningnomor || item.rekening_nomor || item.rekeningNomor) : null,
           rekeningNama: item.rekeningnama || item.rekening_nama || item.rekeningNama || null,

@@ -2,14 +2,17 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🛠️ Update: Smart CRM Sync & Precision Payroll (v4.19) 🚀 (TERBARU!)
-*   **Smart CRM Two-Way Sync**: Sinkronisasi otomatis dua arah. Import Pemasukan otomatis melunaskan Lead, dan Import CRM otomatis mendeteksi riwayat bayar siswa untuk status "LUNAS" instan.
-*   **Robust CSV Engine v3**: Dukungan *Auto-Delimiter* (Koma/Titik Koma) untuk Excel Indonesia, *Fuzzy Header Matching* (Indo/English), dan pemulihan nomor WhatsApp dari format ilmiah Excel (`6,29E+12`).
-*   **Precision Payroll (CS RO)**: Fee CS RO dikunci pada 5% omset bersih. Sistem secara otomatis membuang "Kode Unik" transaksi dengan pembulatan ke bawah ke ribuan terdekat sebelum perhitungan komisi.
-*   **Global Dashboard Stats**: Angka "Siswa Aktif" dan "Total Terbayar" kini menggunakan kalkulasi *real-time* dari seluruh database, bukan hanya data yang tampil di halaman.
-*   **Sync Terminology**: Penyeragaman status `PAID` dan `LUNAS` lintas modul (CRM & Keuangan) untuk visibilitas data yang konsisten.
+## 🛠️ Update: Robust Import & Smart CS Assignment (v4.27) 🚀 (TERBARU!)
+*   **Admin Bulk Assignment**: Admin kini dapat mengimpor data sekaligus membagi penugasan CS secara massal lewat satu file CSV dengan kolom `nama_cs`.
+*   **Indo-Excel Recovery**: Peningkatan deteksi format ilmiah Excel versi Indonesia (pemulihan angka `6,29E+12` yang menggunakan koma sebagai desimal).
+*   **Enhanced Header Matching**: Penambahan dukungan otomatis untuk kolom `harga_normal` dan variasi penamaan header lainnya (Fuzzy Matching v4).
+*   **Real-time Import UX**: Alert notifikasi sekarang menampilkan angka riil baris yang berhasil di-import, memberikan kejujuran data saat proses upload massal.
+*   **Schema Consistency**: Sinkronisasi otomatis antara logika kode dan Database Enum (`LeadStatus`) untuk menjamin 100% integritas data saat transaksi massal.
+*   **Maintenance Logs**: Integrasi sistem *Debug Logging* di server untuk pelacakan cepat jika terjadi kendala saat pemrosesan ribuan data.
 
 ---
+
+## 🛠️ Update: Smart CRM Sync & Precision Payroll (v4.19) 🚀
 
 ## 🤝 Fitur Sebelumnya: Jalur Pendaftaran Affiliate & Dev Utilities (v4.5) 🚀
 

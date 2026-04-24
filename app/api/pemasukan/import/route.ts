@@ -65,7 +65,15 @@ export async function POST(request: NextRequest) {
     };
 
     if (data.length > 0) {
-      console.log("Importing Pemasukan. First row keys:", Object.keys(data[0]));
+      const fs = require('fs');
+      const debugInfo = {
+        timestamp: new Date().toISOString(),
+        firstRowKeys: Object.keys(data[0]),
+        firstRowValues: data[0],
+        totalRows: data.length
+      };
+      fs.writeFileSync('c:\\Users\\Muis M\\.gemini\\antigravity\\scratch\\sisfo-keuangan\\scratch\\import_debug.log', JSON.stringify(debugInfo, null, 2));
+      console.log("Importing Pemasukan. Debug info written to scratch/import_debug.log");
     }
 
     for (const item of data) {

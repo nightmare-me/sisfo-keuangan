@@ -2,12 +2,13 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Dynamic Finance & Universal Personnel (v4.50) 🚀 (TERBARU!)
-*   **Dynamic Financial Settings**: Semua parameter penggajian (Fee Live, Bonus Omset, Sharing Profit TOEFL) kini dapat dikelola langsung via UI di menu "Pengaturan Keuangan". Tidak ada lagi angka yang ditanam kaku (hardcode) di kode program.
-*   **Hard Reset Utility**: Penambahan alat pembersih database yang komprehensif untuk menghapus seluruh data transaksi, siswa, dan profil karyawan secara aman (menyisakan akun Admin) saat persiapan *go-live*.
+## 📢 Fitur Baru: Hyper-Flexible Finance & Smart UX (v4.55) 🚀 (TERBARU!)
+*   **Fully Flexible Positions**: Bapak kini bisa menambah posisi baru (misal: Manager, Staff Ahli) langsung dari dashboard. Mesin payroll akan otomatis mencari kecocokan antara nama posisi dan pengaturan bonus tanpa perlu ubah kode.
+*   **Complete Dynamic Fees**: Modul CS Live dan CS TOEFL kini 100% dinamis. Pengaturan rate CR (konversi), fee paket Elite/Master, dan persentase sharing bisa diubah kapan saja.
+*   **Compact Tiered UI**: Desain ulang antarmuka pengaturan bonus bertingkat (Tiered Bonus) menjadi format horizontal yang padat dan informatif sesuai standar profesional.
+*   **Accordion Sidebar Navigation**: Implementasi menu samping yang bisa di-*collapse* per kategori (Keuangan, Akademik, dll) untuk navigasi yang lebih bersih dan efisien pada dashboard yang kompleks.
 *   **Universal NIP/NIK Separation**: Pemisahan total antara Nomor Induk Pegawai (NIP - Otomatis) dan Nomor Induk Kependudukan (NIK/KTP - Manual) yang berlaku seragam di modul Karyawan maupun Pengajar.
-*   **Smart NIP Generator**: Sistem pelacakan urutan otomatis yang cerdas untuk menjamin keunikan NIP saat penginputan manual maupun *import* massal ribuan data sekaligus via CSV.
-*   **Unified Personnel Management**: Sinkronisasi format data, template import, dan tampilan tabel antara modul Staf Administrasi dan Pengajar untuk efisiensi manajemen SDM.
+*   **Hard Reset Utility**: Penambahan alat pembersih database yang komprehensif untuk persiapan *go-live*.
 
 ---
 

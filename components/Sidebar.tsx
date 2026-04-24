@@ -27,7 +27,8 @@ import {
   Clock,
   Contact,
   ShieldCheck,
-  DollarSign
+  DollarSign,
+  ChevronDown
 } from "lucide-react";
 
 interface NavItem {
@@ -90,6 +91,23 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const role = (session?.user as any)?.role;
   const name = session?.user?.name ?? "User";
+  
+  // Track expanded groups
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(() => {
+    // Default open: the group that contains the active path
+    const activeGroup = navItems.find(g => 
+      g.items.some(i => pathname === i.href || pathname.startsWith(i.href + "/"))
+    );
+    return activeGroup ? [activeGroup.group] : ["UTAMA"];
+  });
+
+  const toggleGroup = (groupName: string) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupName) 
+        ? prev.filter(g => g !== groupName) 
+        : [...prev, groupName]
+    );
+  };
 
   const getRoleBadgeClass = (r: string) => {
     switch(r) {
@@ -140,23 +158,55 @@ export default function Sidebar() {
 
             if (filteredItems.length === 0) return null;
 
+            const isExpanded = expandedGroups.includes(group.group);
+
             return (
-              <div key={group.group}>
-                <div className="nav-section-label">{group.group}</div>
-                {filteredItems.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className={`nav-item ${isActive ? "active" : ""}`}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
+              <div key={group.group} style={{ marginBottom: 4 }}>
+                <div 
+                  className="nav-section-label" 
+                  onClick={() => toggleGroup(group.group)}
+                  style={{ 
+                    cursor: "pointer", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "space-between",
+                    padding: "12px 16px 8px 16px",
+                    userSelect: "none"
+                  }}
+                >
+                  <span>{group.group}</span>
+                  <ChevronDown 
+                    size={14} 
+                    style={{ 
+                      transition: "transform 0.3s ease", 
+                      transform: isExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                      opacity: 0.5
+                    }} 
+                  />
+                </div>
+                
+                <div style={{ 
+                  maxHeight: isExpanded ? "1000px" : "0px", 
+                  overflow: "hidden", 
+                  transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                  opacity: isExpanded ? 1 : 0
+                }}>
+                  {filteredItems.map((item) => {
+                    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className={`nav-item ${isActive ? "active" : ""}`}
+                        style={{ marginLeft: 8, marginRight: 8, width: "auto" }}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}

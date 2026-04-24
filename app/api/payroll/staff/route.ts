@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
       // E. Bonus Akademik (RO Omset) - If role is Akademik or SPV Akademik
       if (posisi.toUpperCase().includes("AKADEMIK")) {
           const totalRO = pemasukanAll.filter((p: any) => p.isRO).reduce((s: number, p: any) => s + p.hargaFinal, 0);
-          totalBonus += calculateBonusAkademikRO(totalRO);
+          totalBonus += calculateBonusAkademikRO(totalRO, config);
       }
 
       // F. Profit Shared Bonuses (CEO, COO, SPV, etc)

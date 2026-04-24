@@ -49,12 +49,32 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { id, value } = await request.json();
-    const updated = await prisma.financialConfig.update({
-      where: { id },
-      data: { value: parseFloat(value) }
-    });
-    return NextResponse.json(updated);
+    const data = await request.json();
+    
+    if (data.id) {
+      // UPDATE EXISTING
+      const updated = await prisma.financialConfig.update({
+        where: { id: data.id },
+        data: { 
+          value: parseFloat(data.value),
+          label: data.label,
+          description: data.description 
+        }
+      });
+      return NextResponse.json(updated);
+    } else {
+      // CREATE NEW
+      const created = await prisma.financialConfig.create({
+        data: {
+          key: data.key,
+          value: parseFloat(data.value),
+          label: data.label,
+          description: data.description,
+          category: data.category
+        }
+      });
+      return NextResponse.json(created);
+    }
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

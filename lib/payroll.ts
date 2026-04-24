@@ -83,26 +83,33 @@ export function calculateCSFee(
 
   if (csCategory === 'CS_LIVE') {
     if (productType === '49K' || productType === '49K_DISKON') {
-      return cr > 0.5 ? 2500 : 2000;
+      const highRate = config?.FEE_CS_LIVE_49K_HIGH_CR || 2500;
+      const lowRate = config?.FEE_CS_LIVE_49K_LOW_CR || 2000;
+      return cr > 0.5 ? highRate : lowRate;
     }
     if (productType.includes('FAST') || productType.includes('PRIVATE')) {
-      return basePrice * 0.05;
+      const liveRate = config?.FEE_CS_LIVE_PERCENT || 0.05;
+      return basePrice * liveRate;
     }
   }
 
   if (csCategory === 'CS_TOEFL') {
+    const eliteFee = config?.FEE_CS_TOEFL_ELITE || 2500;
+    const masterFee = config?.FEE_CS_TOEFL_MASTER || 5000;
+    const defaultToeflRate = config?.FEE_CS_TOEFL_PERCENT || 0.10;
+
     // Cek Kategori Dulu (Explicit)
-    if (productType === 'ELITE' || productType === 'ELITE_PRO') return 2500;
-    if (productType === 'MASTER') return 5000;
+    if (productType === 'ELITE' || productType === 'ELITE_PRO') return eliteFee;
+    if (productType === 'MASTER') return masterFee;
 
     // Fallback: Cek dari Nama Program jika kategori kosong/tidak sesuai
     if (program && (program as any).nama) {
       const lowerName = String((program as any).nama).toLowerCase();
-      if (lowerName.includes("elite")) return 2500;
-      if (lowerName.includes("master")) return 5000;
+      if (lowerName.includes("elite")) return eliteFee;
+      if (lowerName.includes("master")) return masterFee;
     }
 
-    return basePrice * 0.10; // Lain-lain: 10% x Harga Produk
+    return basePrice * defaultToeflRate; // Lain-lain: 10% x Harga Produk
   }
 
   if (csCategory === 'CS_RO') {
@@ -155,10 +162,18 @@ export function calculateBonusTalent(omsetTalent: number): number {
 /**
  * Calculate SPV Akademik Bonus based on RO Omset
  */
-export function calculateBonusAkademikRO(omsetRO: number): number {
-  if (omsetRO < 200000000) return omsetRO * 0.0025;
-  if (omsetRO <= 400000000) return omsetRO * 0.005;
-  return omsetRO * 0.01;
+export function calculateBonusAkademikRO(omsetRO: number, config?: PayrollConfig): number {
+  const limit1 = config?.BONUS_AKADEMIK_RO_LIMIT_1 || 200000000;
+  const rate1 = config?.BONUS_AKADEMIK_RO_RATE_1 || 0.0025;
+  
+  const limit2 = config?.BONUS_AKADEMIK_RO_LIMIT_2 || 400000000;
+  const rate2 = config?.BONUS_AKADEMIK_RO_RATE_2 || 0.005;
+  
+  const rate3 = config?.BONUS_AKADEMIK_RO_RATE_3 || 0.01;
+
+  if (omsetRO < limit1) return omsetRO * rate1;
+  if (omsetRO <= limit2) return omsetRO * rate2;
+  return omsetRO * rate3;
 }
 
 /**
@@ -178,17 +193,10 @@ export function calculateSharingTOEFL(toeflProfit: number, posisi: string, confi
   const teamShareRate = config?.SHARING_TOEFL_TEAM_PERCENT || 0.5;
   const teamShare = toeflProfit * teamShareRate; 
   
-  const rates: Record<string, number> = {
-    'CEO': config?.RATE_SHARING_CEO || 0.825,
-    'COO': config?.RATE_SHARING_COO || 0.05,
-    'SPV AKADEMIK': config?.RATE_SHARING_SPV_AKADEMIK || 0.05,
-    'SPV ADV': config?.RATE_SHARING_SPV_ADV || 0.025,
-    'SPV MULTIMEDIA': config?.RATE_SHARING_SPV_MULTIMEDIA || 0.02,
-    'ASSISTANT CEO': config?.RATE_SHARING_ASSISTANT_CEO || 0.02,
-    'FINANCE': config?.RATE_SHARING_FINANCE || 0.01
-  };
-
-  const rate = rates[posisi.toUpperCase()] || 0;
+  // DYNAMIC LOOKUP: Cari key RATE_SHARING_[NAMA_POSISI]
+  const dynamicKey = `RATE_SHARING_${posisi.toUpperCase().replace(/\s+/g, '_')}`;
+  const rate = config?.[dynamicKey] || 0;
+  
   return teamShare * rate;
 }
 
@@ -196,16 +204,10 @@ export function calculateSharingTOEFL(toeflProfit: number, posisi: string, confi
  * Calculate Revenue-based Bonus (from Gross Profit)
  */
 export function calculateBonusGrossProfit(grossProfit: number, posisi: string, config?: PayrollConfig): number {
-  const rates: Record<string, number> = {
-    'CEO': config?.BONUS_GROSS_CEO || 0.015,
-    'ASSISTANT CEO': config?.BONUS_GROSS_ASSISTANT_CEO || 0.015,
-    'COO': config?.BONUS_GROSS_COO || 0.03,
-    'FINANCE': config?.BONUS_GROSS_FINANCE || 0.01,
-    'SPV ADV': config?.BONUS_GROSS_SPV_ADV || 0.015,
-    'SPV MULTIMEDIA': config?.BONUS_GROSS_SPV_MULTIMEDIA || 0.015
-  };
-
-  const rate = rates[posisi.toUpperCase()] || 0;
+  // DYNAMIC LOOKUP: Cari key BONUS_GROSS_[NAMA_POSISI]
+  const dynamicKey = `BONUS_GROSS_${posisi.toUpperCase().replace(/\s+/g, '_')}`;
+  const rate = config?.[dynamicKey] || 0;
+  
   return grossProfit * rate;
 }
 

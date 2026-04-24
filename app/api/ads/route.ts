@@ -130,18 +130,19 @@ export async function POST(request: NextRequest) {
           const leads = parseInt(item.leads);
           if (!isNaN(leads) && leads > 0) {
             let advId = sessionUserId;
-            let teamType = (session.user as any).teamType || 'ADV_REGULAR';
+            let teamTypeRaw = (session.user as any).teamType || 'ADV_REGULAR';
 
             if (item.email_advertiser) {
               const adv = await tx.user.findUnique({ where: { email: item.email_advertiser }});
               if (adv) {
                 advId = adv.id;
-                teamType = adv.teamType || 'ADV_REGULAR';
+                teamTypeRaw = adv.teamType || 'ADV_REGULAR';
               }
             }
 
             const cpl = spent / leads;
-            const fee = calculateAdvFee(teamType as AdvCategory, cpl, leads);
+            const firstTeam = Array.isArray(teamTypeRaw) ? teamTypeRaw[0] : (teamTypeRaw as unknown as string);
+            const fee = calculateAdvFee((firstTeam || 'ADV_REGULAR') as AdvCategory, cpl, leads);
 
             await tx.adPerformance.create({
               data: {

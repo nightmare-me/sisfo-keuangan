@@ -43,9 +43,11 @@ export async function POST(request: NextRequest) {
 
     const cpl = leads > 0 ? (spent / leads) : 0;
     
+    const firstTeam = Array.isArray(user.teamType) ? user.teamType[0] : (user.teamType as unknown as string);
+    
     // Calculate Fee
     const fee = calculateAdvFee(
-      (user.teamType || 'ADV_REGULAR') as AdvCategory,
+      (firstTeam || 'ADV_REGULAR') as AdvCategory,
       cpl,
       leads
     );

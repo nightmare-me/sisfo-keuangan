@@ -2,7 +2,14 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 🛠️ Update: Robust Import & Smart CS Assignment (v4.27) 🚀 (TERBARU!)
+## 📢 Fitur Baru: One-Gate Ads Import (v4.28) 🚀 (TERBARU!)
+*   **Integrated Workflow**: Penggabungan alur *import* data pengeluaran iklan. Satu kali unggah CSV di menu "Spent Ads" akan mendistribusikan data ke modul "Spent Ads" (Keuangan) dan "Performa Iklan" (Advertiser).
+*   **Smart Column Detection**: Penambahan kolom `leads` dan `email_advertiser` pada template CSV. Sistem secara otomatis menghitung *Cost Per Lead* (CPL) dan kalkulasi Bonus Fee bagi advertiser jika kolom tersebut diisi.
+*   **Transaction Safety**: Menggunakan *Prisma Transaction* untuk menjamin konsistensi data antara rekap finansial perusahaan dan bonus performa karyawan.
+
+---
+
+## 🛠️ Update: Robust Import & Smart CS Assignment (v4.27) 🚀
 *   **Admin Bulk Assignment**: Admin kini dapat mengimpor data sekaligus membagi penugasan CS secara massal lewat satu file CSV dengan kolom `nama_cs`.
 *   **Indo-Excel Recovery**: Peningkatan deteksi format ilmiah Excel versi Indonesia (pemulihan angka `6,29E+12` yang menggunakan koma sebagai desimal).
 *   **Enhanced Header Matching**: Penambahan dukungan otomatis untuk kolom `harga_normal` dan variasi penamaan header lainnya (Fuzzy Matching v4).

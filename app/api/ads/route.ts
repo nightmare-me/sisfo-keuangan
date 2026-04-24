@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { calculateAdvFee, AdvCategory } from "@/lib/payroll";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -99,18 +100,68 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
+  const sessionUserId = (session.user as any).id;
 
   // Bulk create
   if (Array.isArray(body)) {
-    const data = body.map((item: any) => ({
-      tanggal: item.tanggal ? new Date(item.tanggal) : new Date(),
-      platform: item.platform ?? "META",
-      jumlah: parseFloat(item.jumlah),
-      keterangan: item.keterangan || null,
-      dibuatOleh: (session.user as any).id,
-    }));
-    const result = await prisma.spentAds.createMany({ data });
-    return NextResponse.json({ success: result.count }, { status: 201 });
+    let successCount = 0;
+    try {
+      await prisma.$transaction(async (tx) => {
+        for (const item of body) {
+          const tanggal = item.tanggal ? new Date(item.tanggal) : new Date();
+          const platform = item.platform ?? "META";
+          const spent = parseFloat(item.jumlah);
+          
+          if (isNaN(spent)) continue;
+
+          // 1. Buat data SpentAds
+          await tx.spentAds.create({
+            data: {
+              tanggal,
+              platform,
+              jumlah: spent,
+              keterangan: item.keterangan || null,
+              dibuatOleh: sessionUserId,
+            }
+          });
+          successCount++;
+
+          // 2. Jika ada data Leads, masukkan juga ke AdPerformance
+          const leads = parseInt(item.leads);
+          if (!isNaN(leads) && leads > 0) {
+            let advId = sessionUserId;
+            let teamType = (session.user as any).teamType || 'ADV_REGULAR';
+
+            if (item.email_advertiser) {
+              const adv = await tx.user.findUnique({ where: { email: item.email_advertiser }});
+              if (adv) {
+                advId = adv.id;
+                teamType = adv.teamType || 'ADV_REGULAR';
+              }
+            }
+
+            const cpl = spent / leads;
+            const fee = calculateAdvFee(teamType as AdvCategory, cpl, leads);
+
+            await tx.adPerformance.create({
+              data: {
+                date: tanggal,
+                platform,
+                spent,
+                leads,
+                cpl,
+                fee,
+                advId
+              }
+            });
+          }
+        }
+      });
+      return NextResponse.json({ success: successCount }, { status: 201 });
+    } catch (e: any) {
+      console.error(e);
+      return NextResponse.json({ error: "Gagal memproses import data" }, { status: 500 });
+    }
   }
 
   // Single create

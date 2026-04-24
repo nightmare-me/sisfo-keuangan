@@ -80,11 +80,11 @@ export default function AdsPage() {
   }
 
   function downloadCsvTemplate() {
-    const header = "tanggal,platform,jumlah,keterangan\n";
+    const header = "tanggal,platform,jumlah,keterangan,leads,email_advertiser\n";
     const examples = [
-      "2024-03-01,META,500000,Iklan Promo Maret",
-      "2024-03-02,GOOGLE,1000000,Search Engine Campaign",
-      "2024-03-03,TIKTOK,750000,Video kreatif",
+      "2024-03-01,META,500000,Iklan Promo Maret,50,advertiser@speakingpartner.id",
+      "2024-03-02,GOOGLE,1000000,Search Engine Campaign,80,",
+      "2024-03-03,TIKTOK,750000,Video kreatif,,",
     ].join("\n") + "\n";
     const notes = [
       "",
@@ -92,6 +92,8 @@ export default function AdsPage() {
       "# - tanggal: format YYYY-MM-DD",
       "# - platform: GOOGLE / META / TIKTOK / INSTAGRAM / YOUTUBE / LAINNYA",
       "# - jumlah: angka saja tanpa titik/koma (contoh: 1500000)",
+      "# - leads: (Opsional) Jika diisi angka, akan otomatis masuk ke data 'Performa Iklan'",
+      "# - email_advertiser: (Opsional) Email user advertiser untuk perhitungan bonus fee. Jika kosong, akan memakai akun Anda."
     ].join("\n");
     const blob = new Blob([header + examples + notes], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);

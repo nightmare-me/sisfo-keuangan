@@ -39,8 +39,28 @@ export default function KaryawanPage() {
   const [saving, setSaving] = useState(false);
   
   const [form, setForm] = useState({
-    nik: "", posisi: "", bankName: "", rekeningNomor: "", rekeningNama: "",
-    gajiPokok: 0, tunjangan: 0, feeClosing: 0, feeLead: 0, bonusTarget: 0, bonusNominal: 0, keterangan: ""
+    nik: "", 
+    namaPanggilan: "",
+    posisi: "", 
+    tempatLahir: "",
+    tanggalLahir: "",
+    jenisKelamin: "",
+    noHp: "",
+    alamat: "",
+    statusPernikahan: "",
+    tanggalMasuk: "",
+    tanggalResign: "",
+    kontakDarurat: "",
+    bankName: "", 
+    rekeningNomor: "", 
+    rekeningNama: "",
+    gajiPokok: 0, 
+    tunjangan: 0, 
+    feeClosing: 0, 
+    feeLead: 0, 
+    bonusTarget: 0, 
+    bonusNominal: 0, 
+    keterangan: ""
   });
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -110,7 +130,17 @@ export default function KaryawanPage() {
     const p = user.karyawanProfile || {};
     setForm({
       nik: p.nik || "",
+      namaPanggilan: user.namaPanggilan || "",
       posisi: p.posisi || "",
+      tempatLahir: p.tempatLahir || "",
+      tanggalLahir: p.tanggalLahir ? p.tanggalLahir.split("T")[0] : "",
+      jenisKelamin: p.jenisKelamin || "",
+      noHp: user.noHp || "",
+      alamat: p.alamat || "",
+      statusPernikahan: p.statusPernikahan || "",
+      tanggalMasuk: p.tanggalMasuk ? p.tanggalMasuk.split("T")[0] : "",
+      tanggalResign: p.tanggalResign ? p.tanggalResign.split("T")[0] : "",
+      kontakDarurat: p.kontakDarurat || "",
       bankName: p.bankName || "",
       rekeningNomor: p.rekeningNomor || "",
       rekeningNama: p.rekeningNama || "",
@@ -272,7 +302,7 @@ export default function KaryawanPage() {
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <CreditCard size={20} style={{ color: 'var(--success)' }} />
-                <span>Manajemen Data Karyawan: {selectedKaryawan?.name}</span>
+                <span>Payroll Profile: {selectedKaryawan?.name}</span>
               </div>
               <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
             </div>
@@ -281,23 +311,96 @@ export default function KaryawanPage() {
               <div className="modal-body">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   
-                  {/* Seksi Identitas & Posisi */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <div className="form-group">
-                      <label className="form-label">NIK (Nomor Induk Karyawan)</label>
-                      <input type="text" className="form-control" value={form.nik} placeholder="Otomatis jika kosong" onChange={e => setForm(f => ({ ...f, nik: e.target.value }))} style={{ fontWeight: 700, color: 'var(--primary)' }} />
+                  {/* Seksi Informasi Pribadi */}
+                  <div className="card" style={{ background: 'var(--surface-container-lowest)', padding: 16, border: '1px solid var(--ghost-border)', borderRadius: 'var(--radius-lg)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>
+                      <TrendingUp size={16} /> DATA PRIBADI KARYAWAN
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                      <div className="form-group">
+                        <label className="form-label">Nama Panggilan</label>
+                        <input type="text" className="form-control" placeholder="Cth: Rara" value={form.namaPanggilan} onChange={e => setForm(f => ({ ...f, namaPanggilan: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Jenis Kelamin</label>
+                        <select className="form-control" value={form.jenisKelamin} onChange={e => setForm(f => ({ ...f, jenisKelamin: e.target.value }))}>
+                          <option value="">-- Pilih --</option>
+                          <option value="LAKI-LAKI">Laki-laki</option>
+                          <option value="PEREMPUAN">Perempuan</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                      <div className="form-group">
+                        <label className="form-label">Tempat Lahir</label>
+                        <input type="text" className="form-control" placeholder="Kota kelahiran" value={form.tempatLahir} onChange={e => setForm(f => ({ ...f, tempatLahir: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Tanggal Lahir</label>
+                        <input type="date" className="form-control" value={form.tanggalLahir} onChange={e => setForm(f => ({ ...f, tanggalLahir: e.target.value }))} />
+                      </div>
                     </div>
                     <div className="form-group">
-                      <label className="form-label">Posisi / Jabatan</label>
-                      <div style={{ position: 'relative' }}>
-                        <Briefcase size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input type="text" className="form-control" style={{ paddingLeft: 38 }} placeholder="Contoh: Manager, Senior CS..." value={form.posisi} onChange={e => setForm(f => ({ ...f, posisi: e.target.value }))} />
+                      <label className="form-label">Status Pernikahan</label>
+                      <select className="form-control" value={form.statusPernikahan} onChange={e => setForm(f => ({ ...f, statusPernikahan: e.target.value }))}>
+                        <option value="">-- Pilih Status --</option>
+                        <option value="LAJANG">Lajang</option>
+                        <option value="MENIKAH">Menikah</option>
+                        <option value="CERAI">Cerai</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Seksi Kontak & Alamat */}
+                  <div className="card" style={{ background: 'var(--surface-container-lowest)', padding: 16, border: '1px solid var(--ghost-border)', borderRadius: 'var(--radius-lg)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>
+                      <Users size={16} /> KONTAK & ALAMAT
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                      <div className="form-group">
+                        <label className="form-label">Nomor HP / WhatsApp</label>
+                        <input type="tel" className="form-control" placeholder="0812xxxx" value={form.noHp} onChange={e => setForm(f => ({ ...f, noHp: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Kontak Darurat (Nama & No)</label>
+                        <input type="text" className="form-control" placeholder="Cth: Ibu Siti (0813xxxx)" value={form.kontakDarurat} onChange={e => setForm(f => ({ ...f, kontakDarurat: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Alamat Lengkap (Domisili)</label>
+                      <textarea className="form-control" rows={2} placeholder="Jl. Anggrek No. 123..." value={form.alamat} onChange={e => setForm(f => ({ ...f, alamat: e.target.value }))}></textarea>
+                    </div>
+                  </div>
+
+                  {/* Seksi Kepegawaian */}
+                  <div className="card" style={{ background: 'var(--surface-container-lowest)', padding: 16, border: '1px solid var(--ghost-border)', borderRadius: 'var(--radius-lg)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>
+                      <Briefcase size={16} /> DATA KEPEGAWAIAN
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                      <div className="form-group">
+                        <label className="form-label">NIK (Sesuai KTP)</label>
+                        <input type="text" className="form-control" placeholder="16 Digit NIK" value={form.nik} onChange={e => setForm(f => ({ ...f, nik: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Posisi / Jabatan</label>
+                        <input type="text" className="form-control" placeholder="Contoh: Manager, Senior CS..." value={form.posisi} onChange={e => setForm(f => ({ ...f, posisi: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div className="form-group">
+                        <label className="form-label">Tanggal Masuk</label>
+                        <input type="date" className="form-control" value={form.tanggalMasuk} onChange={e => setForm(f => ({ ...f, tanggalMasuk: e.target.value }))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Tanggal Resign (Jika Ada)</label>
+                        <input type="date" className="form-control" value={form.tanggalResign} onChange={e => setForm(f => ({ ...f, tanggalResign: e.target.value }))} />
                       </div>
                     </div>
                   </div>
 
                   {/* Seksi Perbankan */}
-                  <div className="card glass" style={{ padding: 20, borderRadius: 'var(--radius-lg)' }}>
+                  <div className="card" style={{ background: 'var(--surface-container-lowest)', padding: 16, border: '1px solid var(--ghost-border)', borderRadius: 'var(--radius-lg)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, color: 'var(--on-surface)', fontWeight: 700, fontSize: 13 }}>
                       <Wallet size={16} /> DATA REKENING BANK
                     </div>
@@ -311,7 +414,7 @@ export default function KaryawanPage() {
                         <input type="text" className="form-control" placeholder="XXXX-XXXX-XXXX" value={form.rekeningNomor} onChange={e => setForm(f => ({ ...f, rekeningNomor: e.target.value }))} />
                       </div>
                     </div>
-                    <div className="form-group" style={{ margin: 0 }}>
+                    <div className="form-group">
                       <label className="form-label">Nama Pemilik Rekening</label>
                       <input type="text" className="form-control" placeholder="Harus sesuai buku tabungan" value={form.rekeningNama} onChange={e => setForm(f => ({ ...f, rekeningNama: e.target.value }))} />
                     </div>
@@ -380,7 +483,7 @@ export default function KaryawanPage() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
                 <button type="submit" className="btn btn-primary" style={{ background: 'var(--success)', border: 'none' }} disabled={saving}>
-                  {saving ? "Menyimpan..." : "💾 Simpan Perubahan Data"}
+                  {saving ? "Menyimpan..." : "💾 Simpan Profil Payroll"}
                 </button>
               </div>
             </form>

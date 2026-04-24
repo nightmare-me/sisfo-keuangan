@@ -19,10 +19,7 @@ export async function POST(request: NextRequest) {
     // Pre-load lookup data
     const allPrograms = await prisma.program.findMany();
     const allSiswa = await prisma.siswa.findMany();
-    const allCS = await prisma.user.findMany({
-      where: { role: { slug: "cs" } },
-      select: { id: true, name: true },
-    });
+    const allUsers = await prisma.user.findMany({ where: { role: { slug: "cs" } } });
 
     const parseDate = (dateStr: string) => {
       if (!dateStr || dateStr.trim() === "") return new Date();
@@ -46,10 +43,6 @@ export async function POST(request: NextRequest) {
         return new Date();
       }
     };
-
-    const allSiswa = await prisma.siswa.findMany();
-    const allPrograms = await prisma.program.findMany();
-    const allUsers = await prisma.user.findMany({ where: { role: { slug: "cs" } } });
 
     let successCount = 0;
     let failCount = 0;

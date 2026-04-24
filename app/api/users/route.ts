@@ -77,13 +77,13 @@ export async function POST(request: NextRequest) {
     for (const item of body) {
       const { name, email, password, roleSlug, teamType } = item;
       
-      if (!name || !email || !password) {
-        results.failed++; results.errors.push(`${email || name}: data tidak lengkap`); continue;
+      if (!name || !email || !password || !roleSlug) {
+        results.failed++; results.errors.push(`${email || name}: data tidak lengkap (nama, email, password, dan role wajib diisi)`); continue;
       }
 
-      const roleObj = await prisma.role.findUnique({ where: { slug: (roleSlug || "cs").toLowerCase() } });
+      const roleObj = await prisma.role.findUnique({ where: { slug: roleSlug.toLowerCase() } });
       if (!roleObj) {
-        results.failed++; results.errors.push(`${email}: role invalid`); continue;
+        results.failed++; results.errors.push(`${email}: role '${roleSlug}' tidak ditemukan di database`); continue;
       }
 
       const exists = await prisma.user.findUnique({ where: { email } });

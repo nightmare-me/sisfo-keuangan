@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
           const pendingLead = await tx.lead.findFirst({
             where: { 
               nama: { equals: targetSiswa.nama, mode: 'insensitive' },
-              status: { notIn: ["PAID", "LUNAS"] } 
+              status: { not: "PAID" } 
             },
             orderBy: { createdAt: "desc" }
           });

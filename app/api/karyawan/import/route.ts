@@ -59,6 +59,12 @@ export async function POST(request: NextRequest) {
         let user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
           const hashedPassword = await bcrypt.hash("password123", 10);
+          // Handle TeamType / Sub-Role (bisa satu atau banyak dipisah koma)
+          const teamTypeRaw = item.team_type || item.kategori_tim || item.teamType || "";
+          const teamType = teamTypeRaw 
+            ? String(teamTypeRaw).split(',').map(t => t.trim().toUpperCase()).filter(Boolean)
+            : [];
+
           user = await prisma.user.create({
             data: {
               email,
@@ -67,7 +73,24 @@ export async function POST(request: NextRequest) {
               noHp: String(item.no_hp || item.noHp || ""),
               password: hashedPassword,
               roleId: targetRole?.id || allRoles[0]?.id || "",
+              teamType: teamType,
               aktif: true
+            }
+          });
+        } else {
+          // Update user if already exists
+          const teamTypeRaw = item.team_type || item.kategori_tim || item.teamType || "";
+          const teamType = teamTypeRaw 
+            ? String(teamTypeRaw).split(',').map(t => t.trim().toUpperCase()).filter(Boolean)
+            : undefined;
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { 
+              roleId: targetRole?.id || undefined,
+              namaPanggilan: item.nama_panggilan || undefined,
+              noHp: item.no_hp || undefined,
+              teamType: teamType
             }
           });
         }

@@ -51,7 +51,7 @@ export default function UsersPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({ 
-    name: "", email: "", password: "", roleId: "", teamType: [] as string[], aktif: true,
+    name: "", namaPanggilan: "", noHp: "", email: "", password: "", roleId: "", teamType: [] as string[], aktif: true,
     shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
   });
 
@@ -119,6 +119,8 @@ export default function UsersPage() {
     setEditUser(user);
     setForm({ 
       name: user.name, 
+      namaPanggilan: user.namaPanggilan || "",
+      noHp: user.noHp || "",
       email: user.email, 
       password: "", 
       roleId: user.roleId, 
@@ -135,7 +137,7 @@ export default function UsersPage() {
   function openAdd() {
     setEditUser(null);
     setForm({ 
-      name: "", email: "", password: "", roleId: roles.find(r => r.slug === 'cs')?.id || "", teamType: [], aktif: true,
+      name: "", namaPanggilan: "", noHp: "", email: "", password: "", roleId: roles.find(r => r.slug === 'cs')?.id || "", teamType: [], aktif: true,
       shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
     });
     setMode("single");
@@ -492,8 +494,18 @@ export default function UsersPage() {
                       <input id="inp-nama-user" type="text" className="form-control" placeholder="Nama user..." value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
                     </div>
                     <div className="form-group">
+                      <label className="form-label">Nama Panggilan</label>
+                      <input type="text" className="form-control" placeholder="Panggilan..." value={form.namaPanggilan} onChange={e => setForm(f => ({ ...f, namaPanggilan: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="form-grid-2">
+                    <div className="form-group">
                       <label className="form-label required">Email</label>
                       <input type="email" className="form-control" placeholder="email@speakingpartner.id" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">No. HP / WA</label>
+                      <input type="tel" className="form-control" placeholder="0812xxxx" value={form.noHp} onChange={e => setForm(f => ({ ...f, noHp: e.target.value }))} />
                     </div>
                   </div>
                   <div className="form-group">

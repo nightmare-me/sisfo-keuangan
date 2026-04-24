@@ -14,9 +14,16 @@ export async function GET(request: NextRequest) {
 
   if (userId) {
     const profile = await prisma.karyawanProfile.findUnique({
-      where: { userId }
+      where: { userId },
+      include: { user: { select: { namaPanggilan: true, noHp: true } } }
     });
-    return NextResponse.json(profile || null);
+    if (!profile) return NextResponse.json(null);
+    
+    return NextResponse.json({
+      ...profile,
+      namaPanggilan: profile.user.namaPanggilan,
+      noHp: profile.user.noHp
+    });
   }
 
   // If no userId, return ALL users who are active so we can manage their employee data
@@ -49,6 +56,12 @@ export async function POST(request: NextRequest) {
     const { userId, ...data } = body;
 
     if (!userId) return NextResponse.json({ error: "UserId required" }, { status: 400 });
+
+    // Update User fields first
+    await prisma.user.update({
+      where: { id: userId },
+      data: { namaPanggilan, noHp }
+    });
 
     const existing = await prisma.karyawanProfile.findUnique({ where: { userId } });
     

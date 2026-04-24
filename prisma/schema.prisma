@@ -9,6 +9,8 @@ datasource db {
 model User {
   id              String           @id @default(cuid())
   name            String
+  namaPanggilan   String?
+  noHp            String?
   email           String           @unique
   password        String
   aktif           Boolean          @default(true)
@@ -42,12 +44,10 @@ model KaryawanProfile {
   id            String   @id @default(cuid())
   userId        String   @unique
   nik              String?  @unique
-  namaPanggilan    String?
   posisi           String?
   tempatLahir      String?
   tanggalLahir     DateTime?
   jenisKelamin     String?
-  noHp             String?
   alamat           String?
   statusPernikahan String?
   tanggalMasuk     DateTime?

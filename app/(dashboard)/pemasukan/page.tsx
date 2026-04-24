@@ -520,12 +520,15 @@ export default function PemasukanPage() {
                               body: JSON.stringify(jsonData)
                             });
                             if (res.ok) {
-                              alert("Berhasil mengimpor data pemasukan!");
+                              const result = await res.json();
+                              console.log("Import response:", result);
+                              alert(result.message || `Berhasil mengimpor ${result.count || 0} data pemasukan!`);
                               setShowImportModal(false);
                               fetchData();
                             } else {
                               const err = await res.json();
-                              alert("Gagal impor: " + err.error);
+                              console.error("Import error:", err);
+                              alert("Gagal impor: " + (err.error || "Cek format file"));
                             }
                           } catch (err) {
                             alert("Terjadi kesalahan saat mengunggah.");

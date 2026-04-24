@@ -64,11 +64,15 @@ export async function POST(request: NextRequest) {
       return null;
     };
 
+    if (data.length > 0) {
+      console.log("Importing Pemasukan. First row keys:", Object.keys(data[0]));
+    }
+
     for (const item of data) {
       try {
         const rawNamaSiswa = getValue(item, ["nama_siswa", "nama", "siswa", "student"]);
         const rawProgram = getValue(item, ["program", "produk", "product"]);
-        const rawNominal = getValue(item, ["nominal", "harga", "total", "bayar", "amount", "price"]);
+        const rawNominal = getValue(item, ["nominal", "harga_normal", "harga", "total", "bayar", "amount", "price"]);
         const rawTanggal = getValue(item, ["tanggal", "date", "tgl"]);
         const rawCS = getValue(item, ["cs", "nama_cs", "marketing", "sales"]);
         const rawRO = getValue(item, ["ro", "repeat_order", "repeat"]);

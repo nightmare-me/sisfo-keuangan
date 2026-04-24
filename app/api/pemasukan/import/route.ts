@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
             stack: err.stack,
             item: item
           };
-          fs.appendFileSync('c:\\Users\\Muis M\\.gemini\antigravity\\scratch\\sisfo-keuangan\\scratch\\import_debug.log', "\n\nFIRST ERROR:\n" + JSON.stringify(errorLog, null, 2));
+          fs.appendFileSync('c:\\Users\\Muis M\\.gemini\\antigravity\\scratch\\sisfo-keuangan\\scratch\\import_debug.log', "\n\nFIRST ERROR:\n" + JSON.stringify(errorLog, null, 2));
         }
         failCount++;
         console.error("Row import error:", err);

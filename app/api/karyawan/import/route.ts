@@ -16,8 +16,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Data must be an array" }, { status: 400 });
     }
 
-    // Pre-cache all roles for matching
-    const allRoles = await prisma.role.findMany();
+    // Pre-cache all roles and sub-roles for matching
+    const [allRoles, allSubRoles] = await Promise.all([
+      prisma.role.findMany(),
+      prisma.subRole.findMany({ include: { role: true } })
+    ]);
 
     // Get the latest NIP once before starting the loop
     const lastProfileBase = await prisma.karyawanProfile.findFirst({
@@ -48,12 +51,28 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        // 1. Role Matching
-        const roleName = (item.role || item.role_slug || 'cs').toLowerCase();
-        const targetRole = allRoles.find((r: any) => 
-          r.name.toLowerCase() === roleName || 
-          r.slug.toLowerCase() === roleName
+        // 1. Role & SubRole Matching (Smart Lookup)
+        const inputRole = (item.role || item.role_slug || 'cs').toLowerCase().trim();
+        
+        // Cari di Sub-Role dulu
+        const targetSubRole = allSubRoles.find((sr: any) => 
+          sr.name.toLowerCase() === inputRole
         );
+
+        let finalRoleId = "";
+        let finalSubRoleId = null;
+
+        if (targetSubRole) {
+          finalSubRoleId = targetSubRole.id;
+          finalRoleId = targetSubRole.roleId;
+        } else {
+          // Kalau tidak ketemu di Sub-Role, cari di Role Utama
+          const targetRole = allRoles.find((r: any) => 
+            r.name.toLowerCase() === inputRole || 
+            r.slug.toLowerCase() === inputRole
+          );
+          finalRoleId = targetRole?.id || allRoles.find(r => r.slug === 'cs')?.id || allRoles[0]?.id || "";
+        }
 
         // 2. User Handling
         let user = await prisma.user.findUnique({ where: { email } });
@@ -72,7 +91,8 @@ export async function POST(request: NextRequest) {
               namaPanggilan: item.nama_panggilan || item.namaPanggilan || null,
               noHp: String(item.no_hp || item.noHp || ""),
               password: hashedPassword,
-              roleId: targetRole?.id || allRoles[0]?.id || "",
+              roleId: finalRoleId,
+              subRoleId: finalSubRoleId,
               teamType: teamType,
               aktif: true
             }
@@ -87,7 +107,8 @@ export async function POST(request: NextRequest) {
           await prisma.user.update({
             where: { id: user.id },
             data: { 
-              roleId: targetRole?.id || undefined,
+              roleId: finalRoleId,
+              subRoleId: finalSubRoleId,
               namaPanggilan: item.nama_panggilan || undefined,
               noHp: item.no_hp || undefined,
               teamType: teamType

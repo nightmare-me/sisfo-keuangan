@@ -19,6 +19,7 @@ export default function SubRolePage() {
     description: "",
     permissionIds: [] as string[]
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -55,23 +56,58 @@ export default function SubRolePage() {
     }
 
     try {
+      const method = editingId ? "PUT" : "POST";
+      const payload = editingId ? { id: editingId, ...formData } : formData;
+
       const res = await fetch("/api/admin/sub-roles", {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
-        toast.success("Sub-Role berhasil dibuat");
-        setIsModalOpen(false);
-        setFormData({ name: "", roleId: "", description: "", permissionIds: [] });
+        toast.success(editingId ? "Sub-Role berhasil diperbarui" : "Sub-Role berhasil dibuat");
+        handleCloseModal();
         fetchData();
       } else {
-        toast.error("Gagal membuat Sub-Role");
+        toast.error("Gagal menyimpan Sub-Role");
       }
     } catch (error) {
       toast.error("Terjadi kesalahan");
     }
+  };
+
+  const handleEdit = (sr: any) => {
+    setEditingId(sr.id);
+    setFormData({
+      name: sr.name,
+      roleId: sr.roleId,
+      description: sr.description || "",
+      permissionIds: sr.permissions?.map((p: any) => p.id) || []
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Hapus sub-role ini? Tindakan ini tidak dapat dibatalkan.")) return;
+
+    try {
+      const res = await fetch(`/api/admin/sub-roles?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Sub-Role berhasil dihapus");
+        fetchData();
+      } else {
+        toast.error("Gagal menghapus sub-role");
+      }
+    } catch (error) {
+      toast.error("Terjadi kesalahan");
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormData({ name: "", roleId: "", description: "", permissionIds: [] });
   };
 
   const togglePermission = (id: string) => {
@@ -128,8 +164,8 @@ export default function SubRolePage() {
                   <td style={{ textAlign: 'center' }}>{sr._count?.users || 0}</td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button className="icon-btn" title="Edit"><Edit3 size={16} /></button>
-                      <button className="icon-btn text-danger" title="Hapus"><Trash2 size={16} /></button>
+                      <button className="icon-btn" title="Edit" onClick={() => handleEdit(sr)}><Edit3 size={16} /></button>
+                      <button className="icon-btn text-danger" title="Hapus" onClick={() => handleDelete(sr.id)}><Trash2 size={16} /></button>
                     </div>
                   </td>
                 </tr>
@@ -144,8 +180,8 @@ export default function SubRolePage() {
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: 700, width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-header">
-              <h2 className="headline-sm">Buat Sub-Role Baru</h2>
-              <button className="icon-btn" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
+              <h2 className="headline-sm">{editingId ? "Edit Sub-Role" : "Buat Sub-Role Baru"}</h2>
+              <button className="icon-btn" onClick={handleCloseModal}><X size={20} /></button>
             </div>
             
             <form onSubmit={handleSubmit} style={{ padding: '24px 0' }}>
@@ -223,9 +259,9 @@ export default function SubRolePage() {
               </div>
 
               <div className="modal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Batal</button>
+                <button type="button" className="btn btn-secondary" onClick={handleCloseModal}>Batal</button>
                 <button type="submit" className="btn btn-primary">
-                  <Save size={18} /> Simpan Sub-Role
+                  <Save size={18} /> {editingId ? "Perbarui Sub-Role" : "Simpan Sub-Role"}
                 </button>
               </div>
             </form>

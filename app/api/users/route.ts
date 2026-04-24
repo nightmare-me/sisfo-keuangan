@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       if (filterRoleSlug) {
         const users = await prisma.user.findMany({
           where: { role: { slug: filterRoleSlug.toLowerCase() }, aktif: true },
-          include: { role: true },
+          include: { role: true, karyawanProfile: true },
           orderBy: { name: "asc" },
         });
         
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     const users = await prisma.user.findMany({
       where,
-      include: { role: true },
+      include: { role: true, karyawanProfile: true },
       orderBy: { createdAt: "desc" },
     });
     

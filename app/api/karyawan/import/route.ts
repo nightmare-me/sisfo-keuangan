@@ -16,13 +16,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Data must be an array" }, { status: 400 });
     }
 
-    let successCount = 0;
-    let errorCount = 0;
-
     // Pre-cache all roles for matching
     const allRoles = await prisma.role.findMany();
 
-    // Get the latest NIP once before starting the loop to avoid race conditions
+    // Get the latest NIP once before starting the loop
     const lastProfileBase = await prisma.karyawanProfile.findFirst({
       where: { nip: { startsWith: "SP-", not: null } },
       orderBy: { nip: "desc" }
@@ -34,72 +31,74 @@ export async function POST(request: NextRequest) {
       if (!isNaN(num)) lastNum = num;
     }
 
-    for (const item of data) {
-      try {
-        const email = item.email?.toLowerCase().trim();
-        if (!email) continue;
+    const results = { success: 0, failed: 0, errors: [] as string[] };
 
-        // Find match for role name/slug
-        const roleName = item.role?.toLowerCase() || 'cs';
+    for (const item of data) {
+      const email = item.email?.toLowerCase().trim();
+      if (!email) {
+        results.failed++; results.errors.push("Email kosong di salah satu baris");
+        continue;
+      }
+
+      try {
+        // 1. Role Matching
+        const roleName = (item.role || item.role_slug || 'cs').toLowerCase();
         const targetRole = allRoles.find((r: any) => 
           r.name.toLowerCase() === roleName || 
           r.slug.toLowerCase() === roleName
         );
 
+        // 2. User Handling
         let user = await prisma.user.findUnique({ where: { email } });
-
         if (!user) {
-          // Create new user if not exists
           const hashedPassword = await bcrypt.hash("password123", 10);
           user = await prisma.user.create({
             data: {
               email,
-              name: item.nama || "Karyawan Baru",
-              namaPanggilan: item.nama_panggilan || null,
-              noHp: item.no_hp || null,
+              name: item.nama || item.name || "Karyawan Baru",
+              namaPanggilan: item.nama_panggilan || item.namaPanggilan || null,
+              noHp: String(item.no_hp || item.noHp || ""),
               password: hashedPassword,
               roleId: targetRole?.id || allRoles[0]?.id || "",
               aktif: true
             }
           });
-        } else {
-          // Update user if already exists
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { 
-              roleId: targetRole?.id || undefined,
-              namaPanggilan: item.nama_panggilan || undefined,
-              noHp: item.no_hp || undefined,
-            }
-          });
         }
 
-        // Get or Generate NIP
-        let nip = item.nip || undefined;
+        // 3. Generate/Get NIP
+        let nip = item.nip ? String(item.nip).trim() : null;
         if (!nip) {
           lastNum++;
           nip = `SP-${lastNum.toString().padStart(5, "0")}`;
         }
 
-        // Upsert KaryawanProfile
+        // 4. Data Formatting (Tahan Banting)
         const profileData: any = {
           nip,
-          nik: item.nik || undefined,
-          posisi: item.posisi || undefined,
-          tempatLahir: item.tempat_lahir || undefined,
-          tanggalLahir: item.tanggal_lahir ? new Date(item.tanggal_lahir) : undefined,
-          jenisKelamin: item.jenis_kelamin || undefined,
-          alamat: item.alamat || undefined,
-          statusPernikahan: item.status_pernikahan || undefined,
-          tanggalMasuk: item.tanggal_masuk ? new Date(item.tanggal_masuk) : undefined,
-          tanggalResign: item.tanggal_resign ? new Date(item.tanggal_resign) : undefined,
-          kontakDarurat: item.kontak_darurat || undefined,
-          gajiPokok: parseFloat(item.gajipokok || 0),
-          tunjangan: parseFloat(item.tunjangan || 0),
-          bankName: item.bank || undefined,
-          rekeningNomor: item.rekeningnomor || undefined,
-          rekeningNama: item.rekeningnama || undefined,
+          nik: item.nik ? String(item.nik).trim() : null,
+          posisi: item.posisi || null,
+          tempatLahir: item.tempat_lahir || item.tempatLahir || null,
+          tanggalLahir: item.tanggal_lahir ? new Date(item.tanggal_lahir) : null,
+          jenisKelamin: item.jenis_kelamin || item.jenisKelamin || null,
+          alamat: item.alamat || null,
+          statusPernikahan: item.status_pernikahan || item.statusPernikahan || null,
+          tanggalMasuk: item.tanggal_masuk ? new Date(item.tanggal_masuk) : null,
+          tanggalResign: item.tanggal_resign ? new Date(item.tanggal_resign) : null,
+          kontakDarurat: item.kontak_darurat || item.kontakDarurat || null,
+          gajiPokok: parseFloat(String(item.gajipokok || item.gaji_pokok || 0).replace(/[^0-9.]/g, '')),
+          tunjangan: parseFloat(String(item.tunjangan || 0).replace(/[^0-9.]/g, '')),
+          bankName: item.bank || item.bank_name || item.bankName || null,
+          rekeningNomor: item.rekeningnomor || item.rekening_nomor || item.rekeningNomor ? String(item.rekeningnomor || item.rekening_nomor || item.rekeningNomor) : null,
+          rekeningNama: item.rekeningnama || item.rekening_nama || item.rekeningNama || null,
         };
+
+        // 5. Upsert dengan Pengecekan Duplikat NIK (Manual agar pesan error jelas)
+        if (profileData.nik) {
+          const nikExists = await prisma.karyawanProfile.findFirst({
+            where: { nik: profileData.nik, NOT: { userId: user.id } }
+          });
+          if (nikExists) throw new Error(`NIK ${profileData.nik} sudah dipakai oleh user lain`);
+        }
 
         await prisma.karyawanProfile.upsert({
           where: { userId: user.id },
@@ -107,18 +106,18 @@ export async function POST(request: NextRequest) {
           create: { ...profileData, userId: user.id }
         });
 
-        successCount++;
-      } catch (err) {
-        console.error(`Import error for ${item.email}:`, err);
-        errorCount++;
+        results.success++;
+      } catch (err: any) {
+        console.error(`Import error for ${email}:`, err.message);
+        results.failed++;
+        results.errors.push(`${email}: ${err.message}`);
       }
     }
 
     return NextResponse.json({ 
       success: true, 
-      message: `Berhasil mengimpor ${successCount} data. ${errorCount} gagal.`,
-      successCount,
-      errorCount
+      message: `Impor selesai: ${results.success} sukses, ${results.failed} gagal.`,
+      ...results
     });
 
   } catch (error: any) {

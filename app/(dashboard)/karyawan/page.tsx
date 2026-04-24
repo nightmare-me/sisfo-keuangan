@@ -576,12 +576,17 @@ export default function KaryawanPage() {
                               body: JSON.stringify(jsonData)
                             });
                             if (res.ok) {
-                              alert("Berhasil mengimpor data!");
+                              const result = await res.json();
+                              let msg = `✅ Import selesai: ${result.success} sukses, ${result.failed} gagal.`;
+                              if (result.failed > 0) {
+                                msg += `\n\n❌ Detail Error:\n` + result.errors.slice(0, 10).join("\n");
+                              }
+                              alert(msg);
                               setShowImportModal(false);
                               fetchData();
                             } else {
                               const err = await res.json();
-                              alert("Gagal impor: " + err.error);
+                              alert("Gagal impor: " + (err.error || "Terjadi kesalahan sistem"));
                             }
                           } catch (err) {
                             alert("Terjadi kesalahan saat mengunggah.");

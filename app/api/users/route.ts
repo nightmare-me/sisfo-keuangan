@@ -81,31 +81,63 @@ export async function POST(request: NextRequest) {
         results.failed++; results.errors.push(`${email || name}: data tidak lengkap (nama, email, password, dan role wajib diisi)`); continue;
       }
 
-      const roleObj = await prisma.role.findUnique({ where: { slug: roleSlug.toLowerCase() } });
+      // Role Lookup yang lebih fleksibel (bisa Slug atau Nama)
+      let roleObj = await prisma.role.findFirst({ 
+        where: { 
+          OR: [
+            { slug: roleSlug.toLowerCase() },
+            { name: { equals: roleSlug, mode: 'insensitive' } }
+          ]
+        } 
+      });
+
       if (!roleObj) {
-        results.failed++; results.errors.push(`${email}: role '${roleSlug}' tidak ditemukan di database`); continue;
+        results.failed++; results.errors.push(`${email}: role '${roleSlug}' tidak ditemukan`); continue;
       }
 
-      const exists = await prisma.user.findUnique({ where: { email } });
+      const exists = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
       if (exists) {
         results.failed++; results.errors.push(`${email}: email sudah terdaftar`); continue;
       }
 
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Buat User sekaligus KaryawanProfile-nya
         await prisma.user.create({ 
           data: { 
-            name, email, password: hashedPassword, 
+            name, 
+            email: email.toLowerCase(), 
+            password: hashedPassword, 
             roleId: roleObj.id, 
             namaPanggilan: item.nama_panggilan || item.namaPanggilan || null,
-            noHp: item.no_hp || item.noHp || null,
-            teamType: Array.isArray(teamType) ? teamType : (teamType ? [teamType] : [])
+            noHp: String(item.no_hp || item.noHp || ""),
+            teamType: Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []),
+            karyawanProfile: {
+              create: {
+                nip: item.nip ? String(item.nip) : null,
+                nik: item.nik ? String(item.nik) : null,
+                posisi: item.posisi || null,
+                alamat: item.alamat || null,
+                bankName: item.bank_name || item.bankName || null,
+                rekeningNomor: item.rekening_nomor ? String(item.rekening_nomor) : null,
+                rekeningNama: item.rekening_nama || item.rekeningNama || null,
+                gajiPokok: parseFloat(item.gaji_pokok || item.gajiPokok || 0),
+                tunjangan: parseFloat(item.tunjangan || 0),
+                feeClosing: parseFloat(item.fee_closing || item.feeClosing || 0),
+                feeLead: parseFloat(item.fee_lead || item.feeLead || 0),
+                bonusTarget: parseInt(item.bonus_target || item.bonusTarget || 0),
+                bonusNominal: parseFloat(item.bonus_nominal || item.bonusNominal || 0),
+                keterangan: item.keterangan || "Imported via CSV"
+              }
+            }
           } 
         });
+        
         results.success++;
-        await recordLog((session.user as any).id, "Tambah User (Bulk)", name, `Role: ${roleObj.name}`);
-      } catch {
-        results.failed++; results.errors.push(`${email}: gagal disimpan`);
+        await recordLog((session.user as any).id, "Import User (Bulk)", name, `Role: ${roleObj.name}`);
+      } catch (err: any) {
+        results.failed++; results.errors.push(`${email}: gagal disimpan (${err.message})`);
       }
     }
     return NextResponse.json(results, { status: 201 });

@@ -15,9 +15,11 @@ export const authOptions: NextAuthOptions = {
         try {
           if (!credentials?.email || !credentials?.password) return null;
 
+          const loginEmail = credentials.email.toLowerCase();
+
           // 1. Cek tabel User (Staff/Admin)
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
+            where: { email: loginEmail },
             include: { 
               role: { include: { permissions: true } },
               subRole: { include: { permissions: true } }
@@ -47,8 +49,8 @@ export const authOptions: NextAuthOptions = {
           const siswa = await prisma.siswa.findFirst({
             where: {
               OR: [
-                { email: credentials.email },
-                { noSiswa: credentials.email }
+                { email: loginEmail },
+                { noSiswa: credentials.email } // ID Siswa biarkan asli (biasanya huruf besar/angka)
               ]
             }
           });

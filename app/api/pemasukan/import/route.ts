@@ -135,12 +135,15 @@ export async function POST(request: NextRequest) {
           });
 
           const pendingLead = await tx.lead.findFirst({
-            where: { siswaId: targetSiswa.id, status: { not: "LUNAS" } },
+            where: { 
+              nama: { equals: targetSiswa.nama, mode: 'insensitive' },
+              status: { notIn: ["PAID", "LUNAS"] } 
+            },
             orderBy: { createdAt: "desc" }
           });
 
           if (pendingLead) {
-            await tx.lead.update({ where: { id: pendingLead.id }, data: { status: "LUNAS" } });
+            await tx.lead.update({ where: { id: pendingLead.id }, data: { status: "PAID" } });
           }
 
           await tx.invoice.create({

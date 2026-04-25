@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       if (!isNaN(num)) lastNum = num;
     }
 
-    const results = { success: 0, failed: 0, errors: [] as string[] };
+    const results = { successCount: 0, failedCount: 0, errors: [] as string[] };
 
     // Helper untuk validasi tanggal
     const safeDate = (val: any) => {
@@ -157,17 +157,17 @@ export async function POST(request: NextRequest) {
           create: { ...profileData, userId: user.id }
         });
 
-        results.success++;
+        results.successCount++;
       } catch (err: any) {
         console.error(`Import error for ${email}:`, err.message);
-        results.failed++;
+        results.failedCount++;
         results.errors.push(`${email}: ${err.message}`);
       }
     }
 
     return NextResponse.json({ 
       success: true, 
-      message: `Impor selesai: ${results.success} sukses, ${results.failed} gagal.`,
+      message: `Impor selesai: ${results.successCount} sukses, ${results.failedCount} gagal.`,
       ...results
     });
 

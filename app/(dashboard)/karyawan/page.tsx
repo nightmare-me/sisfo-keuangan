@@ -580,8 +580,8 @@ export default function KaryawanPage() {
                             });
                             if (res.ok) {
                               const result = await res.json();
-                              let msg = `✅ Import selesai: ${result.success} sukses, ${result.failed} gagal.`;
-                              if (result.failed > 0) {
+                              let msg = `✅ Import selesai: ${result.successCount} sukses, ${result.failedCount} gagal.`;
+                              if (result.failedCount > 0) {
                                 msg += `\n\n❌ Detail Error:\n` + result.errors.slice(0, 10).join("\n");
                               }
                               alert(msg);

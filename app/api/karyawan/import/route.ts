@@ -105,8 +105,6 @@ export async function POST(request: NextRequest) {
         bonus_nominal: getVal(['bonus_nominal', 'bonus nominal'])
       };
 
-      console.log(`DEBUG IMPORT [${item.email}]:`, JSON.stringify(item, null, 2));
-
       if (!item.email) {
         results.failedCount++; results.errors.push("Email kosong di salah satu baris");
         continue;

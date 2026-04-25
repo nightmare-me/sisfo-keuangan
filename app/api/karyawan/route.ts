@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
       id: true,
       name: true,
       email: true,
+      namaPanggilan: true,
+      noHp: true,
       role: { select: { name: true } },
       karyawanProfile: true
     },

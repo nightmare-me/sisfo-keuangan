@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
         status_pernikahan: cleanStr(getVal(['status_pernikahan', 'status pernikahan', 'status'])),
         tanggal_masuk: getVal(['tanggal_masuk', 'tanggal masuk', 'join date']),
         tanggal_resign: getVal(['tanggal_resign', 'tanggal resign']),
+        kontak_darurat: cleanStr(getVal(['kontak_darurat', 'kontak darurat', 'emergency'])),
         bank_name: cleanStr(getVal(['bank_name', 'nama_bank', 'bank'])),
         rekening_nomor: fixExcelNumber(getVal(['rekening_nomor', 'no_rekening', 'nomor rekening'])),
         rekening_nama: cleanStr(getVal(['rekening_nama', 'pemilik_rekening', 'nama pemilik'])),
@@ -132,6 +133,24 @@ export async function POST(request: NextRequest) {
           finalRoleId = targetRole?.id || allRoles.find(r => r.slug === 'cs')?.id || allRoles[0]?.id || "";
         }
 
+        // --- NORMALIZE VALUES ---
+        let jk = item.jenis_kelamin?.toUpperCase() || undefined;
+        if (jk) {
+          if (jk.startsWith('L')) jk = 'LAKI-LAKI';
+          if (jk.startsWith('P')) jk = 'PEREMPUAN';
+        }
+
+        let status = item.status_pernikahan?.toUpperCase() || undefined;
+        if (status) {
+          if (status.includes('BELUM')) status = 'BELUM MENIKAH';
+          else if (status.includes('MENIKAH') || status.includes('KAWIN')) status = 'MENIKAH';
+        }
+
+        let phone = item.no_hp || undefined;
+        if (phone && !phone.startsWith('0') && !phone.startsWith('+')) {
+          phone = '0' + phone;
+        }
+
         let user = await prisma.user.findUnique({ where: { email: item.email } });
         const teamTypeRaw = item.team_type || "";
         const teamType = teamTypeRaw 
@@ -145,7 +164,7 @@ export async function POST(request: NextRequest) {
               email: item.email,
               name: item.nama || "Karyawan Baru",
               namaPanggilan: item.nama_panggilan || null,
-              noHp: item.no_hp || "",
+              noHp: phone || "",
               password: hashedPassword,
               roleId: finalRoleId,
               subRoleId: finalSubRoleId,
@@ -161,7 +180,7 @@ export async function POST(request: NextRequest) {
               roleId: finalRoleId,
               subRoleId: finalSubRoleId,
               namaPanggilan: item.nama_panggilan || undefined,
-              noHp: item.no_hp || undefined,
+              noHp: phone || undefined,
               teamType: teamType
             }
           });
@@ -188,11 +207,12 @@ export async function POST(request: NextRequest) {
           nik: item.nik || undefined,
           tempatLahir: item.tempat_lahir || undefined,
           tanggalLahir: safeDate(item.tanggal_lahir),
-          jenisKelamin: item.jenis_kelamin || undefined,
+          jenisKelamin: jk,
           alamat: item.alamat || undefined,
-          statusPernikahan: item.status_pernikahan || undefined,
+          statusPernikahan: status,
           tanggalMasuk: safeDate(item.tanggal_masuk),
           tanggalResign: safeDate(item.tanggal_resign),
+          kontakDarurat: item.kontak_darurat || undefined,
           bankName: item.bank_name || undefined,
           rekeningNomor: item.rekening_nomor || undefined,
           rekeningNama: item.rekening_nama || undefined,

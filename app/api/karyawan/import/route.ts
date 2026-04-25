@@ -55,9 +55,17 @@ export async function POST(request: NextRequest) {
         const inputRole = (item.role || item.role_slug || 'cs').toLowerCase().trim();
         
         // Cari di Sub-Role dulu
-        const targetSubRole = allSubRoles.find((sr: any) => 
+        let targetSubRole = allSubRoles.find((sr: any) => 
           sr.name.toLowerCase() === inputRole
         );
+
+        // Fallback: Jika tidak ketemu di kolom role, cari berdasarkan kolom posisi
+        if (!targetSubRole && item.posisi) {
+          const inputPosisi = String(item.posisi).toLowerCase().trim();
+          targetSubRole = allSubRoles.find((sr: any) => 
+            sr.name.toLowerCase() === inputPosisi
+          );
+        }
 
         let finalRoleId = "";
         let finalSubRoleId = null;

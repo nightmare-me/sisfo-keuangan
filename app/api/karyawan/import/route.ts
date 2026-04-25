@@ -142,13 +142,17 @@ export async function POST(request: NextRequest) {
 
         let status = item.status_pernikahan?.toUpperCase() || undefined;
         if (status) {
-          if (status.includes('BELUM')) status = 'BELUM MENIKAH';
-          else if (status.includes('MENIKAH') || status.includes('KAWIN')) status = 'MENIKAH';
+          if (status.includes('BELUM') || status.includes('LAJANG') || status === 'L') status = 'LAJANG';
+          else if (status.includes('MENIKAH') || status.includes('KAWIN') || status === 'M') status = 'MENIKAH';
+          else if (status.includes('CERAI')) status = 'CERAI';
         }
 
         let phone = item.no_hp || undefined;
-        if (phone && !phone.startsWith('0') && !phone.startsWith('+')) {
-          phone = '0' + phone;
+        if (phone) {
+          phone = String(phone).replace(/[^0-9+]/g, '');
+          if (!phone.startsWith('0') && !phone.startsWith('+')) {
+            phone = '0' + phone;
+          }
         }
 
         let user = await prisma.user.findUnique({ where: { email: item.email } });

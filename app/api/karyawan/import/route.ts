@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     for (const item of data) {
       const email = item.email?.toLowerCase().trim();
       if (!email) {
-        results.failed++; results.errors.push("Email kosong di salah satu baris");
+        results.failedCount++; results.errors.push("Email kosong di salah satu baris");
         continue;
       }
 

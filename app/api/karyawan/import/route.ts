@@ -16,13 +16,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Data must be an array" }, { status: 400 });
     }
 
-    // Pre-cache all roles and sub-roles for matching
     const [allRoles, allSubRoles] = await Promise.all([
       prisma.role.findMany(),
       prisma.subRole.findMany({ include: { role: true } })
     ]);
 
-    // Get the latest NIP once before starting the loop
     const lastProfileBase = await prisma.karyawanProfile.findFirst({
       where: { nip: { startsWith: "SP-", not: null } },
       orderBy: { nip: "desc" }
@@ -36,76 +34,74 @@ export async function POST(request: NextRequest) {
 
     const results = { successCount: 0, failedCount: 0, errors: [] as string[] };
 
-    // Helper untuk validasi tanggal
     const safeDate = (val: any) => {
-      if (!val || String(val).trim() === "") return null;
+      if (!val || String(val).trim() === "") return undefined;
       const d = new Date(val);
-      return isNaN(d.getTime()) ? null : d;
+      return isNaN(d.getTime()) ? undefined : d;
     };
 
     for (const rawItem of data) {
-      // Helper to find values regardless of header casing/spacing
       const getVal = (keys: string[]) => {
         for (const key of keys) {
-          const normalized = key.toLowerCase().trim();
+          const target = key.toLowerCase().trim().replace(/[\s\.\-]+/g, '_');
           for (const [k, v] of Object.entries(rawItem)) {
-            const rowKey = k.toLowerCase().trim().replace(/[\s\.]+/g, '_');
-            const targetKey = normalized.replace(/[\s\.]+/g, '_');
-            if (rowKey === targetKey) return v;
+            const rowKey = k.toLowerCase().replace(/[^\x20-\x7E]/g, '').trim().replace(/[\s\.\-]+/g, '_');
+            if (rowKey === target) return v;
           }
         }
         return null;
       };
 
+      const fixExcelNumber = (val: any) => {
+        if (!val) return "";
+        let s = String(val).trim();
+        if (s.toLowerCase().includes('e+') || s.includes(',')) {
+          const clean = s.replace(',', '.');
+          const num = Number(clean);
+          if (!isNaN(num)) return BigInt(Math.round(num)).toString();
+        }
+        return s;
+      };
+
       const item = {
-        email: getVal(['email']),
+        email: String(getVal(['email']) || "").toLowerCase().trim(),
         nama: getVal(['nama', 'name', 'nama_lengkap', 'nama lengkap']),
         nama_panggilan: getVal(['nama_panggilan', 'panggilan', 'nama panggilan']),
-        no_hp: getVal(['no_hp', 'no hp', 'whatsapp', 'telepon', 'no. hp']),
+        no_hp: fixExcelNumber(getVal(['no_hp', 'no hp', 'whatsapp', 'telepon', 'no. hp'])),
         posisi: getVal(['posisi', 'jabatan', 'position']),
         role: getVal(['role', 'role_slug', 'sub_role', 'jabatan_sistem']),
-        team_type: getVal(['team_type', 'kategori_tim', 'team type', 'teamType']),
+        team_type: getVal(['team_type', 'kategori_tim', 'team type']),
         nip: getVal(['nip', 'no_karyawan', 'nomor induk', 'no. karyawan']),
-        nik: getVal(['nik', 'no_ktp', 'nomor ktp', 'nik ktp']),
-        tempat_lahir: getVal(['tempat_lahir', 'tempat lahir', 'birthplace']),
+        nik: fixExcelNumber(getVal(['nik', 'no_ktp', 'nomor ktp', 'nik ktp'])),
+        tempat_lahir: getVal(['tempat_lahir', 'tempat lahir']),
         tanggal_lahir: getVal(['tanggal_lahir', 'tanggal lahir', 'birthdate']),
         jenis_kelamin: getVal(['jenis_kelamin', 'jenis kelamin', 'gender', 'jk']),
         alamat: getVal(['alamat', 'alamat lengkap', 'address']),
-        status_pernikahan: getVal(['status_pernikahan', 'status pernikahan', 'status', 'marital']),
-        tanggal_masuk: getVal(['tanggal_masuk', 'tanggal masuk', 'join date', 'tgl masuk']),
-        tanggal_resign: getVal(['tanggal_resign', 'tanggal resign', 'resign date']),
-        bank_name: getVal(['bank_name', 'nama_bank', 'bank', 'nama bank']),
-        rekening_nomor: getVal(['rekening_nomor', 'no_rekening', 'nomor rekening', 'no. rekening']),
-        rekening_nama: getVal(['rekening_nama', 'pemilik_rekening', 'nama rekening', 'nama pemilik rekening']),
-        gaji_pokok: getVal(['gaji_pokok', 'gaji pokok', 'gapok', 'salary']),
-        tunjangan: getVal(['tunjangan', 'tunjangan tetap', 'allowance']),
-        fee_closing: getVal(['fee_closing', 'fee closing', 'closing fee']),
-        fee_lead: getVal(['fee_lead', 'fee lead', 'lead fee']),
-        bonus_target: getVal(['bonus_target', 'bonus target', 'target unit']),
-        bonus_nominal: getVal(['bonus_nominal', 'bonus nominal', 'nominal bonus'])
+        status_pernikahan: getVal(['status_pernikahan', 'status pernikahan', 'status']),
+        tanggal_masuk: getVal(['tanggal_masuk', 'tanggal masuk', 'join date']),
+        tanggal_resign: getVal(['tanggal_resign', 'tanggal resign']),
+        bank_name: getVal(['bank_name', 'nama_bank', 'bank']),
+        rekening_nomor: fixExcelNumber(getVal(['rekening_nomor', 'no_rekening', 'nomor rekening'])),
+        rekening_nama: getVal(['rekening_nama', 'pemilik_rekening', 'nama pemilik']),
+        gaji_pokok: getVal(['gaji_pokok', 'gaji pokok', 'gapok', 'gajipokok']),
+        tunjangan: getVal(['tunjangan', 'tunjangan tetap']),
+        fee_closing: getVal(['fee_closing', 'fee closing']),
+        fee_lead: getVal(['fee_lead', 'fee lead']),
+        bonus_target: getVal(['bonus_target', 'bonus target']),
+        bonus_nominal: getVal(['bonus_nominal', 'bonus nominal'])
       };
 
-      const email = item.email ? String(item.email).toLowerCase().trim() : null;
-      if (!email) {
+      if (!item.email) {
         results.failedCount++; results.errors.push("Email kosong di salah satu baris");
         continue;
       }
 
       try {
-        // 1. Role & SubRole Matching (Smart Lookup)
         const inputRole = String(item.role || 'cs').toLowerCase().trim();
-        
-        // Cari di Sub-Role dulu
-        let targetSubRole = allSubRoles.find((sr: any) => 
-          sr.name.toLowerCase() === inputRole
-        );
-
-        // Fallback: Jika tidak ketemu di kolom role, cari berdasarkan kolom posisi
+        let targetSubRole = allSubRoles.find((sr: any) => sr.name.toLowerCase() === inputRole);
         if (!targetSubRole && item.posisi) {
           const inputPosisi = String(item.posisi).toLowerCase().trim();
-          targetSubRole = allSubRoles.find((sr: any) => 
-            sr.name.toLowerCase() === inputPosisi
-          );
+          targetSubRole = allSubRoles.find((sr: any) => sr.name.toLowerCase() === inputPosisi);
         }
 
         let finalRoleId = "";
@@ -115,56 +111,47 @@ export async function POST(request: NextRequest) {
           finalSubRoleId = targetSubRole.id;
           finalRoleId = targetSubRole.roleId;
         } else {
-          // Kalau tidak ketemu di Sub-Role, cari di Role Utama
           const targetRole = allRoles.find((r: any) => 
-            r.name.toLowerCase() === inputRole || 
-            r.slug.toLowerCase() === inputRole
+            r.name.toLowerCase() === inputRole || r.slug.toLowerCase() === inputRole
           );
           finalRoleId = targetRole?.id || allRoles.find(r => r.slug === 'cs')?.id || allRoles[0]?.id || "";
         }
 
-        // 2. User Handling
-        let user = await prisma.user.findUnique({ where: { email } });
+        let user = await prisma.user.findUnique({ where: { email: item.email } });
+        const teamTypeRaw = item.team_type || "";
+        const teamType = teamTypeRaw 
+          ? String(teamTypeRaw).split(',').map(t => t.trim().toUpperCase()).filter(Boolean)
+          : undefined;
+
         if (!user) {
           const hashedPassword = await bcrypt.hash("password123", 10);
-          const teamTypeRaw = item.team_type || "";
-          const teamType = teamTypeRaw 
-            ? String(teamTypeRaw).split(',').map(t => t.trim().toUpperCase()).filter(Boolean)
-            : [];
-
           user = await prisma.user.create({
             data: {
-              email,
+              email: item.email,
               name: item.nama || "Karyawan Baru",
               namaPanggilan: item.nama_panggilan || null,
-              noHp: String(item.no_hp || ""),
+              noHp: item.no_hp || "",
               password: hashedPassword,
               roleId: finalRoleId,
               subRoleId: finalSubRoleId,
-              teamType: teamType,
+              teamType: teamType || [],
               aktif: true
             }
           });
         } else {
-          // Update user if already exists
-          const teamTypeRaw = item.team_type || "";
-          const teamType = teamTypeRaw 
-            ? String(teamTypeRaw).split(',').map(t => t.trim().toUpperCase()).filter(Boolean)
-            : undefined;
-
           await prisma.user.update({
             where: { id: user.id },
             data: { 
+              name: item.nama || undefined,
               roleId: finalRoleId,
               subRoleId: finalSubRoleId,
               namaPanggilan: item.nama_panggilan || undefined,
-              noHp: item.no_hp ? String(item.no_hp) : undefined,
+              noHp: item.no_hp || undefined,
               teamType: teamType
             }
           });
         }
 
-        // 3. Generate/Get NIP
         let nip = item.nip ? String(item.nip).trim() : null;
         if (!nip) {
           const existingProfile = await prisma.karyawanProfile.findUnique({ where: { userId: user.id } });
@@ -175,48 +162,56 @@ export async function POST(request: NextRequest) {
           nip = `SP-${lastNum.toString().padStart(5, "0")}`;
         }
 
-        // 4. Karyawan Profile Upsert
-        const profileData = {
-          nip,
-          posisi: item.posisi ? String(item.posisi) : null,
-          nik: item.nik ? String(item.nik).trim() : null,
-          tempatLahir: item.tempat_lahir ? String(item.tempat_lahir) : null,
-          tanggalLahir: safeDate(item.tanggal_lahir),
-          jenisKelamin: item.jenis_kelamin ? String(item.jenis_kelamin) : null,
-          alamat: item.alamat ? String(item.alamat) : null,
-          statusPernikahan: item.status_pernikahan ? String(item.status_pernikahan) : null,
-          tanggalMasuk: safeDate(item.tanggal_masuk),
-          tanggalResign: safeDate(item.tanggal_resign),
-          bankName: item.bank_name ? String(item.bank_name) : null,
-          rekeningNomor: item.rekening_nomor ? String(item.rekening_nomor) : null,
-          rekeningNama: item.rekening_nama ? String(item.rekening_nama) : null,
-          gajiPokok: parseFloat(String(item.gaji_pokok || 0)),
-          tunjangan: parseFloat(String(item.tunjangan || 0)),
-          feeClosing: parseFloat(String(item.fee_closing || 0)),
-          feeLead: parseFloat(String(item.fee_lead || 0)),
-          bonusTarget: parseInt(String(item.bonus_target || 0)),
-          bonusNominal: parseFloat(String(item.bonus_nominal || 0)),
+        const cleanPrice = (val: any) => {
+          if (!val) return undefined;
+          const n = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+          return isNaN(n) ? undefined : n;
         };
 
-        // 5. Upsert dengan Pengecekan Duplikat NIK (Manual agar pesan error jelas)
-        if (profileData.nik) {
+        const profileData = {
+          posisi: item.posisi || undefined,
+          nik: item.nik || undefined,
+          tempatLahir: item.tempat_lahir || undefined,
+          tanggalLahir: safeDate(item.tanggal_lahir),
+          jenisKelamin: item.jenis_kelamin || undefined,
+          alamat: item.alamat || undefined,
+          statusPernikahan: item.status_pernikahan || undefined,
+          tanggalMasuk: safeDate(item.tanggal_masuk),
+          tanggalResign: safeDate(item.tanggal_resign),
+          bankName: item.bank_name || undefined,
+          rekeningNomor: item.rekening_nomor || undefined,
+          rekeningNama: item.rekening_nama || undefined,
+          gajiPokok: cleanPrice(item.gaji_pokok),
+          tunjangan: cleanPrice(item.tunjangan),
+          feeClosing: cleanPrice(item.fee_closing),
+          feeLead: cleanPrice(item.fee_lead),
+          bonusTarget: item.bonus_target ? parseInt(String(item.bonus_target)) : undefined,
+          bonusNominal: cleanPrice(item.bonus_nominal),
+          nip: nip || undefined
+        };
+
+        const filteredProfileData = Object.fromEntries(
+          Object.entries(profileData).filter(([_, v]) => v !== undefined)
+        );
+
+        if (filteredProfileData.nik) {
           const nikExists = await prisma.karyawanProfile.findFirst({
-            where: { nik: profileData.nik, NOT: { userId: user.id } }
+            where: { nik: filteredProfileData.nik as string, NOT: { userId: user.id } }
           });
-          if (nikExists) throw new Error(`NIK ${profileData.nik} sudah dipakai oleh user lain`);
+          if (nikExists) throw new Error(`NIK ${filteredProfileData.nik} sudah digunakan oleh user lain`);
         }
 
         await prisma.karyawanProfile.upsert({
           where: { userId: user.id },
-          update: profileData,
-          create: { ...profileData, userId: user.id }
+          update: filteredProfileData,
+          create: { ...filteredProfileData, userId: user.id } as any
         });
 
         results.successCount++;
       } catch (err: any) {
-        console.error(`Import error for ${email}:`, err.message);
+        console.error(`Import error for ${item.email}:`, err.message);
         results.failedCount++;
-        results.errors.push(`${email}: ${err.message}`);
+        results.errors.push(`${item.email}: ${err.message}`);
       }
     }
 

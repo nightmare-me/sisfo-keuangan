@@ -36,8 +36,21 @@ export async function POST(request: NextRequest) {
 
     const safeDate = (val: any) => {
       if (!val || String(val).trim() === "") return undefined;
-      const d = new Date(val);
+      let s = String(val).trim();
+      
+      if (s.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/)) {
+        const parts = s.split(/[\/\-]/);
+        s = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+
+      const d = new Date(s);
       return isNaN(d.getTime()) ? undefined : d;
+    };
+
+    const cleanStr = (val: any) => {
+      if (!val) return undefined;
+      const s = String(val).replace(/[^\x20-\x7E\u00A0-\u00FF]/g, '').trim();
+      return s || undefined;
     };
 
     for (const rawItem of data) {
@@ -65,24 +78,24 @@ export async function POST(request: NextRequest) {
 
       const item = {
         email: String(getVal(['email']) || "").toLowerCase().trim(),
-        nama: getVal(['nama', 'name', 'nama_lengkap', 'nama lengkap']),
-        nama_panggilan: getVal(['nama_panggilan', 'panggilan', 'nama panggilan']),
+        nama: cleanStr(getVal(['nama', 'name', 'nama_lengkap', 'nama lengkap'])),
+        nama_panggilan: cleanStr(getVal(['nama_panggilan', 'panggilan', 'nama panggilan'])),
         no_hp: fixExcelNumber(getVal(['no_hp', 'no hp', 'whatsapp', 'telepon', 'no. hp'])),
-        posisi: getVal(['posisi', 'jabatan', 'position']),
-        role: getVal(['role', 'role_slug', 'sub_role', 'jabatan_sistem']),
-        team_type: getVal(['team_type', 'kategori_tim', 'team type']),
-        nip: getVal(['nip', 'no_karyawan', 'nomor induk', 'no. karyawan']),
+        posisi: cleanStr(getVal(['posisi', 'jabatan', 'position'])),
+        role: cleanStr(getVal(['role', 'role_slug', 'sub_role', 'jabatan_sistem'])),
+        team_type: cleanStr(getVal(['team_type', 'kategori_tim', 'team type'])),
+        nip: cleanStr(getVal(['nip', 'no_karyawan', 'nomor induk', 'no. karyawan'])),
         nik: fixExcelNumber(getVal(['nik', 'no_ktp', 'nomor ktp', 'nik ktp'])),
-        tempat_lahir: getVal(['tempat_lahir', 'tempat lahir']),
+        tempat_lahir: cleanStr(getVal(['tempat_lahir', 'tempat lahir'])),
         tanggal_lahir: getVal(['tanggal_lahir', 'tanggal lahir', 'birthdate']),
-        jenis_kelamin: getVal(['jenis_kelamin', 'jenis kelamin', 'gender', 'jk']),
-        alamat: getVal(['alamat', 'alamat lengkap', 'address']),
-        status_pernikahan: getVal(['status_pernikahan', 'status pernikahan', 'status']),
+        jenis_kelamin: cleanStr(getVal(['jenis_kelamin', 'jenis kelamin', 'gender', 'jk'])),
+        alamat: cleanStr(getVal(['alamat', 'alamat lengkap', 'address'])),
+        status_pernikahan: cleanStr(getVal(['status_pernikahan', 'status pernikahan', 'status'])),
         tanggal_masuk: getVal(['tanggal_masuk', 'tanggal masuk', 'join date']),
         tanggal_resign: getVal(['tanggal_resign', 'tanggal resign']),
-        bank_name: getVal(['bank_name', 'nama_bank', 'bank']),
+        bank_name: cleanStr(getVal(['bank_name', 'nama_bank', 'bank'])),
         rekening_nomor: fixExcelNumber(getVal(['rekening_nomor', 'no_rekening', 'nomor rekening'])),
-        rekening_nama: getVal(['rekening_nama', 'pemilik_rekening', 'nama pemilik']),
+        rekening_nama: cleanStr(getVal(['rekening_nama', 'pemilik_rekening', 'nama pemilik'])),
         gaji_pokok: getVal(['gaji_pokok', 'gaji pokok', 'gapok', 'gajipokok']),
         tunjangan: getVal(['tunjangan', 'tunjangan tetap']),
         fee_closing: getVal(['fee_closing', 'fee closing']),
@@ -90,6 +103,8 @@ export async function POST(request: NextRequest) {
         bonus_target: getVal(['bonus_target', 'bonus target']),
         bonus_nominal: getVal(['bonus_nominal', 'bonus nominal'])
       };
+
+      console.log(`DEBUG IMPORT [${item.email}]:`, JSON.stringify(item, null, 2));
 
       if (!item.email) {
         results.failedCount++; results.errors.push("Email kosong di salah satu baris");

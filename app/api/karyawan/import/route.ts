@@ -210,10 +210,19 @@ export async function POST(request: NextRequest) {
         );
 
         if (filteredProfileData.nik) {
+          const nikStr = String(filteredProfileData.nik);
+          const isTruncated = nikStr.endsWith('000000');
+
           const nikExists = await prisma.karyawanProfile.findFirst({
-            where: { nik: filteredProfileData.nik as string, NOT: { userId: user.id } }
+            where: { nik: nikStr, NOT: { userId: user.id } }
           });
-          if (nikExists) throw new Error(`NIK ${filteredProfileData.nik} sudah digunakan oleh user lain`);
+
+          if (nikExists) {
+            console.warn(`NIK ${nikStr} duplicated for ${item.email}, skipping NIK update.`);
+            delete (filteredProfileData as any).nik;
+          } else if (isTruncated) {
+             console.warn(`NIK ${nikStr} for ${item.email} looks truncated by Excel.`);
+          }
         }
 
         await prisma.karyawanProfile.upsert({

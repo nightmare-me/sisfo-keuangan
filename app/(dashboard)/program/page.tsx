@@ -284,7 +284,7 @@ export default function ProgramPage() {
 
       {/* Modal Tambah/Edit */}
       {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowModal(false); setEditId(null); } }}>
+        <div className="modal-overlay">
           <div className="modal modal-lg">
             <div className="modal-header">
               <div className="modal-title">{editId ? "✏️ Edit Produk" : "📦 Tambah Produk Baru"}</div>

@@ -683,7 +683,7 @@ export default function CRMPage() {
 
       {/* NEW LEAD NATIVE MODAL */}
       {showNewLeadModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowNewLeadModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ width: 440 }}>
              <div className="modal-header">
                 <div>
@@ -752,7 +752,7 @@ export default function CRMPage() {
 
       {/* CONVERT TO SISWA LUNAS MODAL */}
       {showConvertModal && selectedLead && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowConvertModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ width: 440 }}>
              <div className="modal-header">
                 <div>
@@ -862,7 +862,7 @@ export default function CRMPage() {
       )}
       {/* Modal Import CSV */}
       {showImportModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 500 }}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1087,7 +1087,7 @@ export default function CRMPage() {
       )}
       {/* MODAL BAGIKAN LINK */}
       {showShareLinksModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowShareLinksModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 550 }}>
             <div className="modal-header">
               <div className="modal-title">

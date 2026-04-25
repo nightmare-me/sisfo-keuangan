@@ -496,7 +496,7 @@ export default function PengeluaranPage() {
       )}
       {/* Modal Import CSV */}
       {showImportModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 550 }}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -198,7 +198,7 @@ export default function RolesPage() {
 
         {/* Modal Tambah Role */}
         {showAddModal && (
-          <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowAddModal(false); }}>
+          <div className="modal-overlay">
             <div className="modal" style={{ maxWidth: 400 }}>
               <div className="modal-header">
                 <div className="modal-title">Tambah Role Baru</div>

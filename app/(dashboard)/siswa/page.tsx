@@ -416,7 +416,7 @@ export default function SiswaPage() {
 
       {/* MODAL REFUND */}
       {showRefundModal && selectedForRefund && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowRefundModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ width: 440 }}>
             <div className="modal-header">
               <div className="modal-title">💸 Ajukan Pembatalan / Refund</div>
@@ -480,7 +480,7 @@ export default function SiswaPage() {
       )}
       {/* Modal Import CSV */}
       {showImportModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 500 }}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

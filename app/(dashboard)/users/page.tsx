@@ -488,7 +488,7 @@ export default function UsersPage() {
 
       {/* ── Modal ─────────────────────────────────────────── */}
       {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) { setShowModal(false); setEditUser(null); } }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: mode === "bulk" ? 860 : 520, width: "95vw" }}>
             <div className="modal-header">
               <div className="modal-title">
@@ -709,7 +709,7 @@ export default function UsersPage() {
 
       {/* ── Payroll Modal ──────────────────────────────────────── */}
       {showPayrollModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowPayrollModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 640, width: "95vw" }}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

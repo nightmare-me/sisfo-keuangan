@@ -160,7 +160,7 @@ export default function RefundPage() {
 
       {/* PROCESS MODAL */}
       {showProcessModal && selectedRefund && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowProcessModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ width: 440 }}>
             <div className="modal-header">
               <div className="modal-title">Proses Pengajuan Refund</div>

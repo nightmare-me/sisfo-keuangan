@@ -247,7 +247,7 @@ export default function PengajarPage() {
 
       {/* Modal Tambah Pengajar */}
       {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal modal-lg" style={{ maxWidth: 800 }}>
             <div className="modal-header">
               <div className="modal-title">🎓 Pendaftaran Pengajar Baru</div>

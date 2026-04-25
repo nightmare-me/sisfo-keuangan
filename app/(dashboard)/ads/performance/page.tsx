@@ -171,7 +171,7 @@ export default function AdsPerformancePage() {
 
       {/* Input Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 440 }}>
             <div className="modal-header">
               <div className="modal-title">📉 Input Performa Iklan</div>

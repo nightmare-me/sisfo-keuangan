@@ -304,7 +304,7 @@ export default function KaryawanPage() {
 
       {/* Modal Edit Data Karyawan */}
       {showModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal modal-lg">
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -504,7 +504,7 @@ export default function KaryawanPage() {
 
       {/* Modal Import CSV */}
       {showImportModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowImportModal(false); }}>
+        <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 500 }}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

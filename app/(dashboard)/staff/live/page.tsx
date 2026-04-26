@@ -40,7 +40,11 @@ export default function StaffLivePage() {
       .then(r => r.json())
       .then(d => {
         const users = Array.isArray(d) ? d : (d.data || []);
-        setTalents(users.filter((u: any) => u.role !== "PENGAJAR"));
+        // Filter: Hanya yang posisinya "Talent Live"
+        setTalents(users.filter((u: any) => 
+          u.karyawanProfile?.posisi?.toUpperCase() === "TALENT LIVE" &&
+          u.aktif !== false
+        ));
       })
       .catch(() => setTalents([]));
   }, []);

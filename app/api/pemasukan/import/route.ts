@@ -86,10 +86,10 @@ export async function POST(request: NextRequest) {
         const pKey = cleanStr(pName);
         let pId = programCache.get(pKey);
 
+        const sharingProfitInput = String(getVal(item, ["sharing_profit", "issharingprofit", "profitsharing"]) || "0");
+        const isSharing = sharingProfitInput === "1" || sharingProfitInput.toLowerCase() === "true";
+
         if (!pId && pName !== "") {
-          const sharingProfitInput = String(getVal(item, ["sharing_profit", "issharingprofit", "profitsharing"]) || "0");
-          const isSharing = sharingProfitInput === "1" || sharingProfitInput.toLowerCase() === "true";
-          
           const newP = await prisma.program.create({
             data: { 
               nama: pName.toUpperCase().trim(), 
@@ -100,6 +100,12 @@ export async function POST(request: NextRequest) {
           });
           pId = newP.id;
           programCache.set(pKey, pId);
+        } else if (pId && isSharing) {
+          // OPTIMASI: Update status profit sharing jika di excel ditandai 1
+          await prisma.program.update({
+            where: { id: pId },
+            data: { isProfitSharing: true }
+          });
         }
 
         // Cari CS & Talent (Hanya jika ada isinya)

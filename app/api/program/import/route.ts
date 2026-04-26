@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
             durasi: item.durasi || undefined,
             feeClosing: parseFloat(item.feeClosing) || undefined,
             feeClosingRO: parseFloat(item.feeClosingRO) || undefined,
-            isProfitSharing: item.isProfitSharing === "true" || item.isProfitSharing === true,
+            isProfitSharing: String(item.isProfitSharing).toLowerCase() === "true",
             aktif: true, // Pastikan jadi aktif lagi kalau di-update
           }
         });
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
             durasi: item.durasi || null,
             feeClosing: parseFloat(item.feeClosing) || 0,
             feeClosingRO: parseFloat(item.feeClosingRO) || 0,
-            isProfitSharing: item.isProfitSharing === "true" || item.isProfitSharing === true,
+            isProfitSharing: String(item.isProfitSharing).toLowerCase() === "true",
             aktif: true,
           }
         });

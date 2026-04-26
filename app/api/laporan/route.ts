@@ -14,6 +14,15 @@ export async function GET(request: NextRequest) {
     const to = searchParams.get("to");
     const type = searchParams.get("type") ?? "month";
 
+    // 0. AMBIL CONFIG KEUANGAN DARI DB
+    const dbConfigs = await prisma.financialConfig.findMany();
+    const config: Record<string, number> = {};
+    dbConfigs.forEach(c => {
+      config[c.key] = c.value;
+    });
+
+    const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
+
     const now = new Date();
     let startDate: Date;
     let endDate: Date;
@@ -34,8 +43,27 @@ export async function GET(request: NextRequest) {
       endDate = new Date(to);
       endDate.setHours(23, 59, 59, 999);
     } else {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      // DEFAULT: BULAN INI (DENGAN CUTOFF)
+      // Jika cutoffDay = 1, maka ini akan jadi bulan kalender biasa.
+      if (cutoffDay === 1) {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      } else {
+        // Misal hari ini 26 April. Cutoff 25.
+        // Maka range: 25 April - 24 Mei? 
+        // Biasanya kalau user lihat "Bulan Ini" di tanggal 26 April, dia mau lihat periode yang SEDANG BERJALAN.
+        // Periode berjalan sekarang adalah 25 April s/d 24 Mei.
+        
+        // Tapi kalau sekarang tanggal 10 April, periode berjalannya adalah 25 Maret s/d 24 April.
+        
+        if (now.getDate() >= cutoffDay) {
+          startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
+        } else {
+          startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
+          endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
+        }
+      }
     }
 
     const dateFilter = { gte: startDate, lte: endDate };

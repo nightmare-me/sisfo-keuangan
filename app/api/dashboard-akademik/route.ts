@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
   // 5. Tren 30 hari penambahan murid
   const trendData = [];
   for (let i = 29; i >= 0; i--) {
-    const date = subDays(today, i);
+    const date = subDays(now, i);
     const dayStart = startOfDay(date);
     const dayEnd = endOfDay(date);
     const count = await prisma.siswa.count({ where: { createdAt: { gte: dayStart, lte: dayEnd } } });

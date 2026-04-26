@@ -22,15 +22,18 @@ export async function GET(request: NextRequest) {
     const bulan = parseInt(searchParams.get("bulan") ?? String(new Date().getMonth() + 1));
     const tahun = parseInt(searchParams.get("tahun") ?? String(new Date().getFullYear()));
 
-    const dayStart = startOfMonth(new Date(tahun, bulan - 1));
-    const dayEnd = endOfMonth(new Date(tahun, bulan - 1));
-
     // 0. AMBIL CONFIG KEUANGAN DARI DB
     const dbConfigs = await prisma.financialConfig.findMany();
     const config: Record<string, number> = {};
     dbConfigs.forEach(c => {
       config[c.key] = c.value;
     });
+
+    const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
+
+    // Hitung Range Berdasarkan Cutoff (Misal: 25 Maret - 24 April untuk Gaji April)
+    const dayStart = new Date(tahun, bulan - 2, cutoffDay, 0, 0, 0);
+    const dayEnd = new Date(tahun, bulan - 1, cutoffDay - 1, 23, 59, 59);
 
     // 1. HITUNG METRIK GLOBAL (Profit)
     const [pemasukanAll, approvedRefunds, pengeluaranAll, adsAll] = await Promise.all([

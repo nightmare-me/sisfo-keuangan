@@ -79,6 +79,11 @@ export default function PemasukanPage() {
   const teamType = (session?.user as any)?.teamType || "";
   const isCSLive = isCS && teamType === "CS_LIVE";
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit] = useState(25);
+  const [filterPrograms, setFilterPrograms] = useState<any[]>([]);
+
   function fetchData() {
     if (sessionStatus === "loading") return;
     
@@ -94,7 +99,9 @@ export default function PemasukanPage() {
     
     if (filter.programId) params.set("programId", filter.programId);
     if (filter.metodeBayar) params.set("metodeBayar", filter.metodeBayar);
-    params.set("limit", "100");
+    
+    params.set("page", String(page));
+    params.set("limit", String(limit));
 
     setLoading(true);
     fetch(`/api/pemasukan?${params}`)
@@ -102,6 +109,7 @@ export default function PemasukanPage() {
       .then((d) => { 
         setData(d.data ?? []); 
         setSummary(d.summary ?? { totalPemasukan: 0, totalDiskon: 0, jumlahTransaksi: 0 }); 
+        setTotalPages(d.totalPages ?? 1);
         setLoading(false); 
       })
       .catch(() => setLoading(false));
@@ -111,10 +119,15 @@ export default function PemasukanPage() {
     if (sessionStatus !== "loading") {
       fetchData(); 
     }
-  }, [filter, sessionStatus, userId]);
+  }, [filter, page, sessionStatus, userId]);
 
   useEffect(() => {
+    // Program untuk modal tambah (Semua yang aktif)
     fetch("/api/program").then(r => r.json()).then(d => setPrograms(d)).catch(() => {});
+    
+    // Program untuk filter (Hanya yang sudah ada transaksinya)
+    fetch("/api/program?hasPemasukanOnly=true").then(r => r.json()).then(d => setFilterPrograms(d)).catch(() => {});
+
     fetch("/api/siswa?limit=500").then(r => r.json()).then(d => setSiswaDrop(d.data ?? [])).catch(() => {});
     fetch("/api/users?role=CS").then(r => r.json()).then(d => setCsList(d)).catch(() => {});
     fetch("/api/users").then(r => r.json()).then(d => {
@@ -293,11 +306,11 @@ export default function PemasukanPage() {
                  <span>→</span>
                  <input type="date" className="form-control" value={filter.to} onChange={e => setFilter(f => ({ ...f, to: e.target.value }))} />
               </div>
-              <select className="form-control" style={{ width: 200 }} value={filter.programId} onChange={e => setFilter(f => ({ ...f, programId: e.target.value }))}>
+              <select className="form-control" style={{ width: 200 }} value={filter.programId} onChange={e => { setFilter(f => ({ ...f, programId: e.target.value })); setPage(1); }}>
                  <option value="">Semua Program</option>
-                 {programs.map(p => <option key={p.id} value={p.id}>{p.nama}</option>)}
+                 {filterPrograms.map(p => <option key={p.id} value={p.id}>{p.nama}</option>)}
               </select>
-              <button className="btn btn-secondary btn-sm" onClick={() => setFilter({ from: "", to: "", csId: "", programId: "", metodeBayar: "" })}><RefreshCw size={14} /> Reset</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setFilter({ from: "", to: "", csId: "", programId: "", metodeBayar: "" }); setPage(1); }}><RefreshCw size={14} /> Reset</button>
            </div>
         </div>
 
@@ -363,6 +376,45 @@ export default function PemasukanPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px' }}>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Menampilkan halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              disabled={page === 1} 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              Sebelumnya
+            </button>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || (p >= page - 1 && p <= page + 1))
+                .map((p, i, arr) => (
+                  <div key={p} style={{ display: 'flex', gap: 4 }}>
+                    {i > 0 && arr[i-1] !== p - 1 && <span style={{ padding: '0 4px' }}>...</span>}
+                    <button 
+                      className={`btn btn-sm ${page === p ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ minWidth: 36 }}
+                      onClick={() => setPage(p)}
+                    >
+                      {p}
+                    </button>
+                  </div>
+                ))}
+            </div>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              disabled={page === totalPages} 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            >
+              Selanjutnya
+            </button>
+          </div>
         </div>
       </div>
 

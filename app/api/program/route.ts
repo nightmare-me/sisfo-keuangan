@@ -7,8 +7,16 @@ export async function GET(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { searchParams } = new URL(request.url);
   const all = searchParams.get("all") === "true";
+  const hasPemasukanOnly = searchParams.get("hasPemasukanOnly") === "true";
+
+  const where: any = all ? {} : { aktif: true };
+  
+  if (hasPemasukanOnly) {
+    where.pemasukan = { some: {} };
+  }
+
   const programs = await prisma.program.findMany({
-    where: all ? {} : { aktif: true },
+    where,
     orderBy: { nama: "asc" },
   });
   return NextResponse.json(programs);

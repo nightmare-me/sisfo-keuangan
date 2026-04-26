@@ -77,12 +77,20 @@ export default function PengeluaranPage() {
     setExistingNotes([]);
   }
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit] = useState(25);
+
   function fetchData() {
     const p = new URLSearchParams();
     if (filter.from) p.set("from", filter.from);
     if (filter.to) p.set("to", filter.to+"T23:59:59");
     if (filter.kategori) p.set("kategori", filter.kategori);
     if (filter.metodeBayar) p.set("metodeBayar", filter.metodeBayar);
+    
+    p.set("page", String(page));
+    p.set("limit", String(limit));
+
     setLoading(true);
     fetch(`/api/pengeluaran?${p}`)
       .then(async r => {
@@ -96,10 +104,10 @@ export default function PengeluaranPage() {
         setData(d.data ?? []);
         setSummary(d.summary ?? { totalPengeluaran: 0, jumlahTransaksi: 0 });
         setByKategori(d.byKategori ?? []);
+        setTotalPages(d.totalPages ?? 1);
       })
       .catch(err => {
         console.error("Fetch Data Error:", err);
-        // alert(err.message);
       })
       .finally(() => {
         setLoading(false);
@@ -119,8 +127,11 @@ export default function PengeluaranPage() {
 
   useEffect(() => {
     fetchData();
+  }, [filter, page]);
+
+  useEffect(() => {
     fetchCategories();
-  }, [filter]);
+  }, []);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files.length > 0) {
@@ -311,36 +322,35 @@ export default function PengeluaranPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Calendar size={18} style={{ color: "var(--primary)" }} />
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="date" className="form-control" value={filter.from} onChange={e=>setFilter(f=>({...f,from:e.target.value}))} style={{ maxWidth:150, padding: '8px 12px' }} />
+                <input type="date" className="form-control" value={filter.from} onChange={e=>{setFilter(f=>({...f,from:e.target.value})); setPage(1);}} style={{ maxWidth:150, padding: '8px 12px' }} />
                 <span style={{ color:"var(--text-muted)", fontSize:13 }}>s/d</span>
-                <input type="date" className="form-control" value={filter.to} onChange={e=>setFilter(f=>({...f,to:e.target.value}))} style={{ maxWidth:150, padding: '8px 12px' }} />
+                <input type="date" className="form-control" value={filter.to} onChange={e=>{setFilter(f=>({...f,to:e.target.value})); setPage(1);}} style={{ maxWidth:150, padding: '8px 12px' }} />
               </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
               <Filter size={18} style={{ color: "var(--primary)" }} />
               <div style={{ display: "flex", gap: 12, flex: 1 }}>
-                <select className="form-control" value={filter.kategori} onChange={e=>setFilter(f=>({...f,kategori:e.target.value}))} style={{ padding: '8px 12px' }}>
+                <select className="form-control" value={filter.kategori} onChange={e=>{setFilter(f=>({...f,kategori:e.target.value})); setPage(1);}} style={{ padding: '8px 12px' }}>
                   <option value="">Semua Kategori</option>
                   {Array.isArray(kategoriList) && kategoriList.map(k => <option key={k.id} value={k.nama}>{k.nama}</option>)}
                 </select>
                 <button className="btn btn-secondary btn-icon" onClick={() => setShowCatModal(true)} title="Kelola Kategori">
                   <Plus size={16} />
                 </button>
-                <select className="form-control" value={filter.metodeBayar} onChange={e=>setFilter(f=>({...f,metodeBayar:e.target.value}))} style={{ padding: '8px 12px' }}>
+                <select className="form-control" value={filter.metodeBayar} onChange={e=>{setFilter(f=>({...f,metodeBayar:e.target.value})); setPage(1);}} style={{ padding: '8px 12px' }}>
                   <option value="">Semua Metode</option>
                   {METODE.map(m=><option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
             </div>
 
-            <button className="btn btn-secondary btn-sm" onClick={()=>setFilter({from:"",to:"",kategori:"",metodeBayar:""})} style={{ borderRadius: 'var(--radius-full)' }}>
+            <button className="btn btn-secondary btn-sm" onClick={()=>{setFilter({from:"",to:"",kategori:"",metodeBayar:""}); setPage(1);}} style={{ borderRadius: 'var(--radius-full)' }}>
               <RefreshCw size={14} /> Reset
             </button>
           </div>
         </div>
 
-        {/* Table */}
         {/* Table Section */}
         <div className="table-wrapper">
           <table>
@@ -406,6 +416,45 @@ export default function PengeluaranPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Section */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px' }}>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Menampilkan halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              disabled={page === 1} 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              Sebelumnya
+            </button>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || (p >= page - 1 && p <= page + 1))
+                .map((p, i, arr) => (
+                  <div key={p} style={{ display: 'flex', gap: 4 }}>
+                    {i > 0 && arr[i-1] !== p - 1 && <span style={{ padding: '0 4px' }}>...</span>}
+                    <button 
+                      className={`btn btn-sm ${page === p ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ minWidth: 36 }}
+                      onClick={() => setPage(p)}
+                    >
+                      {p}
+                    </button>
+                  </div>
+                ))}
+            </div>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              disabled={page === totalPages} 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            >
+              Selanjutnya
+            </button>
+          </div>
         </div>
       </div>
 

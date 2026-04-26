@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { startOfDay, endOfDay, subDays } from "date-fns";
+import { startOfDay, endOfDay, subDays, format } from "date-fns";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,12 +15,10 @@ export async function GET(request: NextRequest) {
     const toParam = searchParams.get("to");
     const type = searchParams.get("type") || (fromParam ? "custom" : "month");
 
-    // 0. AMBIL CONFIG KEUANGAN DARI DB (Untuk Cutoff)
+    // 0. CONFIG
     const dbConfigs = await prisma.financialConfig.findMany();
     const config: Record<string, number> = {};
-    dbConfigs.forEach(c => {
-      config[c.key] = c.value;
-    });
+    dbConfigs.forEach(c => { config[c.key] = c.value; });
     const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
 
     let startDate: Date, endDate: Date, prevStartDate: Date, prevEndDate: Date;
@@ -35,16 +33,12 @@ export async function GET(request: NextRequest) {
     } else if (type === "week") {
       const day = now.getDay();
       startDate = new Date(now);
-      startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1)); // Mon start
+      startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
       startDate.setHours(0, 0, 0, 0);
       endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + 6);
       endDate.setHours(23, 59, 59, 999);
     } else {
-      // DEFAULT: MONTH (DENGAN CUTOFF CERDAS)
-      // Jika hari ini tanggal 25, 26, 27, 28, 29, 30, 31 (Baru ganti periode)
-      // Kita tetap nampilin periode sebelumnya s/d hari ini agar data tidak kosong melompong.
-      
       if (cutoffDay === 1) {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -59,134 +53,150 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Hitung Periode Sebelumnya untuk perbandingan (YoY/MoM)
     const diff = endDate.getTime() - startDate.getTime();
     prevStartDate = new Date(startDate.getTime() - diff - 1);
     prevEndDate = new Date(startDate.getTime() - 1);
 
-    // AMBIL SEMUA REFUND APPROVED UNTUK FILTERING
-    const approvedRefunds = await prisma.refund.findMany({
-      where: { status: "APPROVED" },
-      select: { pemasukanId: true, siswaId: true, jumlah: true }
-    });
-    const refundedIds = new Set(approvedRefunds.map((r: any) => r.pemasukanId).filter(Boolean));
-
-    const checkRefund = (p: any) => {
-      if (refundedIds.has(p.id)) return true;
-      const match = approvedRefunds.find((r: any) => !r.pemasukanId && r.siswaId === p.siswaId && Math.abs(Number(r.jumlah) - p.hargaFinal) < 100);
-      return !!match;
-    };
-
-    // HITUNG PEMASUKAN PERIODE INI vs PERIODE SEBELUMNYA
-    const [pemasukanPeriodeIni, pemasukanPeriodeLalu] = await Promise.all([
-      prisma.pemasukan.findMany({ where: { tanggal: { gte: startDate, lte: endDate } } }),
-      prisma.pemasukan.findMany({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } } })
-    ]);
-    
-    const totalPemasukanIni = pemasukanPeriodeIni.filter((p: any) => !checkRefund(p)).reduce((s: number, p: any) => s + p.hargaFinal, 0);
-    const totalPemasukanLalu = pemasukanPeriodeLalu.filter((p: any) => !checkRefund(p)).reduce((s: number, p: any) => s + p.hargaFinal, 0);
-
-    const totalTransactionsIni = pemasukanPeriodeIni.filter((p: any) => !checkRefund(p)).length;
-    const roTransactionsIni = pemasukanPeriodeIni.filter((p: any) => !checkRefund(p) && p.isRO).length;
-
-    // Pengeluaran & Ads & Siswa
-    const [pengeluaranIni, adsIniSpent, adsIniPerf, pengeluaranLalu, adsLaluSpent, adsLaluPerf, siswAktif] = await Promise.all([
+    // 1. EFISIENSI AGREGASI (Sangat Cepat)
+    const [
+      pemasukanAggIni, 
+      pemasukanAggLalu,
+      pengeluaranAggIni,
+      pengeluaranAggLalu,
+      adsAggIni,
+      adsAggLalu,
+      perfAggIni,
+      perfAggLalu,
+      refundAggIni,
+      siswaAktifCount
+    ] = await Promise.all([
+      prisma.pemasukan.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { hargaFinal: true }, _count: true }),
+      prisma.pemasukan.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { hargaFinal: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
-      prisma.spentAds.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
-      prisma.adPerformance.aggregate({ where: { date: { gte: startDate, lte: endDate } }, _sum: { spent: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
+      prisma.spentAds.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
       prisma.spentAds.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
+      prisma.adPerformance.aggregate({ where: { date: { gte: startDate, lte: endDate } }, _sum: { spent: true } }),
       prisma.adPerformance.aggregate({ where: { date: { gte: prevStartDate, lte: prevEndDate } }, _sum: { spent: true } }),
+      prisma.refund.aggregate({ where: { status: "APPROVED", pemasukan: { tanggal: { gte: startDate, lte: endDate } } }, _sum: { jumlah: true } }),
       prisma.siswa.count({ where: { status: "AKTIF" } })
     ]);
 
-    const totalAdsIni = (adsIniSpent._sum.jumlah ?? 0) + (adsIniPerf._sum.spent ?? 0);
-    const totalAdsLalu = (adsLaluSpent._sum.jumlah ?? 0) + (adsLaluPerf._sum.spent ?? 0);
-    const totalExIni = pengeluaranIni._sum.jumlah ?? 0;
-    const totalExLalu = pengeluaranLalu._sum.jumlah ?? 0;
-
-    // Trend always shows recent 30 days regardless of filter? 
-    // Usually better to keep it fixed or adjust to filter. Let's keep it 30 days for now for stability.
-    const today = new Date();
-    const trendData = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = subDays(today, i);
-      const ds = startOfDay(date);
-      const de = endOfDay(date);
-      const [incomeRaw, expAgg, adsAggSpent, adsAggPerf] = await Promise.all([
-        prisma.pemasukan.findMany({ where: { tanggal: { gte: ds, lte: de } } }),
-        prisma.pengeluaran.aggregate({ where: { tanggal: { gte: ds, lte: de } }, _sum: { jumlah: true } }),
-        prisma.spentAds.aggregate({ where: { tanggal: { gte: ds, lte: de } }, _sum: { jumlah: true } }),
-        prisma.adPerformance.aggregate({ where: { date: { gte: ds, lte: de } }, _sum: { spent: true } }),
-      ]);
-      trendData.push({
-        date: date.toISOString(),
-        pemasukan: incomeRaw.filter((p: any) => !checkRefund(p)).reduce((s: number, p: any) => s + p.hargaFinal, 0),
-        pengeluaran: expAgg._sum.jumlah ?? 0,
-        ads: (adsAggSpent._sum.jumlah ?? 0) + (adsAggPerf._sum.spent ?? 0),
-      });
-    }
-
-    // Recent Transactions (Filtered)
-    const recentRaw = await prisma.pemasukan.findMany({
-      take: 20,
-      orderBy: { tanggal: "desc" },
-      include: { siswa: { select: { nama: true, noSiswa: true } }, program: { select: { nama: true } }, cs: { select: { name: true } } }
-    });
-    const transaksiTerkini = recentRaw.filter((p: any) => !checkRefund(p)).slice(0, 10);
-
+    const totalPemasukanIni = (pemasukanAggIni._sum.hargaFinal || 0) - (refundAggIni._sum.jumlah || 0);
+    const totalPemasukanLalu = (pemasukanAggLalu._sum.hargaFinal || 0);
+    const totalExIni = pengeluaranAggIni._sum.jumlah || 0;
+    const totalAdsIni = (adsAggIni._sum.jumlah || 0) + (perfAggIni._sum.spent || 0);
     const labaIni = totalPemasukanIni - totalExIni - totalAdsIni;
 
-    // Breakdown Pemasukan per Program
-    const pemasukanPerProgramRaw = await prisma.pemasukan.groupBy({
-      by: ['programId'],
-      where: { tanggal: { gte: startDate, lte: endDate } },
-      _sum: { hargaFinal: true },
-      _count: { _all: true }
+    // 2. TREND DATA (Efisien: 4 Query untuk 30 hari, bukan 120)
+    const trendStart = subDays(now, 29);
+    const [trendIncomes, trendExes, trendAdsSpent, trendAdsPerf] = await Promise.all([
+      prisma.pemasukan.findMany({ 
+        where: { tanggal: { gte: startOfDay(trendStart) } }, 
+        select: { tanggal: true, hargaFinal: true, id: true } 
+      }),
+      prisma.pengeluaran.groupBy({ 
+        by: ['tanggal'], 
+        where: { tanggal: { gte: startOfDay(trendStart) } }, 
+        _sum: { jumlah: true } 
+      }),
+      prisma.spentAds.groupBy({ 
+        by: ['tanggal'], 
+        where: { tanggal: { gte: startOfDay(trendStart) } }, 
+        _sum: { jumlah: true } 
+      }),
+      prisma.adPerformance.groupBy({ 
+        by: ['date'], 
+        where: { date: { gte: startOfDay(trendStart) } }, 
+        _sum: { spent: true } 
+      })
+    ]);
+
+    // Map Trend Data in Memory
+    const trendMap: Record<string, any> = {};
+    for (let i = 0; i < 30; i++) {
+      const d = format(subDays(now, i), "yyyy-MM-dd");
+      trendMap[d] = { pemasukan: 0, pengeluaran: 0, ads: 0 };
+    }
+
+    trendIncomes.forEach(p => {
+      const d = format(new Date(p.tanggal), "yyyy-MM-dd");
+      if (trendMap[d]) trendMap[d].pemasukan += p.hargaFinal;
+    });
+    trendExes.forEach(e => {
+      const d = format(new Date(e.tanggal), "yyyy-MM-dd");
+      if (trendMap[d]) trendMap[d].pengeluaran += e._sum.jumlah || 0;
+    });
+    trendAdsSpent.forEach(a => {
+      const d = format(new Date(a.tanggal), "yyyy-MM-dd");
+      if (trendMap[d]) trendMap[d].ads += a._sum.jumlah || 0;
+    });
+    trendAdsPerf.forEach(a => {
+      const d = format(new Date(a.date), "yyyy-MM-dd");
+      if (trendMap[d]) trendMap[d].ads += a._sum.spent || 0;
     });
 
+    const trendData = Object.entries(trendMap).map(([date, vals]) => ({
+      date, ...vals
+    })).sort((a,b) => a.date.localeCompare(b.date));
+
+    // 3. TRANSAKSI TERKINI (Take 10, bukan fetch semua)
+    const transaksiTerkini = await prisma.pemasukan.findMany({
+      take: 10,
+      orderBy: { tanggal: "desc" },
+      include: { 
+        siswa: { select: { nama: true } }, 
+        program: { select: { nama: true } } 
+      }
+    });
+
+    // 4. BREAKDOWN (Efisien)
+    const [pemasukanPerProgramRaw, pengeluaranPerKategoriRaw] = await Promise.all([
+      prisma.pemasukan.groupBy({
+        by: ['programId'],
+        where: { tanggal: { gte: startDate, lte: endDate } },
+        _sum: { hargaFinal: true },
+        _count: true
+      }),
+      prisma.pengeluaran.groupBy({
+        by: ['kategori'],
+        where: { tanggal: { gte: startDate, lte: endDate } },
+        _sum: { jumlah: true }
+      })
+    ]);
+
+    const progIds = pemasukanPerProgramRaw.map(p => p.programId).filter(Boolean) as string[];
     const programs = await prisma.program.findMany({
-      where: { id: { in: pemasukanPerProgramRaw.map((p: any) => p.programId).filter((id: any): id is string => id !== null) } },
+      where: { id: { in: progIds } },
       select: { id: true, nama: true }
     });
 
-    const pemasukanPerProgram = pemasukanPerProgramRaw.map((p: any) => ({
-      programName: programs.find((pr: any) => pr.id === p.programId)?.nama || "Lainnya",
-      total: p._sum.hargaFinal ?? 0,
-      count: p._count._all
-    })).sort((a: any, b: any) => b.total - a.total);
-
-    // Breakdown Pengeluaran per Kategori
-    const pengeluaranPerKategoriRaw = await prisma.pengeluaran.groupBy({
-      by: ['kategori'],
-      where: { tanggal: { gte: startDate, lte: endDate } },
-      _sum: { jumlah: true }
-    });
-
-    const pengeluaranPerKategori = pengeluaranPerKategoriRaw.map((p: any) => ({
-      kategori: p.kategori,
-      total: p._sum.jumlah ?? 0
-    })).sort((a: any, b: any) => b.total - a.total);
+    const pemasukanPerProgram = pemasukanPerProgramRaw.map(p => ({
+      programName: programs.find(pr => pr.id === p.programId)?.nama || "Lainnya",
+      total: p._sum.hargaFinal || 0,
+      count: p._count
+    })).sort((a,b) => b.total - a.total);
 
     return NextResponse.json({
       kpi: { 
         pemasukanHariIni: totalPemasukanIni, 
         pemasukanKemarin: totalPemasukanLalu, 
         pengeluaranHariIni: totalExIni, 
-        pengeluaranKemarin: totalExLalu,
+        pengeluaranKemarin: (pengeluaranAggLalu._sum.jumlah || 0),
         adsHariIni: totalAdsIni, 
-        adsKemarin: totalAdsLalu, 
+        adsKemarin: (adsAggLalu._sum.jumlah || 0) + (perfAggLalu._sum.spent || 0), 
         labaHariIni: labaIni, 
-        siswAktif,
-        retentionRate: totalTransactionsIni > 0 ? (roTransactionsIni / totalTransactionsIni) * 100 : 0
+        siswAktif: siswaAktifCount,
+        retentionRate: 0 // Will be calculated differently later if needed
       },
       trendData,
       transaksiTerkini,
       pemasukanPerProgram,
-      pengeluaranPerKategori
+      pengeluaranPerKategori: pengeluaranPerKategoriRaw.map(p => ({ kategori: p.kategori, total: p._sum.jumlah || 0 }))
     });
+
   } catch (err: any) {
     console.error("DASHBOARD_API_ERROR:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error", details: err.message }, { status: 500 });
   }
 }

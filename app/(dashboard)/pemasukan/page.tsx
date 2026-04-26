@@ -151,7 +151,7 @@ export default function PemasukanPage() {
       keterangan: item.keterangan ?? "",
       isRO: item.isRO || false,
       talentId: item.talentId || "",
-      tanggal: item.tanggal.slice(0, 10),
+      tanggal: item.tanggal ? String(item.tanggal).slice(0, 10) : new Date().toISOString().slice(0, 10),
     });
     setShowModal(true);
   }

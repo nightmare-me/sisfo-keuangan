@@ -8,24 +8,33 @@ export async function GET(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userId = (session?.user as any)?.id;
-  const todayStart = startOfDay(new Date());
-  const todayEnd = endOfDay(new Date());
-  const last30DaysStart = startOfDay(subDays(new Date(), 30));
+  const { searchParams } = new URL(request.url);
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
-  // 1. Pemasukan Saya Hari Ini
+  let startDate: Date, endDate: Date;
+  if (from && to) {
+    startDate = startOfDay(new Date(from));
+    endDate = endOfDay(new Date(to));
+  } else {
+    startDate = startOfDay(subDays(new Date(), 30));
+    endDate = endOfDay(new Date());
+  }
+
+  // 1. Pemasukan Saya Hari Ini (Dalam Range Filter)
   const myRevenueToday = await prisma.pemasukan.aggregate({
     where: {
       csId: userId,
-      tanggal: { gte: todayStart, lte: todayEnd }
+      tanggal: { gte: startDate, lte: endDate }
     },
     _sum: { hargaFinal: true }
   });
 
-  // 2. Statistik Leads Saya (Bulan Ini)
+  // 2. Statistik Leads Saya (Dalam Range Filter)
   const myLeadsCount = await prisma.lead.count({
     where: {
       csId: userId,
-      createdAt: { gte: startOfDay(subDays(new Date(), 30)) }
+      createdAt: { gte: startDate, lte: endDate }
     }
   });
 
@@ -33,15 +42,15 @@ export async function GET(request: NextRequest) {
     where: {
       csId: userId,
       status: "PAID",
-      tanggalClosing: { gte: startOfDay(subDays(new Date(), 30)) }
+      tanggalClosing: { gte: startDate, lte: endDate }
     }
   });
 
-  // 3. Leaderboard CS (30 Hari Terakhir)
+  // 3. Leaderboard CS (Dalam Range Filter)
   const leaderboardRaw = await prisma.pemasukan.groupBy({
     by: ['csId'],
     where: {
-      tanggal: { gte: last30DaysStart },
+      tanggal: { gte: startDate, lte: endDate },
       csId: { not: null }
     },
     _sum: { hargaFinal: true },

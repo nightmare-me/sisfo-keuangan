@@ -138,6 +138,28 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    // 5. LEADERBOARD CS (IKUT FILTER TANGGAL)
+    const csStats = await prisma.pemasukan.groupBy({
+      by: ["csId"],
+      where: {
+        tanggal: { gte: startDate, lte: endDate },
+        csId: { not: null }
+      },
+      _sum: { hargaFinal: true },
+      _count: { id: true },
+    });
+
+    const leaderboardRaw = await Promise.all(csStats.map(async (stat) => {
+      const user = await prisma.user.findUnique({ where: { id: stat.csId! } });
+      return {
+        name: user?.name || "Unknown",
+        closing: stat._count.id,
+        revenue: stat._sum.hargaFinal || 0
+      };
+    }));
+
+    const leaderboard = leaderboardRaw.sort((a, b) => b.revenue - a.revenue);
+
     const totalRefund = refundAgg._sum.jumlah ?? 0;
     // Pemasukan Bersih (setelah dikurangi refund approved)
     const totalPemasukanBruto = pemasukanAgg._sum.hargaFinal ?? 0;

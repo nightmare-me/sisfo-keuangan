@@ -174,7 +174,7 @@ export default function DashboardPage() {
 
     if (isCS) {
       promises.push(
-        fetch("/api/dashboard-cs")
+        fetch("/api/dashboard-cs" + query)
           .then(r => r.json())
           .then(d => setCsData(d))
       );
@@ -276,7 +276,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Retention Rate</div>
-              <div style={{ fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 800 }}>88%</div>
+              <div style={{ fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 800 }}>{(data?.kpi as any)?.retentionRate?.toFixed(0) || 0}%</div>
               <div style={{ fontSize: 11, color: 'var(--brand-primary-light)', marginTop: 4 }}>Target: 90%</div>
             </div>
           </div>

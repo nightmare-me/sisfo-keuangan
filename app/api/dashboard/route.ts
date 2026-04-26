@@ -53,6 +53,9 @@ export async function GET(request: NextRequest) {
     const totalPemasukanIni = pemasukanPeriodeIni.filter((p: any) => !checkRefund(p)).reduce((s: number, p: any) => s + p.hargaFinal, 0);
     const totalPemasukanLalu = pemasukanPeriodeLalu.filter((p: any) => !checkRefund(p)).reduce((s: number, p: any) => s + p.hargaFinal, 0);
 
+    const totalTransactionsIni = pemasukanPeriodeIni.filter((p: any) => !checkRefund(p)).length;
+    const roTransactionsIni = pemasukanPeriodeIni.filter((p: any) => !checkRefund(p) && p.isRO).length;
+
     // Pengeluaran & Ads & Siswa
     const [pengeluaranIni, adsIniSpent, adsIniPerf, pengeluaranLalu, adsLaluSpent, adsLaluPerf, siswAktif] = await Promise.all([
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
@@ -141,7 +144,8 @@ export async function GET(request: NextRequest) {
         adsHariIni: totalAdsIni, 
         adsKemarin: totalAdsLalu, 
         labaHariIni: labaIni, 
-        siswAktif 
+        siswAktif,
+        retentionRate: totalTransactionsIni > 0 ? (roTransactionsIni / totalTransactionsIni) * 100 : 0
       },
       trendData,
       transaksiTerkini,

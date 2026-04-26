@@ -121,8 +121,9 @@ export async function GET(request: NextRequest) {
           const progName = p.program?.nama?.toLowerCase() || "";
           
           if (p.isRO) feeCategory = "CS_RO";
-          else if (progName.includes("toefl") || progName.includes("ielts")) feeCategory = "CS_TOEFL";
+          else if (progName.includes("toefl") || progName.includes("ielts") || progName.includes("elite") || progName.includes("master")) feeCategory = "CS_TOEFL";
           else if (progName.includes("live")) feeCategory = "CS_LIVE";
+          else if (progName.includes("affiliate")) feeCategory = "CS_AFFILIATE";
 
           totalFee += calculateCSFee(
             feeCategory as any,

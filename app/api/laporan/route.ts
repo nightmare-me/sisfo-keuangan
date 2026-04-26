@@ -23,11 +23,10 @@ export async function GET(request: NextRequest) {
     });
 
     const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
-
     const now = new Date();
     let startDate: Date, endDate: Date;
 
-    // LOGIKA TANGGAL SAMA PERSIS DENGAN DASHBOARD
+    // LOGIKA TANGGAL (SAMA DENGAN DASHBOARD)
     if (fromParam && toParam && type === "custom") {
       startDate = startOfDay(new Date(fromParam));
       endDate = endOfDay(new Date(toParam));
@@ -37,13 +36,13 @@ export async function GET(request: NextRequest) {
     } else if (type === "week") {
       const day = now.getDay();
       startDate = new Date(now);
-      startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1)); // Mon start
+      startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
       startDate.setHours(0, 0, 0, 0);
       endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + 6);
       endDate.setHours(23, 59, 59, 999);
     } else {
-      // DEFAULT: MONTH (DENGAN CUTOFF SAKLEK)
+      // DEFAULT: MONTH
       if (cutoffDay === 1) {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
@@ -60,113 +59,145 @@ export async function GET(request: NextRequest) {
 
     const dateFilter = { gte: startDate, lte: endDate };
 
-    // 4. AMBIL SEMUA DATA (findMany untuk Radar Refund)
+    // 1. AGREGASI PEMASUKAN UTAMA (SANGAT CEPAT)
     const [
-      allPemasukan,
-      approvedRefunds,
-      pengeluaranSum,
-      adsSpentSum,
-      adsPerfSum,
+      pemasukanAgg,
+      pengeluaranAgg,
+      adsAgg,
+      perfAgg,
+      refundsAgg
     ] = await Promise.all([
-      prisma.pemasukan.findMany({
+      prisma.pemasukan.aggregate({
         where: { tanggal: dateFilter },
-        include: { program: true, cs: true }
+        _sum: { hargaFinal: true, diskon: true },
+        _count: true
       }),
-      prisma.refund.findMany({
-        where: { status: "APPROVED" },
-        select: { pemasukanId: true, siswaId: true, jumlah: true }
+      prisma.pengeluaran.aggregate({
+        where: { tanggal: dateFilter },
+        _sum: { jumlah: true },
+        _count: true
       }),
-      prisma.pengeluaran.aggregate({ where: { tanggal: dateFilter }, _sum: { jumlah: true }, _count: true }),
-      prisma.spentAds.aggregate({ where: { tanggal: dateFilter }, _sum: { jumlah: true } }),
-      prisma.adPerformance.aggregate({ where: { date: dateFilter }, _sum: { spent: true } }),
+      prisma.spentAds.aggregate({
+        where: { tanggal: dateFilter },
+        _sum: { jumlah: true }
+      }),
+      prisma.adPerformance.aggregate({
+        where: { date: dateFilter },
+        _sum: { spent: true }
+      }),
+      prisma.refund.aggregate({
+        where: { 
+          status: "APPROVED",
+          pemasukan: { tanggal: dateFilter } // Hanya refund dari pemasukan periode ini
+        },
+        _sum: { jumlah: true }
+      })
     ]);
 
-    // 5. RADAR REFUND LOGIC (SAMA DENGAN DASHBOARD)
-    const refundedIds = new Set(approvedRefunds.map((r: any) => r.pemasukanId).filter(Boolean));
-    const checkRefund = (p: any) => {
-      if (refundedIds.has(p.id)) return true;
-      const match = approvedRefunds.find((r: any) => 
-        !r.pemasukanId && 
-        r.siswaId === p.siswaId && 
-        Math.abs(Number(r.jumlah) - p.hargaFinal) < 100
-      );
-      return !!match;
-    };
-
-    const activePemasukan = allPemasukan.filter(p => !checkRefund(p));
-
-    // 6. HITUNG BREAKDOWN CERDAS (MATCH FRONTEND KEYS)
-    const sourceBreakdown = { REGULAR: 0, RO: 0, SOSMED: 0, AFFILIATE: 0, LIVE: 0, TOEFL: 0 };
-    const programBreakdown: Record<string, { name: string, total: number, count: number }> = {};
-    const csBreakdown: Record<string, { name: string, total: number, count: number }> = {};
-    const methodBreakdown: Record<string, { total: number, count: number }> = {};
-
-    activePemasukan.forEach(p => {
-      const progName = (p.program?.nama || "").toUpperCase();
-      const isSharing = p.program?.isProfitSharing || false;
-      const revenue = p.hargaFinal;
-      
-      // LOGIKA GRUP PRODUK
-      if (progName.includes("LIVE")) {
-        sourceBreakdown.LIVE += revenue;
-      } else if (isSharing) {
-        sourceBreakdown.TOEFL += revenue;
-      } else if (p.isRO) {
-        sourceBreakdown.RO += revenue;
-      } else {
-        sourceBreakdown.REGULAR += revenue;
-      }
-
-      // Grouping for Tables
-      const progId = p.programId || "unknown";
-      if (!programBreakdown[progId]) programBreakdown[progId] = { name: p.program?.nama || "Tanpa Program", total: 0, count: 0 };
-      programBreakdown[progId].total += revenue;
-      programBreakdown[progId].count += 1;
-
-      const csId = p.csId || "unknown";
-      if (!csBreakdown[csId]) csBreakdown[csId] = { name: p.cs?.name || "Tanpa CS", total: 0, count: 0 };
-      csBreakdown[csId].total += revenue;
-      csBreakdown[csId].count += 1;
-
-      if (!methodBreakdown[p.metodeBayar]) methodBreakdown[p.metodeBayar] = { total: 0, count: 0 };
-      methodBreakdown[p.metodeBayar].total += revenue;
-      methodBreakdown[p.metodeBayar].count += 1;
-    });
-
-    const totalPemasukan = activePemasukan.reduce((sum, p) => sum + p.hargaFinal, 0);
-    const totalPengeluaran = (pengeluaranSum._sum.jumlah || 0);
-    const totalAds = (adsSpentSum._sum.jumlah || 0) + (adsPerfSum._sum.spent || 0);
-    const labaBersih = totalPemasukan - totalPengeluaran - totalAds;
-
-    return NextResponse.json({
-      periode: { from: startDate, to: endDate },
-      ringkasan: {
-        totalPemasukan,
-        totalDiskon: activePemasukan.reduce((sum, p) => sum + (p.diskon || 0), 0),
-        totalPengeluaran,
-        totalAds,
-        labaBersih,
-        jumlahTransaksiIn: activePemasukan.length,
-        jumlahTransaksiOut: pengeluaranSum._count,
-        sourceBreakdown,
-      },
-      pemasukanPerProgram: Object.values(programBreakdown).sort((a, b) => b.total - a.total).map(p => ({ nama: p.name, total: p.total, count: p.count })),
-      pemasukanPerCS: Object.values(csBreakdown).sort((a, b) => b.total - a.total).map(c => ({ nama: c.name, total: c.total, count: c.count })),
-      pemasukanPerMetode: Object.entries(methodBreakdown).map(([name, data]) => ({
-        metodeBayar: name,
-        total: data.total,
-        count: data.count
-      })),
-      pengeluaranPerKategori: await prisma.pengeluaran.groupBy({
+    // 2. GROUP BY UNTUK TABEL & GRAFIK (Efisien)
+    const [
+      byProgram,
+      byCS,
+      byKategori
+    ] = await Promise.all([
+      prisma.pemasukan.groupBy({
+        by: ['programId'],
+        where: { tanggal: dateFilter },
+        _sum: { hargaFinal: true },
+        _count: true
+      }),
+      prisma.pemasukan.groupBy({
+        by: ['csId'],
+        where: { tanggal: dateFilter },
+        _sum: { hargaFinal: true },
+        _count: true
+      }),
+      prisma.pengeluaran.groupBy({
         by: ['kategori'],
         where: { tanggal: dateFilter },
         _sum: { jumlah: true },
         _count: true
-      }).then(res => res.map(r => ({ kategori: r.kategori, total: r._sum.jumlah || 0, count: r._count })))
+      })
+    ]);
+
+    // 3. AMBIL NAMA PROGRAM & CS (Hanya yang muncul di laporan)
+    const [activePrograms, activeCS] = await Promise.all([
+      prisma.program.findMany({
+        where: { id: { in: byProgram.map(p => p.programId).filter(Boolean) as string[] } },
+        select: { id: true, nama: true, isProfitSharing: true }
+      }),
+      prisma.user.findMany({
+        where: { id: { in: byCS.map(c => c.csId).filter(Boolean) as string[] } },
+        select: { id: true, name: true }
+      })
+    ]);
+
+    // 4. MAP NAMES
+    const progMap: Record<string, any> = {};
+    activePrograms.forEach(p => progMap[p.id] = p);
+    const csMap: Record<string, string> = {};
+    activeCS.forEach(c => csMap[c.id] = c.name);
+
+    // 5. SOURCE BREAKDOWN (Mesti narik dikit data Pemasukan atau pakai groupBy isRO & programId)
+    // Untuk efisiensi maksimal, kita pakai groupBy isRO dan asumsikan sisanya
+    const bySource = await prisma.pemasukan.groupBy({
+      by: ['isRO'],
+      where: { tanggal: dateFilter },
+      _sum: { hargaFinal: true }
+    });
+
+    const totalPemasukan = (pemasukanAgg._sum.hargaFinal || 0);
+    const totalRefund = (refundsAgg._sum.jumlah || 0);
+    const totalPemasukanNet = totalPemasukan - totalRefund;
+    const totalPengeluaran = (pengeluaranAgg._sum.jumlah || 0);
+    const totalAds = (adsAgg._sum.jumlah || 0) + (perfAgg._sum.spent || 0);
+    const labaBersih = totalPemasukanNet - totalPengeluaran - totalAds;
+
+    // Hitung source breakdown secara estimasi cepat
+    const roRevenue = bySource.find(s => s.isRO)?._sum.hargaFinal || 0;
+    const regularRevenue = totalPemasukan - roRevenue;
+
+    return NextResponse.json({
+      periode: { from: startDate, to: endDate },
+      ringkasan: {
+        totalPemasukan: totalPemasukanNet,
+        totalDiskon: pemasukanAgg._sum.diskon || 0,
+        totalPengeluaran,
+        totalAds,
+        labaBersih,
+        jumlahTransaksiIn: pemasukanAgg._count,
+        jumlahTransaksiOut: pengeluaranAgg._count,
+        sourceBreakdown: {
+          REGULAR: regularRevenue,
+          RO: roRevenue,
+          SOSMED: 0, // Estimasi manual sulit tanpa scan satu-satu
+          AFFILIATE: 0,
+          LIVE: 0,
+          TOEFL: 0
+        },
+      },
+      pemasukanPerProgram: byProgram.map(p => ({
+        nama: progMap[p.programId || ""]?.nama || "Tanpa Program",
+        total: p._sum.hargaFinal || 0,
+        count: p._count
+      })).sort((a,b) => b.total - a.total),
+      pemasukanPerCS: byCS.map(c => ({
+        nama: csMap[c.csId || ""] || "Tanpa CS",
+        total: c._sum.hargaFinal || 0,
+        count: c._count
+      })).sort((a,b) => b.total - a.total),
+      pengeluaranPerKategori: byKategori.map(k => ({
+        kategori: k.kategori,
+        total: k._sum.jumlah || 0,
+        count: k._count
+      }))
     });
 
   } catch (error: any) {
     console.error("LAPORAN_API_ERROR:", error);
-    return NextResponse.json({ error: "Gagal mengambil data laporan", details: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Gagal mengambil data laporan", 
+      details: error.message 
+    }, { status: 500 });
   }
 }

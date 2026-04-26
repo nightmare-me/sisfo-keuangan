@@ -53,12 +53,7 @@ export default function LaporanPage() {
     fetch(`/api/laporan?${p}`)
       .then(r=>r.json())
       .then(d=>{ 
-        if (d.error) {
-          console.error(d.error);
-          setData(null);
-        } else {
-          setData(d);
-        }
+        setData(d);
         setLoading(false); 
       })
       .catch(err => {
@@ -266,8 +261,12 @@ export default function LaporanPage() {
         ) : !data || data.error ? (
           <div style={{ textAlign: 'center', padding: 64 }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Belum Ada Data Laporan</h3>
-            <p style={{ color: 'var(--text-muted)' }}>{data?.error || "Pilih periode lain atau jalankan transaksi hari ini."}</p>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Tidak Dapat Menampilkan Laporan</h3>
+            <p style={{ color: 'var(--danger)', fontWeight: 600, maxWidth: 400, margin: '0 auto' }}>
+              {data?.error || "Pilih periode lain atau pastikan data transaksi sudah benar."}
+            </p>
+            {data?.details && <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 12 }}>Detail: {data.details}</p>}
+
           </div>
         ) : (
           <>

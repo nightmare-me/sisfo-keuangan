@@ -144,29 +144,40 @@ export async function POST(request: NextRequest) {
         const kodeUnik = finalPrice % 1000;
         const nominalMurni = finalPrice - kodeUnik;
 
-        // 5. Handle Date (Paksa dd/mm/yyyy agar tidak terbalik mm/dd)
+        // 5. Handle Date (Super Robust)
         let tgl = new Date();
         const tglInput = findValue(["tanggal", "date", "tgl"]);
+        
         if (tglInput && String(tglInput).trim() !== "") {
           const s = String(tglInput).trim();
-          // Jika format dd/mm/yyyy (pakai slash /)
-          if (s.includes("/")) {
+          
+          // A. Handle Excel Numeric Date (misal: 45408)
+          if (/^\d+$/.test(s) && parseInt(s) > 10000) {
+            const excelDate = parseInt(s);
+            // Excel epoch starts at Jan 1, 1900
+            tgl = new Date((excelDate - 25569) * 86400 * 1000);
+          } 
+          // B. Handle format dd/mm/yyyy (pakai slash /)
+          else if (s.includes("/")) {
             const parts = s.split("/");
             if (parts.length === 3) {
               const d = parseInt(parts[0]);
-              const m = parseInt(parts[1]) - 1; // JS month 0-11
+              const m = parseInt(parts[1]) - 1; 
               const y = parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2]);
               const parsedDate = new Date(y, m, d);
-              if (!isNaN(parsedDate.getTime())) {
-                tgl = parsedDate;
-              }
+              if (!isNaN(parsedDate.getTime())) tgl = parsedDate;
             }
-          } else {
+          } 
+          // C. Handle Standard formats (yyyy-mm-dd, etc)
+          else {
             const parsedDate = new Date(s);
-            if (!isNaN(parsedDate.getTime())) {
-              tgl = parsedDate;
-            }
+            if (!isNaN(parsedDate.getTime())) tgl = parsedDate;
           }
+        }
+        
+        // Final guard: Jangan sampai masuk 1970 (Epoch 0)
+        if (isNaN(tgl.getTime()) || tgl.getFullYear() < 2000) {
+          tgl = new Date();
         }
 
         const keterangan = findValue(["keterangan", "note"]) || "";

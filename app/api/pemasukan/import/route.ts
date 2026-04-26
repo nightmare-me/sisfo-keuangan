@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // Tingkatkan timeout jika di Vercel
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Data harus berupa array" }, { status: 400 });
     }
 
-    // 1. PRE-FETCH DATA (OPTIMASI: Ambil semua di awal agar tidak query di dalam loop)
+    // 1. PRE-FETCH DATA
     const [allCS, allPrograms, allTalents, allSiswa] = await Promise.all([
       prisma.user.findMany({
         where: { OR: [{ role: { slug: "cs" } }, { role: { slug: "admin" } }] },
@@ -22,21 +21,19 @@ export async function POST(request: NextRequest) {
       prisma.siswa.findMany({ select: { id: true, nama: true, telepon: true } })
     ]);
 
-    // Cache untuk mempercepat lookup di memori
     const siswaCache = new Map();
-    allSiswa.forEach(s => {
-      const key = `${s.nama.toLowerCase()}|${s.telepon || ""}`;
-      siswaCache.set(key, s.id);
-    });
+    allSiswa.forEach(s => siswaCache.set(`${s.nama.toLowerCase()}|${s.telepon || ""}`, s.id));
 
     const programCache = new Map();
     allPrograms.forEach(p => programCache.set(p.nama.toLowerCase().replace(/[^a-z0-9]/g, ""), p.id));
 
     let countSiswa = await prisma.siswa.count();
     const results = [];
+    const errors = [];
 
     // 2. PROSES DATA DALAM LOOP
-    for (const item of body) {
+    for (let i = 0; i < body.length; i++) {
+      const item = body[i];
       try {
         const findValue = (keyNames: string[]) => {
           const key = Object.keys(item).find(k => {
@@ -47,7 +44,10 @@ export async function POST(request: NextRequest) {
         };
 
         const siswaName = String(findValue(["siswa", "namasiswa", "studentname", "nama"]) || "").trim();
-        if (!siswaName) continue;
+        if (!siswaName) {
+          errors.push({ line: i + 1, error: "Nama siswa kosong" });
+          continue;
+        }
 
         const programName = String(findValue(["program", "namaprogram", "produk"]) || "").trim();
         const csName = String(findValue(["cs", "namacs", "staff", "nama_cs"]) || "").trim();
@@ -56,10 +56,6 @@ export async function POST(request: NextRequest) {
         let hargaNormal = parseFloat(String(findValue(["harganormal", "harga", "nominal", "harga_nor"]) || "0"));
         let diskon = parseFloat(String(findValue(["diskon", "potongan"]) || "0"));
         let nominalInput = parseFloat(String(findValue(["totalbayar", "hargafinal", "total"]) || "0"));
-
-        if (isNaN(hargaNormal)) hargaNormal = 0;
-        if (isNaN(diskon)) diskon = 0;
-        if (isNaN(nominalInput)) nominalInput = 0;
 
         // A. Handle Siswa
         const rawWA = findValue(["whatsapp", "wa", "nomorwa"]);
@@ -81,12 +77,10 @@ export async function POST(request: NextRequest) {
         let siswaId = siswaCache.get(siswaKey);
 
         if (!siswaId) {
-          // Cari by name saja jika WA kosong/tidak cocok
           const matchByName = allSiswa.find(s => s.nama.toLowerCase() === siswaName.toLowerCase() && (!cleanWA || s.telepon === cleanWA));
           if (matchByName) {
             siswaId = matchByName.id;
           } else {
-            // Buat Siswa Baru (Sequential but unavoidable for ID)
             countSiswa++;
             const newSiswa = await prisma.siswa.create({
               data: {
@@ -102,8 +96,7 @@ export async function POST(request: NextRequest) {
         }
 
         // B. Handle Program
-        const cleanStr = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-        const progKey = cleanStr(programName);
+        const progKey = programName.toLowerCase().replace(/[^a-z0-9]/g, "");
         let programId = programCache.get(progKey);
 
         if (!programId && programName !== "") {
@@ -112,9 +105,10 @@ export async function POST(request: NextRequest) {
           });
           programId = newProg.id;
           programCache.set(progKey, programId);
+          allPrograms.push(newProg);
         }
 
-        // C. Handle CS & Talent (Memory Lookup)
+        // C. Handle CS & Talent
         const cs = allCS.find(c => 
           (c.name || "").toLowerCase().includes(csName.toLowerCase()) || 
           (c.namaPanggilan || "").toLowerCase().includes(csName.toLowerCase())
@@ -127,14 +121,11 @@ export async function POST(request: NextRequest) {
 
         // D. Logic Bisnis
         let prodType = "REGULAR";
-        const upperProg = programName.toUpperCase();
-        if (upperProg.includes("ELITE")) prodType = "ELITE";
-        else if (upperProg.includes("MASTER")) prodType = "MASTER";
-        else if (upperProg.includes("TOEFL") || upperProg.includes("IELTS")) prodType = "TOEFL";
+        if (programName.toUpperCase().includes("ELITE")) prodType = "ELITE";
+        else if (programName.toUpperCase().includes("MASTER")) prodType = "MASTER";
+        else if (programName.toUpperCase().includes("TOEFL") || programName.toUpperCase().includes("IELTS")) prodType = "TOEFL";
 
         let finalPrice = nominalInput > 0 ? nominalInput : (hargaNormal - diskon);
-        const kodeUnik = finalPrice % 1000;
-        const nominalMurni = finalPrice - kodeUnik;
 
         // E. Handle Date
         let tgl = new Date();
@@ -153,7 +144,11 @@ export async function POST(request: NextRequest) {
         }
         if (isNaN(tgl.getTime()) || tgl.getFullYear() < 2000) tgl = new Date();
 
-        // F. SAVE PEMASUKAN
+        // F. Validate Enum Metode Bayar
+        let metode = String(findValue(["metode", "metodebayar", "payment"]) || "TRANSFER").toUpperCase();
+        if (!["TRANSFER", "QRIS", "CASH"].includes(metode)) metode = "TRANSFER";
+
+        // G. SAVE
         const pemasukan = await prisma.pemasukan.create({
           data: {
             tanggal: tgl,
@@ -161,29 +156,31 @@ export async function POST(request: NextRequest) {
             programId,
             csId: cs?.id || null,
             talentId: talent?.id || null,
-            hargaNormal: hargaNormal || nominalMurni || 0,
-            diskon,
+            hargaNormal: hargaNormal || finalPrice || 0,
+            diskon: diskon || 0,
             hargaFinal: finalPrice,
-            metodeBayar: String(findValue(["metode", "metodebayar", "payment"]) || "TRANSFER").toUpperCase() as any,
+            metodeBayar: metode as any,
             keterangan: `[TYPE:${prodType}] ${findValue(["keterangan", "note"]) || ""}`.trim(),
             isRO: String(findValue(["isro", "ro"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
           }
         });
         results.push(pemasukan);
 
-      } catch (err) {
-        console.error("Baris Gagal:", item, err);
+      } catch (err: any) {
+        errors.push({ line: i + 1, error: err.message, data: item.nama_siswa || item.siswa });
       }
     }
 
     return NextResponse.json({ 
       success: true, 
       count: results.length,
-      message: `Berhasil mengimpor ${results.length} data. Gagal: ${body.length - results.length}` 
+      total: body.length,
+      errors: errors.slice(0, 10), // Kirim 10 error pertama saja agar tidak berat
+      message: `Berhasil: ${results.length} | Gagal: ${errors.length}` 
     });
 
   } catch (error: any) {
-    console.error("IMPORT_FATAL_ERROR:", error);
-    return NextResponse.json({ error: "Gagal import data", details: error.message }, { status: 500 });
+    console.error("FATAL_IMPORT:", error);
+    return NextResponse.json({ error: "Gagal total import", details: error.message }, { status: 500 });
   }
 }

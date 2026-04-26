@@ -199,6 +199,7 @@ model Pemasukan {
   updatedAt   DateTime    @updatedAt
   isRO        Boolean     @default(false)
   talentId    String?
+  tipeProduk  String?     // Tambahkan kolom ini untuk hitung fee CS
   invoice     Invoice?
   cs          User?       @relation("CSPemasukan", fields: [csId], references: [id])
   program     Program?    @relation(fields: [programId], references: [id])

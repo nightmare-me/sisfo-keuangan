@@ -193,7 +193,13 @@ export async function GET(request: NextRequest) {
       trendData,
       transaksiTerkini,
       pemasukanPerProgram,
-      pengeluaranPerKategori: pengeluaranPerKategoriRaw.map(p => ({ kategori: p.kategori, total: p._sum.jumlah || 0 }))
+      pengeluaranPerKategori: pengeluaranPerKategoriRaw.map(p => ({ kategori: p.kategori, total: p._sum.jumlah || 0 })),
+      debug: {
+        now: now.toISOString(),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        type
+      }
     });
 
   } catch (err: any) {

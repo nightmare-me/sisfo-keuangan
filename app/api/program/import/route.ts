@@ -20,11 +20,22 @@ export async function POST(request: NextRequest) {
     const createdPrograms = [];
     
     for (const item of body) {
-      if (!item.nama || !item.harga) continue;
+      // Robust key detection (remove spaces and ignore case)
+      const findValue = (keyName: string) => {
+        const key = Object.keys(item).find(k => k.trim().toLowerCase() === keyName.toLowerCase());
+        return key ? item[key] : null;
+      };
+
+      const nama = findValue("nama");
+      const harga = findValue("harga");
+      
+      if (!nama || !harga) continue;
+
+      const isSharing = String(findValue("isProfitSharing") || "").trim().toLowerCase() === "true";
 
       // 1. Cek apakah sudah ada program dengan nama yang sama (case-insensitive)
       const existing = await prisma.program.findFirst({
-        where: { nama: { equals: item.nama, mode: 'insensitive' } }
+        where: { nama: { equals: String(nama), mode: 'insensitive' } }
       });
 
       let program;
@@ -33,30 +44,30 @@ export async function POST(request: NextRequest) {
         program = await prisma.program.update({
           where: { id: existing.id },
           data: {
-            deskripsi: item.deskripsi || undefined,
-            tipe: item.tipe || undefined,
-            harga: parseFloat(item.harga) || undefined,
-            kategoriFee: item.kategoriFee || undefined,
-            durasi: item.durasi || undefined,
-            feeClosing: parseFloat(item.feeClosing) || undefined,
-            feeClosingRO: parseFloat(item.feeClosingRO) || undefined,
-            isProfitSharing: String(item.isProfitSharing).toLowerCase() === "true",
-            aktif: true, // Pastikan jadi aktif lagi kalau di-update
+            deskripsi: findValue("deskripsi") || undefined,
+            tipe: findValue("tipe") || undefined,
+            harga: parseFloat(String(harga)) || undefined,
+            kategoriFee: findValue("kategoriFee") || undefined,
+            durasi: findValue("durasi") || undefined,
+            feeClosing: parseFloat(String(findValue("feeClosing") || 0)) || undefined,
+            feeClosingRO: parseFloat(String(findValue("feeClosingRO") || 0)) || undefined,
+            isProfitSharing: isSharing,
+            aktif: true,
           }
         });
       } else {
         // 3. Jika tidak ada, CREATE NEW
         program = await prisma.program.create({
           data: {
-            nama: item.nama,
-            deskripsi: item.deskripsi || null,
-            tipe: item.tipe || "REGULAR",
-            harga: parseFloat(item.harga) || 0,
-            kategoriFee: item.kategoriFee || "REG_1B",
-            durasi: item.durasi || null,
-            feeClosing: parseFloat(item.feeClosing) || 0,
-            feeClosingRO: parseFloat(item.feeClosingRO) || 0,
-            isProfitSharing: String(item.isProfitSharing).toLowerCase() === "true",
+            nama: String(nama),
+            deskripsi: findValue("deskripsi") || null,
+            tipe: findValue("tipe") || "REGULAR",
+            harga: parseFloat(String(harga)) || 0,
+            kategoriFee: findValue("kategoriFee") || "REG_1B",
+            durasi: findValue("durasi") || null,
+            feeClosing: parseFloat(String(findValue("feeClosing") || 0)) || 0,
+            feeClosingRO: parseFloat(String(findValue("feeClosingRO") || 0)) || 0,
+            isProfitSharing: isSharing,
             aktif: true,
           }
         });

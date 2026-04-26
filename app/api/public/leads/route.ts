@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
         targetTeamType = "CS_RO";
       } else if (isSharing && (lowerName.includes("toefl") || lowerName.includes("ielts") || lowerName.includes("elite") || lowerName.includes("master"))) {
         targetTeamType = "CS_TOEFL";
-      } else if (sumber === "AFFILIATE") {
+      } else if (sumber === "AFFILIATE" || lowerName.includes("affiliate")) {
         targetTeamType = "CS_AFFILIATE";
       } else if (sumber === "SOSMED") {
         targetTeamType = "CS_SOSMED";

@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.revenue - a.revenue);
 
     return NextResponse.json({
-      summary: {
+      ringkasan: {
         totalPemasukan,
         totalDiskon: activePemasukan.reduce((sum, p) => sum + (p.diskon || 0), 0),
         totalPengeluaran,

@@ -156,9 +156,9 @@ export async function POST(request: NextRequest) {
         const pemasukan = await prisma.pemasukan.create({
           data: {
             tanggal: tgl,
-            siswaId: siswaId,
-            programId: programId,
-            csId: cs?.id || null,
+            siswa: siswaId ? { connect: { id: siswaId } } : undefined,
+            program: programId ? { connect: { id: programId } } : undefined,
+            cs: cs?.id ? { connect: { id: cs.id } } : undefined,
             tipeProduk: prodType, // Simpan tipe produk untuk hitung gaji
             hargaNormal: hargaNormal || nominalMurni || 0,
             diskon: diskon || 0,

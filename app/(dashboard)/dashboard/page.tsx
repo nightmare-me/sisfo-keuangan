@@ -342,16 +342,21 @@ export default function DashboardPage() {
                       display: 'flex', 
                       justifyContent: 'space-between', 
                       alignItems: 'center', 
-                      padding: '12px 20px',
+                      padding: '10px 20px',
                       borderBottom: idx === arr.length - 1 ? 'none' : '1px solid var(--ghost-border)',
                       transition: 'background 0.2s',
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--on-surface)' }}>{t.siswa?.nama}</div>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{t.program?.nama}</div>
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <div style={{ padding: '6px 10px', borderRadius: 8, background: 'var(--surface-container)', fontSize: 11, fontWeight: 700, color: 'var(--brand-primary-light)' }}>
+                          {formatDate(t.tanggal, "dd/MM")}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--on-surface)' }}>{t.siswa?.nama}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{t.program?.nama}</div>
+                        </div>
                       </div>
                       <div style={{ textAlign: "right", fontWeight: 800, color: "var(--success)", fontSize: 13 }}>
                         {formatCurrency(t.hargaFinal)}

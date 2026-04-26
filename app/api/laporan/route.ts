@@ -156,7 +156,13 @@ export async function GET(request: NextRequest) {
         metodeBayar: name,
         total: data.total,
         count: data.count
-      }))
+      })),
+      pengeluaranPerKategori: await prisma.pengeluaran.groupBy({
+        by: ['kategori'],
+        where: { tanggal: dateFilter },
+        _sum: { jumlah: true },
+        _count: true
+      }).then(res => res.map(r => ({ kategori: r.kategori, total: r._sum.jumlah || 0, count: r._count })))
     });
 
   } catch (error: any) {

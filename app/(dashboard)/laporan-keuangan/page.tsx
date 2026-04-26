@@ -50,7 +50,21 @@ export default function LaporanPage() {
     const p = new URLSearchParams({ type: period });
     if (period==="custom" && from && to) { p.set("from", from); p.set("to", to); }
     setLoading(true);
-    fetch(`/api/laporan?${p}`).then(r=>r.json()).then(d=>{ setData(d); setLoading(false); });
+    fetch(`/api/laporan?${p}`)
+      .then(r=>r.json())
+      .then(d=>{ 
+        if (d.error) {
+          console.error(d.error);
+          setData(null);
+        } else {
+          setData(d);
+        }
+        setLoading(false); 
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
   }
 
   useEffect(()=>{ fetchData(); },[period, from, to]);
@@ -249,7 +263,13 @@ export default function LaporanPage() {
           <div className="form-grid-3">
             {[1,2,3,4,5,6].map(i=><div key={i} className="skeleton" style={{ height:100,borderRadius:16 }} />)}
           </div>
-        ) : !data ? null : (
+        ) : !data || data.error ? (
+          <div style={{ textAlign: 'center', padding: 64 }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Belum Ada Data Laporan</h3>
+            <p style={{ color: 'var(--text-muted)' }}>{data?.error || "Pilih periode lain atau jalankan transaksi hari ini."}</p>
+          </div>
+        ) : (
           <>
             {/* Laba/Rugi Summary */}
             <div className="kpi-grid" style={{ marginBottom: 48 }}>

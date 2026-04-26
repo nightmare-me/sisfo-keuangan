@@ -214,9 +214,23 @@ export default function LaporanPage() {
               </button>
             ))}
             <div style={{ flex: 1 }} />
-            <button className="btn btn-secondary btn-sm" onClick={fetchData} style={{ borderRadius: 'var(--radius-full)' }}>
-               <RefreshCw size={14} /> Refresh Data
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                className="btn btn-sm btn-ghost" 
+                onClick={async () => {
+                  if(confirm("Jalankan pembersihan duplikat program?")) {
+                    await fetch('/api/admin/cleanup-programs', { method: 'POST' });
+                    fetchData();
+                  }
+                }}
+                title="Bersihkan duplikat data program"
+              >
+                <RefreshCw size={16} className="mr-2" /> Sync & Cleanup
+              </button>
+              <button className="btn btn-sm" onClick={fetchData}>
+                <RefreshCw size={16} className="mr-2" /> Refresh Data
+              </button>
+            </div>
           </div>
 
           {period === "custom" && (

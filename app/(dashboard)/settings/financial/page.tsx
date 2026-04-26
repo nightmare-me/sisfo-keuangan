@@ -10,7 +10,8 @@ import {
   AlertCircle, 
   TrendingUp, 
   Briefcase,
-  Users
+  Users,
+  Clock
 } from "lucide-react";
 
 export default function FinancialSettingsPage() {

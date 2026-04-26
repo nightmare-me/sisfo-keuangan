@@ -413,7 +413,7 @@ export default function UsersPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={6} style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>Memuat data personil...</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : data.length === 0 ? (
                 <tr><td colSpan={6} style={{ textAlign: "center", padding: 64 }}>
                   <div className="empty-state">
                     <div className="empty-state-icon">👤</div>
@@ -421,7 +421,7 @@ export default function UsersPage() {
                     <p>Sesuaikan filter atau tambah user baru</p>
                   </div>
                 </td></tr>
-              ) : filtered.map(user => (
+              ) : data.map(user => (
                 <tr key={user.id} style={{ opacity: user.aktif ? 1 : 0.6 }}>
                   <td>
                     <div style={{ fontWeight: 700, fontSize: 15, color: "var(--on-surface)" }}>{user.name}</div>

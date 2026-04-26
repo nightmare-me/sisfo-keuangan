@@ -153,18 +153,20 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        const keterangan = findValue(["keterangan", "note"]) || "";
+        const finalKeterangan = `[TYPE:${prodType}] ${keterangan}`.trim();
+
         const pemasukan = await prisma.pemasukan.create({
           data: {
             tanggal: tgl,
-            siswa: siswaId ? { connect: { id: siswaId } } : undefined,
-            program: programId ? { connect: { id: programId } } : undefined,
-            cs: cs?.id ? { connect: { id: cs.id } } : undefined,
-            tipeProduk: prodType, // Simpan tipe produk untuk hitung gaji
+            siswaId: siswaId,
+            programId: programId,
+            csId: cs?.id || null,
             hargaNormal: hargaNormal || nominalMurni || 0,
             diskon: diskon || 0,
             hargaFinal: finalPrice || 0,
             metodeBayar: String(findValue(["metode", "metodebayar", "payment"]) || "TRANSFER").toUpperCase() as any,
-            keterangan: findValue(["keterangan", "note"]) || null,
+            keterangan: finalKeterangan,
             isRO: String(findValue(["isro", "ro", "repeatorder"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
           }
         });

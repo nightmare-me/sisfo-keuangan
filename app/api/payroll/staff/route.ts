@@ -58,10 +58,16 @@ export async function GET(request: NextRequest) {
     
     pemasukanAll.filter((p: any) => p.program?.isProfitSharing).forEach((p: any) => {
       toeflRevenue += p.hargaFinal;
+      
+      // Extract type from keterangan
+      const ket = p.keterangan || "";
+      const typeMatch = ket.match(/\[TYPE:(.*?)\]/);
+      const extractedType = typeMatch ? typeMatch[1] : (p.program?.kategoriFee || "");
+
       // Hitung jatah CS untuk pengeluaran TOEFL
       toeflFeeCS += calculateCSFee(
         "CS_TOEFL",
-        p.program?.nama?.toUpperCase() || "",
+        extractedType,
         p.hargaFinal,
         p.isRO,
         0,
@@ -125,9 +131,14 @@ export async function GET(request: NextRequest) {
           else if (progName.includes("live")) feeCategory = "CS_LIVE";
           else if (progName.includes("affiliate")) feeCategory = "CS_AFFILIATE";
 
+          // Extract product type from keterangan if exists
+          const ket = p.keterangan || "";
+          const typeMatch = ket.match(/\[TYPE:(.*?)\]/);
+          const extractedType = typeMatch ? typeMatch[1] : (p.program?.kategoriFee || "");
+
           totalFee += calculateCSFee(
             feeCategory as any,
-            p.program?.kategoriFee || "",
+            extractedType,
             p.hargaFinal,
             p.isRO,
             0,

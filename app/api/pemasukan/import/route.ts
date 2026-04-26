@@ -11,13 +11,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. PRE-FETCH DATA MASTER
-    const [allCS, allPrograms, allTalents, allSiswa] = await Promise.all([
+    // Catatan: Talent di schema Bapak ternyata disimpan di tabel 'User'
+    const [allCS, allPrograms, allUsers, allSiswa] = await Promise.all([
       prisma.user.findMany({
-        where: { OR: [{ role: { slug: "cs" } }, { role: { slug: "admin" } }] },
+        where: { role: { slug: { in: ["cs", "admin"] } } },
         select: { id: true, name: true, namaPanggilan: true }
       }),
       prisma.program.findMany({ select: { id: true, nama: true } }),
-      prisma.talent.findMany({ select: { id: true, nama: true, namaPanggilan: true } }),
+      prisma.user.findMany({ 
+        select: { id: true, name: true, namaPanggilan: true } 
+      }), // Ambil semua user untuk pencarian Talent
       prisma.siswa.findMany({ select: { id: true, nama: true, telepon: true } })
     ]);
 
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
       return key ? item[key] : null;
     };
 
-    // 2. TAHAP 1: PRE-PROCESS & CREATE MISSING SISWA/PROGRAM (Harus sequential karena butuh ID)
+    // 2. TAHAP 1: PRE-PROCESS
     for (let i = 0; i < body.length; i++) {
       const item = body[i];
       try {
@@ -61,7 +64,7 @@ export async function POST(request: NextRequest) {
           return cleaned;
         })(rawWA);
 
-        // Cari Siswa (Cek memori dulu)
+        // Cari Siswa
         const sKey = `${sName.toLowerCase()}|${cleanWA}`;
         let sId = siswaCache.get(sKey);
 
@@ -93,12 +96,12 @@ export async function POST(request: NextRequest) {
           programCache.set(pKey, pId);
         }
 
-        // Cari CS & Talent
+        // Cari CS & Talent (Keduanya dari tabel User)
         const csN = String(getVal(item, ["cs", "nama_cs"]) || "").trim();
         const cs = allCS.find(c => (c.name||"").toLowerCase().includes(csN.toLowerCase()) || (c.namaPanggilan||"").toLowerCase().includes(csN.toLowerCase()));
 
         const talN = String(getVal(item, ["talent", "host"]) || "").trim();
-        const tal = allTalents.find(t => (t.nama||"").toLowerCase().includes(talN.toLowerCase()) || (t.namaPanggilan||"").toLowerCase().includes(talN.toLowerCase()));
+        const tal = allUsers.find(u => (u.name||"").toLowerCase().includes(talN.toLowerCase()) || (u.namaPanggilan||"").toLowerCase().includes(talN.toLowerCase()));
 
         // Logic Tanggal
         let tgl = new Date();
@@ -116,7 +119,6 @@ export async function POST(request: NextRequest) {
         }
         if (isNaN(tgl.getTime()) || tgl.getFullYear() < 2000) tgl = new Date();
 
-        // Koleksi untuk Bulk Create
         const hNorm = parseFloat(String(getVal(item, ["harga_normal", "nominal"]) || "0"));
         const disk = parseFloat(String(getVal(item, ["diskon"]) || "0"));
         const tot = parseFloat(String(getVal(item, ["total", "totalbayar", "hargafinal"]) || "0"));
@@ -149,7 +151,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. TAHAP 2: BULAN INSERT (Super Cepat!)
+    // 3. TAHAP 2: BULK INSERT
     if (recordsToCreate.length > 0) {
       await prisma.pemasukan.createMany({
         data: recordsToCreate,

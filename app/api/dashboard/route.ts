@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const dbConfigs = await prisma.financialConfig.findMany();
     const config: Record<string, number> = {};
     dbConfigs.forEach(c => { config[c.key] = c.value; });
+    const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
     // PAKSA PAKAI WAKTU JAKARTA (WIB - UTC+7) SECARA MANUAL & ROBUST
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);

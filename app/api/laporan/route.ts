@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       config[c.key] = c.value;
     });
 
+    const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
     // PAKSA PAKAI WAKTU JAKARTA (WIB - UTC+7) SECARA MANUAL & ROBUST
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);

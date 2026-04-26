@@ -97,6 +97,7 @@ export default function CRMPage() {
     talentId: "",
   });
   const [programs, setPrograms] = useState<any[]>([]);
+  const [talentList, setTalentList] = useState<any[]>([]);
 
   function fetchData(p = page, l = limit, s = searchTerm, st = activeStatus) {
     setLoading(true);

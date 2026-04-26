@@ -1,136 +1,91 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = (session.user as any).id;
-  const role = (session.user as any).role?.toUpperCase();
-
   try {
     const body = await request.json();
     if (!Array.isArray(body)) {
-      return NextResponse.json({ error: "Data must be an array" }, { status: 400 });
+      return NextResponse.json({ error: "Data harus berupa array" }, { status: 400 });
     }
 
-    const allPrograms = await prisma.program.findMany();
-    const allSiswa = await prisma.siswa.findMany({ include: { pemasukan: true } });
-    const allUsers = await prisma.user.findMany({ where: { role: { slug: "cs" } } });
-    let successCount = 0;
+    const results = [];
     
-    // Helper fuzzy header matching
-    const getValue = (item: any, keys: string[]) => {
-      const itemKeys = Object.keys(item);
-      for (const k of keys) {
-        const found = itemKeys.find(ik => 
-          ik.toLowerCase().replace(/[\s_]/g, '') === k.toLowerCase().replace(/[\s_]/g, '')
-        );
-        if (found) return item[found];
-      }
-      for (const k of keys) {
-        const found = itemKeys.find(ik => ik.toLowerCase().includes(k.toLowerCase()));
-        if (found) return item[found];
-      }
-      return null;
-    };
-
-    // Helper format WA (Recover from 6.28E+12 with comma or dot)
-    const formatWA = (val: any) => {
-      if (!val) return "";
-      let str = String(val).trim().replace(",", "."); // Handle Indo decimal in scientific
-      
-      if (str.includes("E+") || str.includes("e+")) {
-        const num = Number(str);
-        if (!isNaN(num)) str = num.toLocaleString('fullwide', {useGrouping:false});
-      }
-      
-      let cleaned = str.replace(/\D/g, "");
-      if (cleaned.startsWith("0")) cleaned = "62" + cleaned.substring(1);
-      if (cleaned.startsWith("8")) cleaned = "62" + cleaned;
-      return cleaned;
-    };
-
-    for (const item of body) {
-      try {
-        const rawNama = getValue(item, ["nama", "nama_siswa", "name", "student"]);
-        const rawWA = getValue(item, ["whatsapp", "wa", "no_wa", "phone"]);
-        const rawProgram = getValue(item, ["program", "produk", "product"]);
-        const rawPreferensi = getValue(item, ["preferensi", "jadwal", "preference"]);
-        const rawTanggal = getValue(item, ["tanggal", "date", "tgl"]);
-        const rawCS = getValue(item, ["cs", "nama_cs", "marketing", "sales"]);
-
-        if (!rawNama) continue;
-
-        const sName = String(rawNama).trim();
-        const wa = formatWA(rawWA);
-        const pName = String(rawProgram || "").trim();
-        
-        let targetProgram = allPrograms.find((p: any) => 
-          p.nama.toLowerCase() === pName.toLowerCase() ||
-          p.nama.toLowerCase().includes(pName.toLowerCase()) ||
-          pName.toLowerCase().includes(p.nama.toLowerCase())
-        );
-
-        if (!targetProgram && pName) {
-          targetProgram = await prisma.program.create({
-            data: { nama: pName, harga: 0, tipe: "REGULAR", deskripsi: "Auto-Import" }
-          });
-          allPrograms.push(targetProgram);
-        }
-
-        // SMART ASSIGNMENT: Jika ada nama CS di CSV, pakai itu. Jika tidak, pakai yang sedang login (jika CS)
-        let finalCSId = role === "CS" ? userId : null;
-        if (rawCS) {
-          const targetCS = allUsers.find((u: any) => u.name?.toLowerCase().includes(String(rawCS).toLowerCase()));
-          if (targetCS) finalCSId = targetCS.id;
-        }
-
-        // SMART CHECK: Apakah orang ini sudah bayar?
-        const existingSiswa = allSiswa.find(s => s.nama.toLowerCase() === sName.toLowerCase());
-        const hasPayment = existingSiswa?.pemasukan?.some(p => 
-          p.programId === targetProgram?.id || !targetProgram
-        );
-
-        const parseDate = (d: any) => {
-          if (!d) return new Date();
-          const s = String(d);
-          if (s.includes("/")) {
-            const p = s.split("/");
-            if (p.length === 3) return new Date(`${p[2]}-${p[1]}-${p[0]}`);
-          }
-          const parsed = new Date(s);
-          return isNaN(parsed.getTime()) ? new Date() : parsed;
-        };
-
-        await prisma.lead.create({
-          data: {
-            nama: sName,
-            whatsapp: wa,
-            programId: targetProgram?.id,
-            nominalTagihan: targetProgram?.harga || 0,
-            preferensiJadwal: rawPreferensi ? String(rawPreferensi) : null,
-            csId: finalCSId,
-            status: hasPayment ? "PAID" : "NEW",
-            tanggalLead: parseDate(rawTanggal),
-            sumber: "IMPORT_CSV",
-          }
-        });
-        
-        successCount++;
-      } catch (err) {
-        console.error("Row import error:", err);
-      }
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      message: `Berhasil mengimpor ${successCount} leads.` 
+    // Ambil semua CS untuk mapping nama ke ID
+    const allCS = await prisma.user.findMany({
+      where: { role: { slug: "cs" } },
+      select: { id: true, name: true }
     });
 
+    // Ambil semua Program untuk mapping nama ke ID
+    const allPrograms = await prisma.program.findMany({
+      select: { id: true, nama: true, harga: true }
+    });
+
+    for (const item of body) {
+      // Robust key detection (handles spaces, underscores, and case)
+      const findValue = (keyNames: string[]) => {
+        const key = Object.keys(item).find(k => {
+          const cleanK = k.trim().toLowerCase().replace(/_/g, "");
+          return keyNames.some(kn => cleanK === kn.toLowerCase());
+        });
+        return key ? item[key] : null;
+      };
+
+      const namaSiswa = findValue(["nama", "namasiswa", "studentname"]);
+      if (!namaSiswa) continue;
+
+      const programName = String(findValue(["program", "namaprogram", "produk"]) || "").trim();
+      const csName = String(findValue(["cs", "namacs", "staff"]) || "").trim();
+      const whatsapp = String(findValue(["whatsapp", "wa", "nomorwa"]) || "").trim();
+      const nominalInput = parseFloat(String(findValue(["nominal", "harga", "harganormal", "total"]) || "0"));
+
+      // 1. Cari Program ID
+      const program = allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase()));
+      
+      // 2. Cari CS ID
+      const cs = allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase()));
+
+      // 3. Handle Harga & Kode Unik
+      let nominalTagihan = nominalInput;
+      let kodeUnik = 0;
+
+      if (nominalInput > 0) {
+        // Jika nominal > 0, cek apakah ini kelipatan 1000 atau bukan
+        if (nominalInput % 1000 === 0 && program) {
+           // Jika kelipatan 1000 (misal 35000), maka tambahkan kode unik
+           kodeUnik = Math.floor(Math.random() * 999) + 1;
+           nominalTagihan = nominalInput + kodeUnik;
+        } else {
+           // Jika bukan kelipatan 1000 (misal 35231), berarti sudah ada kode uniknya
+           kodeUnik = nominalInput % 1000;
+           nominalTagihan = nominalInput;
+        }
+      } else if (program) {
+        // Jika nominal kosong, ambil dari program + generate kode unik
+        kodeUnik = Math.floor(Math.random() * 999) + 1;
+        nominalTagihan = program.harga + kodeUnik;
+      }
+
+      const lead = await prisma.lead.create({
+        data: {
+          nama: String(namaSiswa),
+          whatsapp: whatsapp,
+          email: findValue(["email", "surel"]) || null,
+          programId: program?.id || null,
+          csId: cs?.id || null,
+          status: cs?.id ? "FOLLOW_UP" : "NEW",
+          nominalTagihan: nominalTagihan,
+          kodeUnik: Math.round(kodeUnik),
+          isRO: String(findValue(["isro", "ro", "repeatorder"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
+          sumber: String(findValue(["sumber", "source"]) || "IMPORT").toUpperCase(),
+          tanggalLead: findValue(["tanggal", "date", "tgl"]) ? new Date(String(findValue(["tanggal", "date", "tgl"]))) : new Date(),
+        }
+      });
+      results.push(lead);
+    }
+
+    return NextResponse.json({ success: true, count: results.length });
   } catch (error: any) {
-    console.error("Fatal CRM import error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Gagal import data CRM", details: error.message }, { status: 500 });
   }
 }

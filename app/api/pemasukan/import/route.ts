@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     });
 
     const allTalents = await prisma.talent.findMany({
-      select: { id: true, nama: true }
+      select: { id: true, nama: true, namaPanggilan: true }
     });
 
     for (const item of body) {
@@ -190,7 +190,8 @@ export async function POST(request: NextRequest) {
 
         const talent = (talentName !== "" && talentName !== "null" && talentName !== "—") 
           ? allTalents.find(t => 
-              (t.nama || "").toLowerCase().includes(talentName.toLowerCase())
+              (t.nama || "").toLowerCase().includes(talentName.toLowerCase()) ||
+              (t.namaPanggilan || "").toLowerCase().includes(talentName.toLowerCase())
             ) 
           : null;
 

@@ -101,8 +101,8 @@ export async function POST(request: NextRequest) {
         nominalTagihan,
         status: finalCsId ? "FOLLOW_UP" : "NEW",
         csId: finalCsId,
-        talentId: body.talentId || null,
-        tanggalLead: body.tanggalLead ? new Date(body.tanggalLead) : new Date(),
+        talentId: talentId || null,
+        tanggalLead: (tanggalLead && !isNaN(new Date(tanggalLead).getTime())) ? new Date(tanggalLead) : new Date(),
         sumber: sumber || null,
       },
     });

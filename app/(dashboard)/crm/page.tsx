@@ -276,7 +276,8 @@ export default function CRMPage() {
       setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false, tanggalLead: new Date().toLocaleDateString('sv'), sumber: "MANUAL", talentId: "" });
       fetchData();
     } else {
-      alert("Gagal menyimpan lead baru.");
+      const errData = await res.json().catch(() => ({}));
+      alert("Gagal menyimpan lead baru: " + (errData.details || errData.error || "Terjadi kesalahan pada server"));
     }
     setSubmittingLead(false);
   }

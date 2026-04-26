@@ -43,20 +43,17 @@ export async function GET(request: NextRequest) {
       endDate = new Date(to);
       endDate.setHours(23, 59, 59, 999);
     } else {
-      // DEFAULT: BULAN INI (DENGAN CUTOFF)
-      // Jika cutoffDay = 1, maka ini akan jadi bulan kalender biasa.
+      // DEFAULT: BULAN INI (DENGAN CUTOFF CERDAS)
       if (cutoffDay === 1) {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       } else {
-        // Misal hari ini 26 April. Cutoff 25.
-        // Maka range: 25 April - 24 Mei? 
-        // Biasanya kalau user lihat "Bulan Ini" di tanggal 26 April, dia mau lihat periode yang SEDANG BERJALAN.
-        // Periode berjalan sekarang adalah 25 April s/d 24 Mei.
-        
-        // Tapi kalau sekarang tanggal 10 April, periode berjalannya adalah 25 Maret s/d 24 April.
-        
-        if (now.getDate() >= cutoffDay) {
+        // Logika Cerdas: Jika baru ganti periode (kurang dari 7 hari dari cutoff), 
+        // nampilin periode yang baru saja lewat.
+        if (now.getDate() >= cutoffDay && now.getDate() < (cutoffDay + 7)) {
+             startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
+             endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
+        } else if (now.getDate() >= cutoffDay) {
           startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
           endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
         } else {

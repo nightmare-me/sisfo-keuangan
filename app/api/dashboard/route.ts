@@ -32,13 +32,30 @@ export async function GET(request: NextRequest) {
     } else if (type === "today") {
       startDate = startOfDay(now);
       endDate = endOfDay(now);
+    } else if (type === "week") {
+      const day = now.getDay();
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1)); // Mon start
+      startDate.setHours(0, 0, 0, 0);
+      endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6);
+      endDate.setHours(23, 59, 59, 999);
     } else {
-      // DEFAULT: MONTH (DENGAN CUTOFF)
+      // DEFAULT: MONTH (DENGAN CUTOFF CERDAS)
+      // Jika hari ini tanggal 25, 26, 27, 28, 29, 30, 31 (Baru ganti periode)
+      // Kita tetap nampilin periode sebelumnya s/d hari ini agar data tidak kosong melompong.
+      
       if (cutoffDay === 1) {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       } else {
-        if (now.getDate() >= cutoffDay) {
+        // Logika: Jika tanggal sekarang < cutoff + 7 hari, tampilkan periode yang baru lewat.
+        // Misal cutoff 25. Jika hari ini tgl 26, maka range: 25 Mar - 24 Apr (periode yg baru tutup).
+        if (now.getDate() >= cutoffDay && now.getDate() < (cutoffDay + 7)) {
+             // Baru ganti periode? Tampilkan periode yang baru saja berakhir (biar ada datanya)
+             startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
+             endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
+        } else if (now.getDate() >= cutoffDay) {
           startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
           endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
         } else {

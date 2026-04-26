@@ -30,13 +30,24 @@ export async function GET(request: NextRequest) {
   } else if (type === "today") {
     startDate = startOfDay(now);
     endDate = endOfDay(now);
+  } else if (type === "week") {
+    const day = now.getDay();
+    startDate = new Date(now);
+    startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1)); // Mon start
+    startDate.setHours(0, 0, 0, 0);
+    endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+    endDate.setHours(23, 59, 59, 999);
   } else {
-    // DEFAULT: MONTH (DENGAN CUTOFF)
+    // DEFAULT: MONTH (DENGAN CUTOFF CERDAS)
     if (cutoffDay === 1) {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
       endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     } else {
-      if (now.getDate() >= cutoffDay) {
+      if (now.getDate() >= cutoffDay && now.getDate() < (cutoffDay + 7)) {
+           startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
+           endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
+      } else if (now.getDate() >= cutoffDay) {
         startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
       } else {

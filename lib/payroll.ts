@@ -52,6 +52,7 @@ export function calculateCSFee(
       }
       if (nama.includes('toefl') || nama.includes('ielts')) return 12500;
       if (nama.includes('native')) return 12500;
+      if (nama.includes('affiliate')) return config?.FEE_AFFILIATE_FIXED || 25000;
     }
 
     // Rules berdasarkan Kategori (Explicit)

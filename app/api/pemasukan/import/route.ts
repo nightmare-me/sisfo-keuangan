@@ -80,8 +80,26 @@ export async function POST(request: NextRequest) {
           siswaId = siswaRecord.id;
         }
 
-        // 2. Cari Program & CS (Cek Nama Lengkap & Nama Panggilan)
-        const program = programName !== "" ? allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase())) : null;
+        // 2. Cari atau Buat Program otomatis jika tidak ada
+        let programId = null;
+        if (programName !== "") {
+          let targetProg = allPrograms.find(p => p.nama.toLowerCase() === programName.toLowerCase());
+          
+          if (!targetProg) {
+            // Buat program baru jika tidak ada (Misal: Lain-lain)
+            targetProg = await prisma.program.create({
+              data: {
+                nama: programName.toUpperCase(),
+                harga: 0,
+                tipe: 'LAINNYA'
+              }
+            });
+            // Masukkan ke list biar tidak buat dobel di baris berikutnya
+            allPrograms.push(targetProg);
+          }
+          programId = targetProg.id;
+        }
+
         const cs = (csName !== "" && csName !== "null" && csName !== "—") 
           ? allCS.find(c => 
               (c.name || "").toLowerCase().includes(csName.toLowerCase()) || 
@@ -112,7 +130,7 @@ export async function POST(request: NextRequest) {
           data: {
             tanggal: tgl,
             siswaId: siswaId,
-            programId: program?.id || null,
+            programId: programId,
             csId: cs?.id || null,
             hargaNormal: hargaNormal || nominalMurni || 0,
             diskon: diskon || 0,

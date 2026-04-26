@@ -109,9 +109,11 @@ export async function GET(request: NextRequest) {
 
     activePemasukan.forEach(p => {
       const progName = (p.program?.nama || "").toUpperCase();
+      const isSharing = p.program?.isProfitSharing || false;
       
-      // LOGIKA GRUP PRODUK (Sesuai Request: Elite, Master, TOEFL, IELTS masuk TOEFL)
-      if (progName.includes("ELITE") || progName.includes("MASTER") || progName.includes("TOEFL") || progName.includes("IELTS")) {
+      // LOGIKA GRUP PRODUK (Berdasarkan Profit Sharing)
+      if (isSharing) {
+        // Semua yang bagi hasil masuk ke kategori TOEFL (Produk Premium)
         revenueTOEFL += p.hargaFinal;
       } else if (progName.includes("LIVE")) {
         revenueLive += p.hargaFinal;

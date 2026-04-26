@@ -22,8 +22,11 @@ import {
   Trash2,
   Clock,
   Layout,
-  Tag
+  Tag,
+  Upload,
+  FileSpreadsheet
 } from "lucide-react";
+import Papa from "papaparse";
 
 const DURASI_OPTIONS = [
   { value: "2_MINGGU", label: "2 Minggu" },
@@ -52,6 +55,7 @@ export default function ProgramPage() {
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const [showNonaktif, setShowNonaktif] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   function fetchData() {
     setLoading(true);
@@ -173,6 +177,15 @@ export default function ProgramPage() {
           {role === "ADMIN" && (
             <button className="btn btn-secondary btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleDeleteAll}>
               <Trash2 size={16} /> Hapus Semua
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setShowImportModal(true)}
+              style={{ borderRadius: 'var(--radius-full)', padding: '8px 20px' }}
+            >
+              <Upload size={16} /> Import CSV
             </button>
           )}
           {isAdmin && (
@@ -397,6 +410,107 @@ export default function ProgramPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Import CSV */}
+      {showImportModal && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: 600 }}>
+            <div className="modal-header">
+              <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Upload size={20} style={{ color: 'var(--primary)' }} />
+                <span>Import Katalog Program via CSV</span>
+              </div>
+              <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+                  Gunakan format CSV berikut untuk mengimpor daftar program masal ke dalam katalog.
+                </p>
+                <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 10, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)', whiteSpace: 'nowrap' }}>
+                  nama,deskripsi,tipe,harga,kategoriFee,durasi,feeClosing,feeClosingRO,isProfitSharing
+                </div>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
+                  onClick={() => {
+                    const csvContent = "nama,deskripsi,tipe,harga,kategoriFee,durasi,feeClosing,feeClosingRO,isProfitSharing\n" +
+                                     "Speaking Regular,Program speaking dasar,REGULAR,250000,REG_1B,1_BULAN,25000,15000,false\n" +
+                                     "Private VIP 10 Sesi,Program privat intensif,PRIVATE,1500000,PRIVATE_VIP,LAINNYA,100000,50000,true";
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "template_program.csv");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  📥 Download Template CSV Program
+                </button>
+              </div>
+              
+              <div style={{ border: '2px dashed var(--ghost-border)', borderRadius: 12, padding: 32, textAlign: 'center', background: 'var(--surface-container-lowest)' }}>
+                <FileSpreadsheet size={32} style={{ color: 'var(--primary)', marginBottom: 12 }} />
+                <div style={{ marginBottom: 16 }}>
+                  <label className="btn btn-primary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', padding: '10px 24px' }}>
+                    <Upload size={16} /> Pilih File CSV
+                    <input type="file" accept=".csv" style={{ display: 'none' }} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        const text = event.target?.result as string;
+                        Papa.parse(text, {
+                          header: true,
+                          skipEmptyLines: true,
+                          complete: async (results) => {
+                            const jsonData = results.data;
+                            if (jsonData.length === 0) {
+                              alert("File CSV kosong atau tidak valid.");
+                              return;
+                            }
+                            
+                            if (confirm(`Impor ${jsonData.length} data program kursus?`)) {
+                              setLoading(true);
+                              try {
+                                const res = await fetch("/api/program/import", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify(jsonData)
+                                });
+                                if (res.ok) {
+                                  alert("Berhasil mengimpor katalog program!");
+                                  setShowImportModal(false);
+                                  fetchData();
+                                } else {
+                                  const err = await res.json();
+                                  alert("Gagal impor: " + (err.error || "Cek format file"));
+                                }
+                              } catch (err) {
+                                alert("Terjadi kesalahan saat mengunggah.");
+                              } finally {
+                                setLoading(false);
+                              }
+                            }
+                          }
+                        });
+                      };
+                      reader.readAsText(file);
+                    }} />
+                  </label>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Pastikan tipe & kategori sesuai pilihan sistem</p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowImportModal(false)}>Tutup</button>
+            </div>
           </div>
         </div>
       )}

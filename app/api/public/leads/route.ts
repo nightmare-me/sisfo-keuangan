@@ -26,11 +26,13 @@ export async function POST(request: NextRequest) {
     // ROUND ROBIN LOGIC: Auto-assign CS if not provided
     let finalCsId = csId || null;
     if (!finalCsId) {
-      // 0. Cek apakan program ini bertipe LIVE
+      // 0. Cek apakan program ini bertipe LIVE / SHARING
       let programName = "";
+      let isSharing = false;
       if (programId) {
-        const program = await prisma.program.findUnique({ where: { id: programId }, select: { nama: true } });
+        const program = await prisma.program.findUnique({ where: { id: programId }, select: { nama: true, isProfitSharing: true } });
         programName = program?.nama || "";
+        isSharing = !!program?.isProfitSharing;
       }
       
       const lowerName = programName.toLowerCase();
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
 
       if (isRO) {
         targetTeamType = "CS_RO";
-      } else if (lowerName.includes("toefl") || lowerName.includes("ielts") || lowerName.includes("elite") || lowerName.includes("master")) {
+      } else if (isSharing && (lowerName.includes("toefl") || lowerName.includes("ielts") || lowerName.includes("elite") || lowerName.includes("master"))) {
         targetTeamType = "CS_TOEFL";
       } else if (sumber === "AFFILIATE") {
         targetTeamType = "CS_AFFILIATE";

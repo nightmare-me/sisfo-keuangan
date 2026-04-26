@@ -22,56 +22,79 @@ export async function POST(request: NextRequest) {
     });
 
     for (const item of body) {
-      const findValue = (keyNames: string[]) => {
-        const key = Object.keys(item).find(k => {
-          const cleanK = k.trim().toLowerCase().replace(/_/g, "");
-          return keyNames.some(kn => cleanK === kn.toLowerCase());
-        });
-        return key ? item[key] : null;
-      };
+      try {
+        const findValue = (keyNames: string[]) => {
+          const key = Object.keys(item).find(k => {
+            const cleanK = k.trim().toLowerCase().replace(/_/g, "");
+            return keyNames.some(kn => cleanK === kn.toLowerCase());
+          });
+          return key ? item[key] : null;
+        };
 
-      const siswa = findValue(["siswa", "namasiswa", "studentname", "nama"]);
-      if (!siswa) continue;
+        const siswa = findValue(["siswa", "namasiswa", "studentname", "nama"]);
+        if (!siswa) continue;
 
-      const programName = String(findValue(["program", "namaprogram", "produk"]) || "").trim();
-      const csName = String(findValue(["cs", "namacs", "staff"]) || "").trim();
-      
-      const hargaNormal = parseFloat(String(findValue(["harganormal", "harga", "nominal"]) || "0"));
-      const diskon = parseFloat(String(findValue(["diskon", "potongan"]) || "0"));
-      const nominalInput = parseFloat(String(findValue(["totalbayar", "hargafinal", "total"]) || "0"));
+        const programName = String(findValue(["program", "namaprogram", "produk"]) || "").trim();
+        const csName = String(findValue(["cs", "namacs", "staff"]) || "").trim();
+        
+        let hargaNormal = parseFloat(String(findValue(["harganormal", "harga", "nominal"]) || "0"));
+        let diskon = parseFloat(String(findValue(["diskon", "potongan"]) || "0"));
+        let nominalInput = parseFloat(String(findValue(["totalbayar", "hargafinal", "total"]) || "0"));
 
-      // 1. Cari Program & CS
-      const program = allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase()));
-      const cs = allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase()));
+        if (isNaN(hargaNormal)) hargaNormal = 0;
+        if (isNaN(diskon)) diskon = 0;
+        if (isNaN(nominalInput)) nominalInput = 0;
 
-      // 2. Handle Nominal & Kode Unik (Import pakai angka apa adanya)
-      let finalPrice = nominalInput;
-      if (finalPrice <= 0) {
-        finalPrice = hargaNormal - diskon;
-      }
+        // 1. Cari Program & CS
+        const program = allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase()));
+        const cs = allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase()));
 
-      const kodeUnik = finalPrice % 1000;
-      const nominalMurni = finalPrice - kodeUnik;
-
-      const pemasukan = await prisma.pemasukan.create({
-        data: {
-          tanggal: findValue(["tanggal", "date", "tgl"]) ? new Date(String(findValue(["tanggal", "date", "tgl"]))) : new Date(),
-          siswa: String(siswa),
-          whatsapp: String(findValue(["whatsapp", "wa", "nomorwa"]) || ""),
-          programId: program?.id || null,
-          csId: cs?.id || null,
-          nominal: nominalMurni,
-          kodeUnik: Math.round(kodeUnik),
-          hargaFinal: finalPrice,
-          metodeBayar: String(findValue(["metode", "metodebayar", "payment"]) || "TRANSFER").toUpperCase(),
-          keterangan: findValue(["keterangan", "note"]) || null,
-          isRO: String(findValue(["isro", "ro", "repeatorder"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
+        // 2. Handle Nominal & Kode Unik
+        let finalPrice = nominalInput;
+        if (finalPrice <= 0) {
+          finalPrice = hargaNormal - diskon;
         }
-      });
-      results.push(pemasukan);
+
+        const kodeUnik = finalPrice % 1000;
+        const nominalMurni = finalPrice - kodeUnik;
+
+        // 3. Handle Date
+        let tgl = new Date();
+        const tglInput = findValue(["tanggal", "date", "tgl"]);
+        if (tglInput) {
+          const parsedDate = new Date(String(tglInput));
+          if (!isNaN(parsedDate.getTime())) {
+            tgl = parsedDate;
+          }
+        }
+
+        const pemasukan = await prisma.pemasukan.create({
+          data: {
+            tanggal: tgl,
+            siswa: String(siswa),
+            whatsapp: String(findValue(["whatsapp", "wa", "nomorwa"]) || ""),
+            programId: program?.id || null,
+            csId: cs?.id || null,
+            nominal: nominalMurni || 0,
+            kodeUnik: Math.round(kodeUnik || 0),
+            hargaFinal: finalPrice || 0,
+            metodeBayar: String(findValue(["metode", "metodebayar", "payment"]) || "TRANSFER").toUpperCase(),
+            keterangan: findValue(["keterangan", "note"]) || null,
+            isRO: String(findValue(["isro", "ro", "repeatorder"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
+          }
+        });
+        results.push(pemasukan);
+      } catch (itemError: any) {
+        console.error("Error pada item:", item, itemError);
+        // Lanjutkan ke item berikutnya saja jika satu baris gagal
+      }
     }
 
-    return NextResponse.json({ success: true, count: results.length });
+    return NextResponse.json({ 
+      success: true, 
+      count: results.length,
+      message: `Berhasil mengimpor ${results.length} data. Gagal: ${body.length - results.length}` 
+    });
   } catch (error: any) {
     return NextResponse.json({ error: "Gagal import data Pemasukan", details: error.message }, { status: 500 });
   }

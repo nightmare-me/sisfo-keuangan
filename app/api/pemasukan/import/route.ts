@@ -119,13 +119,28 @@ export async function POST(request: NextRequest) {
         const kodeUnik = finalPrice % 1000;
         const nominalMurni = finalPrice - kodeUnik;
 
-        // 4. Handle Date
+        // 4. Handle Date (Paksa dd/mm/yyyy agar tidak terbalik mm/dd)
         let tgl = new Date();
         const tglInput = findValue(["tanggal", "date", "tgl"]);
         if (tglInput && String(tglInput).trim() !== "") {
-          const parsedDate = new Date(String(tglInput));
-          if (!isNaN(parsedDate.getTime())) {
-            tgl = parsedDate;
+          const s = String(tglInput).trim();
+          // Jika format dd/mm/yyyy (pakai slash /)
+          if (s.includes("/")) {
+            const parts = s.split("/");
+            if (parts.length === 3) {
+              const d = parseInt(parts[0]);
+              const m = parseInt(parts[1]) - 1; // JS month 0-11
+              const y = parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2]);
+              const parsedDate = new Date(y, m, d);
+              if (!isNaN(parsedDate.getTime())) {
+                tgl = parsedDate;
+              }
+            }
+          } else {
+            const parsedDate = new Date(s);
+            if (!isNaN(parsedDate.getTime())) {
+              tgl = parsedDate;
+            }
           }
         }
 

@@ -49,13 +49,7 @@ export async function GET(request: NextRequest) {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       } else {
-        // Logika: Jika tanggal sekarang < cutoff + 7 hari, tampilkan periode yang baru lewat.
-        // Misal cutoff 25. Jika hari ini tgl 26, maka range: 25 Mar - 24 Apr (periode yg baru tutup).
-        if (now.getDate() >= cutoffDay && now.getDate() < (cutoffDay + 7)) {
-             // Baru ganti periode? Tampilkan periode yang baru saja berakhir (biar ada datanya)
-             startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
-             endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
-        } else if (now.getDate() >= cutoffDay) {
+        if (now.getDate() >= cutoffDay) {
           startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
           endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
         } else {

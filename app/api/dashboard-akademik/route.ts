@@ -52,10 +52,7 @@ export async function GET(request: NextRequest) {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
       endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     } else {
-      if (now.getDate() >= cutoffDay && now.getDate() < (cutoffDay + 7)) {
-           startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
-           endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
-      } else if (now.getDate() >= cutoffDay) {
+      if (now.getDate() >= cutoffDay) {
         startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
         endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
       } else {

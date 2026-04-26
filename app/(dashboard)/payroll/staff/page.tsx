@@ -33,12 +33,25 @@ export default function StaffPayrollPage() {
   const role = (session?.user as any)?.role?.toUpperCase();
   const isAdmin = SUPER_ROLES.includes(role);
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit, setLimit] = useState(50);
+  const [total, setTotal] = useState(0);
+
   function fetchPayroll() {
     setLoading(true);
-    fetch(`/api/payroll/staff?bulan=${bulan}&tahun=${tahun}`)
+    const p = new URLSearchParams({ 
+      bulan: String(bulan), 
+      tahun: String(tahun),
+      page: String(page),
+      limit: String(limit)
+    });
+    fetch(`/api/payroll/staff?${p}`)
       .then(r => r.json())
       .then(d => {
         setData(d.data || []);
+        setTotal(d.total || 0);
+        setTotalPages(d.totalPages || 1);
         setMetrics(d.metrics || {});
         setLoading(false);
       })
@@ -47,6 +60,10 @@ export default function StaffPayrollPage() {
 
   useEffect(() => {
     fetchPayroll();
+  }, [bulan, tahun, page, limit]);
+
+  useEffect(() => {
+    setPage(1);
   }, [bulan, tahun]);
 
   async function handlePay(item: any) {
@@ -199,6 +216,66 @@ export default function StaffPayrollPage() {
               ))}
             </tbody>
           </table>
+          {/* Pagination Footer */}
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--ghost-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Baris per halaman:</span>
+                <select 
+                  className="form-control form-control-sm" 
+                  style={{ width: 80 }}
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(parseInt(e.target.value));
+                    setPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
+             </div>
+
+             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                   Halaman <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{page}</span> dari <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{totalPages}</span>
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     disabled={page <= 1 || loading}
+                     onClick={() => setPage(prev => prev - 1)}
+                     style={{ padding: '4px 12px' }}
+                   >
+                     Sebelumnya
+                   </button>
+                   <div style={{ display: 'flex', gap: 4 }}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || (p >= page - 2 && p <= page + 2))
+                      .map((p, i, arr) => (
+                        <div key={p} style={{ display: 'flex', gap: 4 }}>
+                          {i > 0 && arr[i-1] !== p - 1 && <span style={{ padding: '0 4px', alignSelf: 'center' }}>...</span>}
+                          <button 
+                            className={`btn btn-sm ${page === p ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ minWidth: 32 }}
+                            onClick={() => setPage(p)}
+                          >
+                            {p}
+                          </button>
+                        </div>
+                      ))}
+                   </div>
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     disabled={page >= totalPages || loading}
+                     onClick={() => setPage(prev => prev + 1)}
+                     style={{ padding: '4px 12px' }}
+                   >
+                     Selanjutnya
+                   </button>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
 

@@ -6,30 +6,45 @@ export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get("search");
-  const kondisi = searchParams.get("kondisi");
-  const lowStock = searchParams.get("lowStock") === "true";
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+    const kondisi = searchParams.get("kondisi");
+    const lowStock = searchParams.get("lowStock") === "true";
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "50");
 
-  const where: any = {};
-  if (search) where.nama = { contains: search, mode: "insensitive" };
-  if (kondisi) where.kondisi = kondisi;
-  if (lowStock) where.jumlah = { lte: prisma.inventaris.fields.stokMinimum };
+    const where: any = {};
+    if (search) where.nama = { contains: search, mode: "insensitive" };
+    if (kondisi) where.kondisi = kondisi;
+    if (lowStock) where.jumlah = { lte: prisma.inventaris.fields.stokMinimum };
 
-  const data = await prisma.inventaris.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
+    const [data, total] = await Promise.all([
+      prisma.inventaris.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.inventaris.count({ where })
+    ]);
 
-  // Flag low stock items
-  const withLowStock = data.map((item: any) => ({
-    ...item,
-    isLowStock: item.jumlah <= item.stokMinimum,
-  }));
+    // Flag low stock items
+    const withLowStock = data.map((item: any) => ({
+      ...item,
+      isLowStock: item.jumlah <= item.stokMinimum,
+    }));
 
-  const lowStockCount = withLowStock.filter((i: any) => i.isLowStock).length;
+    const lowStockCount = await prisma.inventaris.count({
+      where: { jumlah: { lte: prisma.inventaris.fields.stokMinimum } }
+    });
 
-  return NextResponse.json({ data: withLowStock, lowStockCount });
+    return NextResponse.json({ 
+      data: withLowStock, 
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      lowStockCount 
+    });
 }
 
 export async function POST(request: NextRequest) {

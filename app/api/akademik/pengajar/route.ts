@@ -5,24 +5,44 @@ import bcrypt from "bcryptjs";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "50");
 
-    // Ambil semua user yang memiliki role PENGAJAR atau yang slug role-nya 'pengajar'
-    const teachers = await prisma.user.findMany({
-      where: {
-        role: {
-          slug: { in: ['pengajar', 'tutor'] }
-        }
-      },
-      include: {
-        role: true,
-        karyawanProfile: true
-      },
-      orderBy: { name: 'asc' }
+    const where: any = {
+      role: {
+        slug: { in: ['pengajar', 'tutor'] }
+      }
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        include: {
+          role: true,
+          karyawanProfile: true
+        },
+        orderBy: { name: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.user.count({ where })
+    ]);
+
+    return NextResponse.json({ 
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
     });
-
-    return NextResponse.json(teachers);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

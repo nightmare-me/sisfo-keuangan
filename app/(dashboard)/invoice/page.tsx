@@ -29,17 +29,39 @@ export default function InvoicePage() {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [printing, setPrinting] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit, setLimit] = useState(50);
+  const [total, setTotal] = useState(0);
+
   function fetchData() {
     const p = new URLSearchParams();
     if (search) p.set("search", search);
+    p.set("page", String(page));
+    p.set("limit", String(limit));
+
     setLoading(true);
-    fetch(`/api/invoice?${p}`).then(r=>r.json()).then(d=>{ setData(d.data??[]); setLoading(false); });
+    fetch(`/api/invoice?${p}`).then(r=>r.json()).then(d=>{ 
+      setData(d.data??[]); 
+      setTotal(d.total || 0);
+      setTotalPages(d.totalPages || 1);
+      setLoading(false); 
+    });
   }
 
-  useEffect(()=>{ fetchData(); },[search]);
+  useEffect(()=>{ fetchData(); },[page, limit]);
 
-  const totalInvoice = data.length;
-  const totalAmount = data.reduce((acc, inv) => acc + (inv.total || 0), 0);
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchData();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const totalInvoice = total;
+  const totalAmount = data.reduce((acc, inv) => acc + (inv.total || 0), 0); // Note: Current page only
   const pendingCount = data.filter(inv => inv.status === 'BELUM_LUNAS').length;
 
   async function printInvoice(inv: any) {
@@ -284,6 +306,66 @@ export default function InvoicePage() {
               ))}
             </tbody>
           </table>
+          {/* Pagination Footer */}
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--ghost-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Baris per halaman:</span>
+                <select 
+                  className="form-control form-control-sm" 
+                  style={{ width: 80 }}
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(parseInt(e.target.value));
+                    setPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+             </div>
+
+             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                   Halaman <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{page}</span> dari <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{totalPages}</span>
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     disabled={page <= 1 || loading}
+                     onClick={() => setPage(prev => prev - 1)}
+                     style={{ padding: '4px 12px' }}
+                   >
+                     Sebelumnya
+                   </button>
+                   <div style={{ display: 'flex', gap: 4 }}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || (p >= page - 2 && p <= page + 2))
+                      .map((p, i, arr) => (
+                        <div key={p} style={{ display: 'flex', gap: 4 }}>
+                          {i > 0 && arr[i-1] !== p - 1 && <span style={{ padding: '0 4px', alignSelf: 'center' }}>...</span>}
+                          <button 
+                            className={`btn btn-sm ${page === p ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ minWidth: 32 }}
+                            onClick={() => setPage(p)}
+                          >
+                            {p}
+                          </button>
+                        </div>
+                      ))}
+                   </div>
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     disabled={page >= totalPages || loading}
+                     onClick={() => setPage(prev => prev + 1)}
+                     style={{ padding: '4px 12px' }}
+                   >
+                     Selanjutnya
+                   </button>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
 

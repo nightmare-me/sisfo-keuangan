@@ -79,7 +79,7 @@ export default function PengeluaranPage() {
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [limit] = useState(25);
+  const [limit, setLimit] = useState(25);
 
   function fetchData() {
     const p = new URLSearchParams();
@@ -127,7 +127,7 @@ export default function PengeluaranPage() {
 
   useEffect(() => {
     fetchData();
-  }, [filter, page]);
+  }, [filter, page, limit]);
 
   useEffect(() => {
     fetchCategories();
@@ -419,41 +419,61 @@ export default function PengeluaranPage() {
         </div>
 
         {/* Pagination Section */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, padding: '0 8px' }}>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            Menampilkan halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
+        <div style={{ padding: '12px 24px', borderTop: '1px solid var(--ghost-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)', marginTop: 24, borderRadius: '0 0 12px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Baris per halaman:</span>
+            <select 
+              className="form-control form-control-sm" 
+              style={{ width: 80 }}
+              value={limit}
+              onChange={(e) => {
+                setLimit(parseInt(e.target.value));
+                setPage(1);
+              }}
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button 
-              className="btn btn-secondary btn-sm" 
-              disabled={page === 1} 
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-            >
-              Sebelumnya
-            </button>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === totalPages || (p >= page - 1 && p <= page + 1))
-                .map((p, i, arr) => (
-                  <div key={p} style={{ display: 'flex', gap: 4 }}>
-                    {i > 0 && arr[i-1] !== p - 1 && <span style={{ padding: '0 4px' }}>...</span>}
-                    <button 
-                      className={`btn btn-sm ${page === p ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ minWidth: 36 }}
-                      onClick={() => setPage(p)}
-                    >
-                      {p}
-                    </button>
-                  </div>
-                ))}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Halaman <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{page}</span> dari <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{totalPages}</span>
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={page === 1} 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+              >
+                Sebelumnya
+              </button>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || (p >= page - 1 && p <= page + 1))
+                  .map((p, i, arr) => (
+                    <div key={p} style={{ display: 'flex', gap: 4 }}>
+                      {i > 0 && arr[i-1] !== p - 1 && <span style={{ padding: '0 4px' }}>...</span>}
+                      <button 
+                        className={`btn btn-sm ${page === p ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ minWidth: 36 }}
+                        onClick={() => setPage(p)}
+                      >
+                        {p}
+                      </button>
+                    </div>
+                  ))}
+              </div>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                disabled={page === totalPages} 
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              >
+                Selanjutnya
+              </button>
             </div>
-            <button 
-              className="btn btn-secondary btn-sm" 
-              disabled={page === totalPages} 
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            >
-              Selanjutnya
-            </button>
           </div>
         </div>
       </div>

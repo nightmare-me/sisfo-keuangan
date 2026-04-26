@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
   const bulan = parseInt(searchParams.get("bulan") ?? String(new Date().getMonth() + 1));
   const tahun = parseInt(searchParams.get("tahun") ?? String(new Date().getFullYear()));
   const pengajarIdParam = searchParams.get("pengajarId");
+  const page = parseInt(searchParams.get("page") ?? "1");
+  const limit = parseInt(searchParams.get("limit") ?? "50");
 
   const where: any = { bulan, tahun };
 
@@ -20,15 +22,26 @@ export async function GET(request: NextRequest) {
     where.pengajarId = pengajarIdParam;
   }
 
-  const data = await prisma.gajiPengajar.findMany({
-    where,
-    include: {
-      pengajar: { select: { name: true, email: true } },
-      kelas: { include: { program: { select: { tipe: true, nama: true } } } },
-    },
-    orderBy: { createdAt: "desc" },
+  const [data, total] = await Promise.all([
+    prisma.gajiPengajar.findMany({
+      where,
+      include: {
+        pengajar: { select: { name: true, email: true } },
+        kelas: { include: { program: { select: { tipe: true, nama: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.gajiPengajar.count({ where })
+  ]);
+
+  return NextResponse.json({ 
+    data,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit)
   });
-  return NextResponse.json({ data });
 }
 
 export async function POST(request: NextRequest) {

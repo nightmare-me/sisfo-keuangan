@@ -2,13 +2,23 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Hyper-Flexible Finance & Smart UX (v4.55) 🚀 (TERBARU!)
+## 📢 Fitur Baru: Big Data Optimization & Server-Side Pagination (v4.60) 🚀 (TERBARU!)
+*   **Unified Server-Side Pagination**: Seluruh modul utama (14+ modul) kini menggunakan pagination di sisi server. Memuat ribuan data kini secepat kilat tanpa membebani browser.
+*   **Smart Limit Dropdown**: Navigasi tabel kini dilengkapi pilihan jumlah baris (10, 50, 100, 200) dengan fitur *auto-refresh* otomatis saat opsi dipilih.
+*   **Ads Performance Merging**: Logika penggabungan data performa iklan dari tabel `SpentAds` dan `AdPerformance` kini mendukung pagination global yang akurat.
+*   **Consistent Footer Navigation**: Standardisasi UI navigasi halaman di seluruh modul untuk pengalaman pengguna yang seragam dan profesional.
+*   **Smart Filter Logic**: Filter program pada modul pemasukan kini hanya menampilkan program yang memiliki riwayat transaksi, membuat dropdown filter lebih bersih dan relevan.
+
+---
+
+## 📢 Fitur Sebelumnya: Hyper-Flexible Finance & Smart UX (v4.55) 🚀
 *   **Fully Flexible Positions**: Bapak kini bisa menambah posisi baru (misal: Manager, Staff Ahli) langsung dari dashboard. Mesin payroll akan otomatis mencari kecocokan antara nama posisi dan pengaturan bonus tanpa perlu ubah kode.
 *   **Complete Dynamic Fees**: Modul CS Live dan CS TOEFL kini 100% dinamis. Pengaturan rate CR (konversi), fee paket Elite/Master, dan persentase sharing bisa diubah kapan saja.
 *   **Compact Tiered UI**: Desain ulang antarmuka pengaturan bonus bertingkat (Tiered Bonus) menjadi format horizontal yang padat dan informatif sesuai standar profesional.
 *   **Accordion Sidebar Navigation**: Implementasi menu samping yang bisa di-*collapse* per kategori (Keuangan, Akademik, dll) untuk navigasi yang lebih bersih dan efisien pada dashboard yang kompleks.
 *   **Universal NIP/NIK Separation**: Pemisahan total antara Nomor Induk Pegawai (NIP - Otomatis) dan Nomor Induk Kependudukan (NIK/KTP - Manual) yang berlaku seragam di modul Karyawan maupun Pengajar.
 *   **Hard Reset Utility**: Penambahan alat pembersih database yang komprehensif untuk persiapan *go-live*.
+
 
 ---
 
@@ -72,4 +82,4 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 
 ---
 *Created with ❤️ by Antigravity (Powered by Google Deepmind) for Speaking Partner Premium Operations.*
-*Sistem v4.1 Aktif - Stabilitas Dashboard Terjamin. Selamat melayani siswa, Pak Muis! ☕*
+*Sistem v4.6 Aktif - Performa & Stabilitas Big Data Terjamin. Selamat melayani siswa, Pak Muis! ☕*

@@ -11,6 +11,9 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get("userId");
+  const search = searchParams.get("search");
+  const page = parseInt(searchParams.get("page") ?? "1");
+  const limit = parseInt(searchParams.get("limit") ?? "50");
 
   if (userId) {
     const profile = await prisma.karyawanProfile.findUnique({
@@ -26,24 +29,42 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // If no userId, return ALL users who are active so we can manage their employee data
-  const allProfiles = await prisma.user.findMany({
-    where: { 
-      aktif: true
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      namaPanggilan: true,
-      noHp: true,
-      role: { select: { name: true } },
-      karyawanProfile: true
-    },
-    orderBy: { name: 'asc' }
-  });
+  const where: any = { aktif: true };
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+      { namaPanggilan: { contains: search, mode: 'insensitive' } },
+      { karyawanProfile: { nip: { contains: search, mode: 'insensitive' } } },
+      { karyawanProfile: { nik: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
 
-  return NextResponse.json(allProfiles);
+  const [profiles, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        namaPanggilan: true,
+        noHp: true,
+        role: { select: { name: true } },
+        karyawanProfile: true
+      },
+      orderBy: { name: 'asc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.user.count({ where })
+  ]);
+
+  return NextResponse.json({
+    data: profiles,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit)
+  });
 }
 
 export async function POST(request: NextRequest) {

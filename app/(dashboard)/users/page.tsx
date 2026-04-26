@@ -43,6 +43,11 @@ export default function UsersPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [search, setSearch] = useState("");
 
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit, setLimit] = useState(50);
+  const [total, setTotal] = useState(0);
+
   const [mode, setMode] = useState<"single" | "bulk" | "csv">("single");
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState<any>(null);
@@ -63,51 +68,41 @@ export default function UsersPage() {
   const [payrollUser, setPayrollUser] = useState<any>(null);
   const [loadingPayroll, setLoadingPayroll] = useState(false);
   const [payrollForm, setPayrollForm] = useState({
-    nik: "", 
-    namaPanggilan: "",
-    posisi: "", 
-    tempatLahir: "",
-    tanggalLahir: "",
-    jenisKelamin: "",
-    noHp: "",
-    alamat: "",
-    statusPernikahan: "",
-    tanggalMasuk: "",
-    tanggalResign: "",
-    kontakDarurat: "",
-    bankName: "", 
-    rekeningNomor: "", 
-    rekeningNama: "",
-    gajiPokok: 0, 
-    tunjangan: 0, 
-    feeClosing: 0, 
-    feeLead: 0, 
-    bonusTarget: 0, 
-    bonusNominal: 0, 
-    keterangan: ""
+    nik: "", namaPanggilan: "", posisi: "", tempatLahir: "", tanggalLahir: "", jenisKelamin: "", noHp: "", alamat: "", statusPernikahan: "", tanggalMasuk: "", tanggalResign: "", kontakDarurat: "", bankName: "", rekeningNomor: "", rekeningNama: "", gajiPokok: 0, tunjangan: 0, feeClosing: 0, feeLead: 0, bonusTarget: 0, bonusNominal: 0, keterangan: ""
   });
 
   function fetchData() {
     setLoading(true);
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      search,
+      status: filterStatus,
+      role: filterRole
+    });
+
     Promise.all([
-      fetch("/api/users").then(r => r.json()),
+      fetch(`/api/users?${params}`).then(r => r.json()),
       fetch("/api/roles").then(r => r.json())
-    ]).then(([users, rolesData]) => {
-      setData(Array.isArray(users) ? users : []);
+    ]).then(([usersData, rolesData]) => {
+      setData(Array.isArray(usersData.data) ? usersData.data : []);
+      setTotal(usersData.total || 0);
+      setTotalPages(usersData.totalPages || 1);
       setRoles(Array.isArray(rolesData) ? rolesData : []);
       setLoading(false);
     });
   }
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [page, limit, filterRole, filterStatus]);
 
-  const filtered = data.filter(u => {
-    if (filterRole && u.role !== filterRole) return false;
-    if (filterStatus === "aktif" && !u.aktif) return false;
-    if (filterStatus === "nonaktif" && u.aktif) return false;
-    if (search && !u.name.toLowerCase().includes(search.toLowerCase()) && !u.email.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchData();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const summary = roles.map(r => ({ 
     role: r.slug.toUpperCase(), 
@@ -480,9 +475,66 @@ export default function UsersPage() {
               ))}
             </tbody>
           </table>
-          {!loading && <div style={{ padding: "10px 16px", fontSize: 12, color: "var(--text-muted)", borderTop: "1px solid var(--border-default)" }}>
-            Menampilkan {filtered.length} dari {data.length} user
-          </div>}
+          {/* Pagination Footer */}
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--ghost-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-container-low)' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Baris per halaman:</span>
+                <select 
+                  className="form-control form-control-sm" 
+                  style={{ width: 80 }}
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(parseInt(e.target.value));
+                    setPage(1);
+                  }}
+                >
+                  <option value={10}>10</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={200}>200</option>
+                </select>
+             </div>
+
+             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                   Halaman <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{page}</span> dari <span style={{ fontWeight: 800, color: 'var(--on-surface)' }}>{totalPages}</span>
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     disabled={page <= 1 || loading}
+                     onClick={() => setPage(prev => prev - 1)}
+                     style={{ padding: '4px 12px' }}
+                   >
+                     Sebelumnya
+                   </button>
+                   <div style={{ display: 'flex', gap: 4 }}>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || (p >= page - 2 && p <= page + 2))
+                      .map((p, i, arr) => (
+                        <div key={p} style={{ display: 'flex', gap: 4 }}>
+                          {i > 0 && arr[i-1] !== p - 1 && <span style={{ padding: '0 4px', alignSelf: 'center' }}>...</span>}
+                          <button 
+                            className={`btn btn-sm ${page === p ? 'btn-primary' : 'btn-secondary'}`}
+                            style={{ minWidth: 32 }}
+                            onClick={() => setPage(p)}
+                          >
+                            {p}
+                          </button>
+                        </div>
+                      ))}
+                   </div>
+                   <button 
+                     className="btn btn-secondary btn-sm" 
+                     disabled={page >= totalPages || loading}
+                     onClick={() => setPage(prev => prev + 1)}
+                     style={{ padding: '4px 12px' }}
+                   >
+                     Selanjutnya
+                   </button>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
 

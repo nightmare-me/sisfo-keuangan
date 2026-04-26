@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const bulan = parseInt(searchParams.get("bulan") ?? String(new Date().getMonth() + 1));
     const tahun = parseInt(searchParams.get("tahun") ?? String(new Date().getFullYear()));
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "50");
 
     // 0. AMBIL CONFIG KEUANGAN DARI DB
     const dbConfigs = await prisma.financialConfig.findMany();
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
     const dayStart = new Date(tahun, bulan - 2, cutoffDay, 0, 0, 0);
     const dayEnd = new Date(tahun, bulan - 1, cutoffDay - 1, 23, 59, 59);
 
-    // 1. HITUNG METRIK GLOBAL (Profit)
+    // 1. HITUNG METRIK GLOBAL (Profit) - Tetap untuk seluruh data bulan ini
     const [pemasukanAll, approvedRefunds, pengeluaranAll, adsAll] = await Promise.all([
       prisma.pemasukan.findMany({ 
         where: { tanggal: { gte: dayStart, lte: dayEnd } },
@@ -62,12 +64,10 @@ export async function GET(request: NextRequest) {
     pemasukanAll.filter((p: any) => p.program?.isProfitSharing).forEach((p: any) => {
       toeflRevenue += p.hargaFinal;
       
-      // Extract type from keterangan
       const ket = p.keterangan || "";
       const typeMatch = ket.match(/\[TYPE:(.*?)\]/);
       const extractedType = typeMatch ? typeMatch[1] : (p.program?.kategoriFee || "");
 
-      // Hitung jatah CS untuk pengeluaran TOEFL
       toeflFeeCS += calculateCSFee(
         "CS_TOEFL",
         extractedType,
@@ -79,10 +79,8 @@ export async function GET(request: NextRequest) {
       );
     });
 
-    // Ambil pengeluaran iklan TOEFL (Asumsi Platform Ads dengan Keterangan TOEFL atau dari Advertiser khusus TOEFL)
-    const toeflAdsSpent = adsAll._sum.jumlah || 0; // Sementara ambil total ads atau filter jika ada kategori
+    const toeflAdsSpent = adsAll._sum.jumlah || 0;
 
-    // Hitung jatah Adv untuk pengeluaran TOEFL
     const toeflTeam = await prisma.user.findMany({ 
       where: { teamType: { has: "ADV_TOEFL" } }, 
       include: { adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } } } 
@@ -94,21 +92,27 @@ export async function GET(request: NextRequest) {
        });
     });
 
-    // PROFIT TOEFL MURNI (Sesuai Bagan Bapak: Pemasukan - Pengeluaran)
     const toeflProfit = toeflRevenue - toeflFeeCS - toeflFeeAdv - toeflAdsSpent;
 
-    // 3. AMBIL SEMUA KARYAWAN
-    const employees = await prisma.user.findMany({
-      where: { karyawanProfile: { isNot: null }, aktif: true },
-      include: { 
-        role: true,
-        karyawanProfile: true,
-        adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } },
-        liveSessions: { where: { tanggal: { gte: dayStart, lte: dayEnd } } },
-        pemasukan: { where: { tanggal: { gte: dayStart, lte: dayEnd } }, include: { program: true } }, // As CS
-        pemasukanTalent: { where: { tanggal: { gte: dayStart, lte: dayEnd } } } // As Talent
-      }
-    });
+    // 3. AMBIL KARYAWAN (Paginated)
+    const empWhere = { karyawanProfile: { isNot: null }, aktif: true };
+    const [employees, totalEmp] = await Promise.all([
+      prisma.user.findMany({
+        where: empWhere,
+        include: { 
+          role: true,
+          karyawanProfile: true,
+          adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } },
+          liveSessions: { where: { tanggal: { gte: dayStart, lte: dayEnd } } },
+          pemasukan: { where: { tanggal: { gte: dayStart, lte: dayEnd } }, include: { program: true } },
+          pemasukanTalent: { where: { tanggal: { gte: dayStart, lte: dayEnd } } }
+        },
+        orderBy: { name: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.user.count({ where: empWhere })
+    ]);
 
     const results = employees.map((emp: any) => {
       const profile = emp.karyawanProfile!;
@@ -193,6 +197,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ 
         data: results,
+        total: totalEmp,
+        page,
+        totalPages: Math.ceil(totalEmp / limit),
         metrics: {
             grossProfit,
             toeflProfit,

@@ -25,27 +25,42 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const pengeluaranDenganNota = await prisma.pengeluaran.findMany({
-      where: {
-        ...dateFilter,
-        arsipNota: {
-          some: {}, // Only get pengeluaran that have at least one nota
-        },
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "50");
+
+    const where = {
+      ...dateFilter,
+      arsipNota: {
+        some: {}, // Only get pengeluaran that have at least one nota
       },
-      include: {
-        arsipNota: true,
-        user: {
-          select: {
-            name: true,
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.pengeluaran.findMany({
+        where,
+        include: {
+          arsipNota: true,
+          user: {
+            select: {
+              name: true,
+            },
           },
         },
-      },
-      orderBy: {
-        tanggal: "desc",
-      },
-    });
+        orderBy: {
+          tanggal: "desc",
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.pengeluaran.count({ where })
+    ]);
 
-    return NextResponse.json(pengeluaranDenganNota);
+    return NextResponse.json({ 
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error: any) {
     console.error("GET Arsip Nota error:", error);
     return NextResponse.json({ error: "Failed to fetch arsip nota" }, { status: 500 });

@@ -11,49 +11,68 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const filterRoleSlug = searchParams.get("role");
+    const search = searchParams.get("search");
+    const status = searchParams.get("status");
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "50");
 
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // Pengecekan akses: Hanya admin atau role dengan permission user:manage yang boleh lihat semua
     const hasUserManage = (session.user as any).permissions?.includes('user:manage');
+    const isAdmin = (session.user as any).role?.toUpperCase() === 'ADMIN';
 
-    if (!hasUserManage && sessionRoleSlug?.toLowerCase() !== 'admin') {
-      // Non-privileged: hanya boleh cari user tertentu (biasanya untuk filter CS)
+    if (!hasUserManage && !isAdmin) {
       if (filterRoleSlug) {
         const users = await prisma.user.findMany({
           where: { role: { slug: filterRoleSlug.toLowerCase() }, aktif: true },
           include: { role: true, karyawanProfile: true },
           orderBy: { name: "asc" },
         });
-        
         const formatted = users.map((u: any) => ({
           ...u,
           role: u.role?.slug?.toUpperCase() || "USER",
           roleName: u.role?.name || "No Role"
         }));
-
         return NextResponse.json(formatted);
       }
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Admin/Privileged: semua user (atau filter role)
-    const where: any = filterRoleSlug ? { role: { slug: filterRoleSlug.toLowerCase() } } : {};
+    const where: any = {};
+    if (filterRoleSlug) where.role = { slug: filterRoleSlug.toLowerCase() };
+    if (status === "aktif") where.aktif = true;
+    if (status === "nonaktif") where.aktif = false;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { namaPanggilan: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-    const users = await prisma.user.findMany({
-      where,
-      include: { role: true, karyawanProfile: true },
-      orderBy: { createdAt: "desc" },
-    });
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        include: { role: true, karyawanProfile: true },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.user.count({ where })
+    ]);
     
-    // Map output agar match format lama tapi dengan data role baru
     const formattedUsers = users.map((u: any) => ({
       ...u,
       role: u.role?.slug?.toUpperCase() || "USER",
       roleName: u.role?.name || "No Role"
     }));
 
-    return NextResponse.json(formattedUsers);
+    return NextResponse.json({
+      data: formattedUsers,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error: any) {
     console.error("USERS_GET_ERROR:", error);
     return NextResponse.json({ error: "Internal Server Error", message: error.message }, { status: 500 });

@@ -8,6 +8,8 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const all = searchParams.get("all") === "true";
   const hasPemasukanOnly = searchParams.get("hasPemasukanOnly") === "true";
+  const page = searchParams.get("page") ? parseInt(searchParams.get("page")!) : null;
+  const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : null;
 
   const where: any = all ? {} : { aktif: true };
   
@@ -15,11 +17,32 @@ export async function GET(request: NextRequest) {
     where.pemasukan = { some: {} };
   }
 
-  const programs = await prisma.program.findMany({
-    where,
-    orderBy: { nama: "asc" },
+  // If no pagination requested (usually for dropdowns)
+  if (!page || !limit) {
+    const programs = await prisma.program.findMany({
+      where,
+      orderBy: { nama: "asc" },
+    });
+    return NextResponse.json(programs);
+  }
+
+  // Paginated request (usually for the management table)
+  const [data, total] = await Promise.all([
+    prisma.program.findMany({
+      where,
+      orderBy: { nama: "asc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.program.count({ where })
+  ]);
+
+  return NextResponse.json({ 
+    data,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit)
   });
-  return NextResponse.json(programs);
 }
 
 export async function POST(request: NextRequest) {

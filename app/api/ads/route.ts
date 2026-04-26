@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const platform = searchParams.get("platform");
+  const page = parseInt(searchParams.get("page") ?? "1");
+  const limit = parseInt(searchParams.get("limit") ?? "50");
 
   const where: any = {};
   const wherePerf: any = {};
@@ -34,11 +36,15 @@ export async function GET(request: NextRequest) {
       where,
       orderBy: { tanggal: "desc" },
       include: { user: { select: { name: true } } },
+      skip: (page - 1) * limit,
+      take: limit,
     }),
     prisma.adPerformance.findMany({
       where: wherePerf,
       orderBy: { date: "desc" },
       include: { adv: { select: { name: true } } },
+      skip: (page - 1) * limit,
+      take: limit,
     }),
     prisma.spentAds.aggregate({ where, _sum: { jumlah: true }, _count: true }),
     prisma.adPerformance.aggregate({ where: wherePerf, _sum: { spent: true }, _count: true }),
@@ -55,7 +61,6 @@ export async function GET(request: NextRequest) {
   ]);
 
   // Combine and Format data for table display
-  // We transform AdPerformance records to look like SpentAds records
   const formattedPerfData = perfData.map((p: any) => ({
     id: p.id,
     tanggal: p.date,
@@ -68,7 +73,7 @@ export async function GET(request: NextRequest) {
 
   const allData = [...spentData, ...formattedPerfData].sort((a: any, b: any) => 
     new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
-  );
+  ).slice(0, limit);
 
   // Combine Summaries
   const totalAmount = (summarySpent._sum.jumlah ?? 0) + (summaryPerf._sum.spent ?? 0);
@@ -90,6 +95,9 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ 
     data: allData, 
+    total: totalCount,
+    page,
+    totalPages: Math.ceil(totalCount / limit),
     summary: { total: totalAmount, count: totalCount }, 
     byPlatform: combinedByPlatform 
   });

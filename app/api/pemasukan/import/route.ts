@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Tingkatkan timeout jika di Vercel
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -8,28 +11,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Data harus berupa array" }, { status: 400 });
     }
 
+    // 1. PRE-FETCH DATA (OPTIMASI: Ambil semua di awal agar tidak query di dalam loop)
+    const [allCS, allPrograms, allTalents, allSiswa] = await Promise.all([
+      prisma.user.findMany({
+        where: { OR: [{ role: { slug: "cs" } }, { role: { slug: "admin" } }] },
+        select: { id: true, name: true, namaPanggilan: true }
+      }),
+      prisma.program.findMany({ select: { id: true, nama: true } }),
+      prisma.talent.findMany({ select: { id: true, nama: true, namaPanggilan: true } }),
+      prisma.siswa.findMany({ select: { id: true, nama: true, telepon: true } })
+    ]);
+
+    // Cache untuk mempercepat lookup di memori
+    const siswaCache = new Map();
+    allSiswa.forEach(s => {
+      const key = `${s.nama.toLowerCase()}|${s.telepon || ""}`;
+      siswaCache.set(key, s.id);
+    });
+
+    const programCache = new Map();
+    allPrograms.forEach(p => programCache.set(p.nama.toLowerCase().replace(/[^a-z0-9]/g, ""), p.id));
+
+    let countSiswa = await prisma.siswa.count();
     const results = [];
-    
-    // Ambil semua CS (Termasuk Nama Panggilan)
-    const allCS = await prisma.user.findMany({
-      where: { 
-        OR: [
-          { role: { slug: "cs" } },
-          { role: { slug: "admin" } }
-        ]
-      },
-      select: { id: true, name: true, namaPanggilan: true }
-    });
 
-    // Ambil semua Program untuk mapping nama ke ID
-    const allPrograms = await prisma.program.findMany({
-      select: { id: true, nama: true }
-    });
-
-    const allTalents = await prisma.talent.findMany({
-      select: { id: true, nama: true, namaPanggilan: true }
-    });
-
+    // 2. PROSES DATA DALAM LOOP
     for (const item of body) {
       try {
         const findValue = (keyNames: string[]) => {
@@ -40,8 +46,8 @@ export async function POST(request: NextRequest) {
           return key ? item[key] : null;
         };
 
-        const siswa = findValue(["siswa", "namasiswa", "studentname", "nama"]);
-        if (!siswa) continue;
+        const siswaName = String(findValue(["siswa", "namasiswa", "studentname", "nama"]) || "").trim();
+        if (!siswaName) continue;
 
         const programName = String(findValue(["program", "namaprogram", "produk"]) || "").trim();
         const csName = String(findValue(["cs", "namacs", "staff", "nama_cs"]) || "").trim();
@@ -55,165 +61,118 @@ export async function POST(request: NextRequest) {
         if (isNaN(diskon)) diskon = 0;
         if (isNaN(nominalInput)) nominalInput = 0;
 
-        // 1. Cari atau Buat Siswa (Pemasukan butuh siswaId)
-        let siswaId = null;
-        if (siswa && String(siswa).trim() !== "") {
-          const cleanSiswa = String(siswa).trim();
-          const rawWA = findValue(["whatsapp", "wa", "nomorwa"]);
-          
-          // ALAT PEMBERSIH WA (ANTI-SCIENTIFIC)
-          const cleanPhone = (p: any) => {
-            if (!p) return "";
-            let s = String(p).trim();
-            if (s.toUpperCase().includes('E')) {
-              const num = Number(s);
-              if (!isNaN(num)) s = num.toLocaleString('fullwide', {useGrouping:false});
-            }
-            let cleaned = s.replace(/[^0-9]/g, "");
-            if (cleaned.startsWith("62")) cleaned = "0" + cleaned.slice(2);
-            else if (cleaned.startsWith("8")) cleaned = "0" + cleaned;
-            return cleaned;
-          };
+        // A. Handle Siswa
+        const rawWA = findValue(["whatsapp", "wa", "nomorwa"]);
+        const cleanPhone = (p: any) => {
+          if (!p) return "";
+          let s = String(p).trim();
+          if (s.toUpperCase().includes('E')) {
+            const num = Number(s);
+            if (!isNaN(num)) s = num.toLocaleString('fullwide', {useGrouping:false});
+          }
+          let cleaned = s.replace(/[^0-9]/g, "");
+          if (cleaned.startsWith("62")) cleaned = "0" + cleaned.slice(2);
+          else if (cleaned.startsWith("8")) cleaned = "0" + cleaned;
+          return cleaned;
+        };
+        const cleanWA = cleanPhone(rawWA);
 
-          const cleanWA = cleanPhone(rawWA);
+        const siswaKey = `${siswaName.toLowerCase()}|${cleanWA}`;
+        let siswaId = siswaCache.get(siswaKey);
 
-          // Cari yang benar-benar mirip
-          // Cari siswa yang Nama DAN WA-nya cocok (jika ada WA)
-          // Jika WA kosong, cari berdasarkan Nama saja
-          let siswaRecord = await prisma.siswa.findFirst({
-            where: {
-              nama: { equals: cleanSiswa, mode: 'insensitive' },
-              ...(cleanWA !== "" ? { telepon: cleanWA } : {})
-            }
+        if (!siswaId) {
+          // Cari by name saja jika WA kosong/tidak cocok
+          const matchByName = allSiswa.find(s => s.nama.toLowerCase() === siswaName.toLowerCase() && (!cleanWA || s.telepon === cleanWA));
+          if (matchByName) {
+            siswaId = matchByName.id;
+          } else {
+            // Buat Siswa Baru (Sequential but unavoidable for ID)
+            countSiswa++;
+            const newSiswa = await prisma.siswa.create({
+              data: {
+                noSiswa: `S${countSiswa.toString().padStart(4, '0')}`,
+                nama: siswaName,
+                telepon: cleanWA || null,
+              }
+            });
+            siswaId = newSiswa.id;
+            allSiswa.push(newSiswa);
+            siswaCache.set(siswaKey, siswaId);
+          }
+        }
+
+        // B. Handle Program
+        const cleanStr = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const progKey = cleanStr(programName);
+        let programId = programCache.get(progKey);
+
+        if (!programId && programName !== "") {
+          const newProg = await prisma.program.create({
+            data: { nama: programName.toUpperCase().trim(), harga: 0, tipe: 'LAINNYA' }
           });
-
-          if (!siswaRecord) {
-            // Jika siswa tidak ada, buat baru
-            const countSiswa = await prisma.siswa.count();
-            siswaRecord = await prisma.siswa.create({
-              data: {
-                noSiswa: `S${(countSiswa + 1).toString().padStart(4, '0')}`,
-                nama: cleanSiswa,
-                telepon: cleanWA !== "" ? cleanWA : null,
-              }
-            });
-          }
-          siswaId = siswaRecord.id;
+          programId = newProg.id;
+          programCache.set(progKey, programId);
         }
 
-        // 2. Cari atau Buat Program otomatis jika tidak ada (Fuzzy matching)
-        let programId = null;
-        if (programName !== "") {
-          const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const targetClean = clean(programName);
-          
-          let targetProg = allPrograms.find(p => clean(p.nama) === targetClean);
-          
-          if (!targetProg) {
-            // Buat program baru jika tidak ada (Misal: Lain-lain)
-            targetProg = await prisma.program.create({
-              data: {
-                nama: programName.toUpperCase().trim(),
-                harga: 0,
-                tipe: 'LAINNYA'
-              }
-            });
-            // Masukkan ke list biar tidak buat dobel di baris berikutnya
-            allPrograms.push(targetProg);
-          }
-          programId = targetProg.id;
-        }
+        // C. Handle CS & Talent (Memory Lookup)
+        const cs = allCS.find(c => 
+          (c.name || "").toLowerCase().includes(csName.toLowerCase()) || 
+          (c.namaPanggilan || "").toLowerCase().includes(csName.toLowerCase())
+        );
 
-        const cs = (csName !== "" && csName !== "null" && csName !== "—") 
-          ? allCS.find(c => 
-              (c.name || "").toLowerCase().includes(csName.toLowerCase()) || 
-              (c.namaPanggilan || "").toLowerCase().includes(csName.toLowerCase())
-            ) 
-          : null;
+        const talent = allTalents.find(t => 
+          (t.nama || "").toLowerCase().includes(talentName.toLowerCase()) ||
+          (t.namaPanggilan || "").toLowerCase().includes(talentName.toLowerCase())
+        );
 
-        // 3. Tentukan Product Type untuk Fee Calculation
+        // D. Logic Bisnis
         let prodType = "REGULAR";
         const upperProg = programName.toUpperCase();
         if (upperProg.includes("ELITE")) prodType = "ELITE";
         else if (upperProg.includes("MASTER")) prodType = "MASTER";
         else if (upperProg.includes("TOEFL") || upperProg.includes("IELTS")) prodType = "TOEFL";
-        else if (upperProg.includes("LAIN")) prodType = "LAINNYA";
-        else if (upperProg.includes("PRIVATE")) prodType = "PRIVATE";
 
-        // 4. Handle Nominal & Kode Unik
-        let finalPrice = nominalInput;
-        if (finalPrice <= 0) {
-          finalPrice = hargaNormal - diskon;
-        }
-
+        let finalPrice = nominalInput > 0 ? nominalInput : (hargaNormal - diskon);
         const kodeUnik = finalPrice % 1000;
         const nominalMurni = finalPrice - kodeUnik;
 
-        // 5. Handle Date (Super Robust)
+        // E. Handle Date
         let tgl = new Date();
         const tglInput = findValue(["tanggal", "date", "tgl"]);
-        
-        if (tglInput && String(tglInput).trim() !== "") {
+        if (tglInput) {
           const s = String(tglInput).trim();
-          
-          // A. Handle Excel Numeric Date (misal: 45408)
           if (/^\d+$/.test(s) && parseInt(s) > 10000) {
-            const excelDate = parseInt(s);
-            // Excel epoch starts at Jan 1, 1900
-            tgl = new Date((excelDate - 25569) * 86400 * 1000);
-          } 
-          // B. Handle format dd/mm/yyyy (pakai slash /)
-          else if (s.includes("/")) {
-            const parts = s.split("/");
-            if (parts.length === 3) {
-              const d = parseInt(parts[0]);
-              const m = parseInt(parts[1]) - 1; 
-              const y = parts[2].length === 2 ? 2000 + parseInt(parts[2]) : parseInt(parts[2]);
-              const parsedDate = new Date(y, m, d);
-              if (!isNaN(parsedDate.getTime())) tgl = parsedDate;
-            }
-          } 
-          // C. Handle Standard formats (yyyy-mm-dd, etc)
-          else {
-            const parsedDate = new Date(s);
-            if (!isNaN(parsedDate.getTime())) tgl = parsedDate;
+            tgl = new Date((parseInt(s) - 25569) * 86400 * 1000);
+          } else if (s.includes("/")) {
+            const p = s.split("/");
+            if (p.length === 3) tgl = new Date(parseInt(p[2].length === 2 ? "20"+p[2] : p[2]), parseInt(p[1])-1, parseInt(p[0]));
+          } else {
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) tgl = d;
           }
         }
-        
-        // Final guard: Jangan sampai masuk 1970 (Epoch 0)
-        if (isNaN(tgl.getTime()) || tgl.getFullYear() < 2000) {
-          tgl = new Date();
-        }
+        if (isNaN(tgl.getTime()) || tgl.getFullYear() < 2000) tgl = new Date();
 
-        const keterangan = findValue(["keterangan", "note"]) || "";
-        const finalKeterangan = `[TYPE:${prodType}] ${keterangan}`.trim();
-
-        const talent = (talentName !== "" && talentName !== "null" && talentName !== "—") 
-          ? allTalents.find(t => 
-              (t.nama || "").toLowerCase().includes(talentName.toLowerCase()) ||
-              (t.namaPanggilan || "").toLowerCase().includes(talentName.toLowerCase())
-            ) 
-          : null;
-
+        // F. SAVE PEMASUKAN
         const pemasukan = await prisma.pemasukan.create({
           data: {
             tanggal: tgl,
-            siswaId: siswaId,
-            programId: programId,
+            siswaId,
+            programId,
             csId: cs?.id || null,
             talentId: talent?.id || null,
             hargaNormal: hargaNormal || nominalMurni || 0,
-            diskon: diskon || 0,
-            hargaFinal: finalPrice || 0,
+            diskon,
+            hargaFinal: finalPrice,
             metodeBayar: String(findValue(["metode", "metodebayar", "payment"]) || "TRANSFER").toUpperCase() as any,
-            keterangan: finalKeterangan,
-            isRO: String(findValue(["isro", "ro", "repeatorder"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
+            keterangan: `[TYPE:${prodType}] ${findValue(["keterangan", "note"]) || ""}`.trim(),
+            isRO: String(findValue(["isro", "ro"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
           }
         });
         results.push(pemasukan);
-      } catch (itemError: any) {
-        console.error("Error pada item:", item, itemError);
-        // Lanjutkan ke item berikutnya saja jika satu baris gagal
+
+      } catch (err) {
+        console.error("Baris Gagal:", item, err);
       }
     }
 
@@ -222,7 +181,9 @@ export async function POST(request: NextRequest) {
       count: results.length,
       message: `Berhasil mengimpor ${results.length} data. Gagal: ${body.length - results.length}` 
     });
+
   } catch (error: any) {
-    return NextResponse.json({ error: "Gagal import data Pemasukan", details: error.message }, { status: 500 });
+    console.error("IMPORT_FATAL_ERROR:", error);
+    return NextResponse.json({ error: "Gagal import data", details: error.message }, { status: 500 });
   }
 }

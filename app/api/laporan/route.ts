@@ -22,37 +22,47 @@ export async function GET(request: NextRequest) {
       config[c.key] = c.value;
     });
 
-    const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
-    const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
+    // PAKSA PAKAI WAKTU JAKARTA (WIB - UTC+7) SECARA MANUAL & ROBUST
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const jktNow = new Date(utc + (3600000 * 7));
+    
     let startDate: Date, endDate: Date;
 
-    // LOGIKA TANGGAL (SAMA DENGAN DASHBOARD)
     if (fromParam && toParam && type === "custom") {
       startDate = startOfDay(new Date(fromParam));
       endDate = endOfDay(new Date(toParam));
     } else if (type === "today") {
-      startDate = startOfDay(now);
-      endDate = endOfDay(now);
+      startDate = new Date(startOfDay(jktNow).getTime() - (3600000 * 7));
+      endDate = new Date(endOfDay(jktNow).getTime() - (3600000 * 7));
     } else if (type === "week") {
-      const day = now.getDay();
-      startDate = new Date(now);
-      startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1));
-      startDate.setHours(0, 0, 0, 0);
-      endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + 6);
-      endDate.setHours(23, 59, 59, 999);
+      const day = jktNow.getDay();
+      const weekStart = new Date(jktNow);
+      weekStart.setDate(jktNow.getDate() - day + (day === 0 ? -6 : 1));
+      startDate = new Date(startOfDay(weekStart).getTime() - (3600000 * 7));
+      endDate = new Date(startDate.getTime() + (7 * 24 * 3600000) - 1);
     } else {
       // DEFAULT: MONTH
+      const jktDay = jktNow.getDate();
+      const jktMonth = jktNow.getMonth();
+      const jktYear = jktNow.getFullYear();
+
       if (cutoffDay === 1) {
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        const s = new Date(jktYear, jktMonth, 1);
+        const e = new Date(jktYear, jktMonth + 1, 0, 23, 59, 59);
+        startDate = new Date(s.getTime() - (3600000 * 7));
+        endDate = new Date(e.getTime() - (3600000 * 7));
       } else {
-        if (now.getDate() >= cutoffDay) {
-          startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
-          endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
+        if (jktDay >= cutoffDay) {
+          const s = new Date(jktYear, jktMonth, cutoffDay);
+          const e = new Date(jktYear, jktMonth + 1, cutoffDay - 1, 23, 59, 59);
+          startDate = new Date(s.getTime() - (3600000 * 7));
+          endDate = new Date(e.getTime() - (3600000 * 7));
         } else {
-          startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
-          endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
+          const s = new Date(jktYear, jktMonth - 1, cutoffDay);
+          const e = new Date(jktYear, jktMonth, cutoffDay - 1, 23, 59, 59);
+          startDate = new Date(s.getTime() - (3600000 * 7));
+          endDate = new Date(e.getTime() - (3600000 * 7));
         }
       }
     }

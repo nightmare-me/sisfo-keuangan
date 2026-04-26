@@ -87,13 +87,15 @@ export async function POST(request: NextRequest) {
         let pId = programCache.get(pKey);
 
         if (!pId && pName !== "") {
-          const isTOEFL = pName.toUpperCase().includes("TOEFL") || pName.toUpperCase().includes("IELTS");
+          const sharingProfitInput = String(getVal(item, ["sharing_profit", "issharingprofit", "profitsharing"]) || "0");
+          const isSharing = sharingProfitInput === "1" || sharingProfitInput.toLowerCase() === "true";
+          
           const newP = await prisma.program.create({
             data: { 
               nama: pName.toUpperCase().trim(), 
               harga: 0, 
               tipe: 'LAINNYA',
-              isProfitSharing: isTOEFL
+              isProfitSharing: isSharing
             }
           });
           pId = newP.id;

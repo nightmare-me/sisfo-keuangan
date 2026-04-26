@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. PRE-FETCH DATA MASTER
-    // Catatan: Talent di schema Bapak ternyata disimpan di tabel 'User'
     const [allCS, allPrograms, allUsers, allSiswa] = await Promise.all([
       prisma.user.findMany({
         where: { role: { slug: { in: ["cs", "admin"] } } },
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest) {
       prisma.program.findMany({ select: { id: true, nama: true } }),
       prisma.user.findMany({ 
         select: { id: true, name: true, namaPanggilan: true } 
-      }), // Ambil semua user untuk pencarian Talent
+      }),
       prisma.siswa.findMany({ select: { id: true, nama: true, telepon: true } })
     ]);
 
@@ -28,29 +27,28 @@ export async function POST(request: NextRequest) {
     allSiswa.forEach(s => siswaCache.set(`${s.nama.toLowerCase()}|${s.telepon || ""}`, s.id));
 
     const programCache = new Map();
-    allPrograms.forEach(p => programCache.set(p.nama.toLowerCase().replace(/[^a-z0-9]/g, ""), p.id));
+    const cleanStr = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    allPrograms.forEach(p => programCache.set(cleanStr(p.nama), p.id));
 
     let countSiswa = await prisma.siswa.count();
     const recordsToCreate: any[] = [];
     const errors: any[] = [];
 
-    // Helper untuk cari value di CSV
+    // HELPER PENCARIAN KOLOM YANG LEBIH CERDAS
     const getVal = (item: any, keys: string[]) => {
-      const key = Object.keys(item).find(k => {
-        const cleanK = k.trim().toLowerCase().replace(/_/g, "");
-        return keys.some(kn => cleanK === kn.toLowerCase());
-      });
-      return key ? item[key] : null;
+      const cleanKeys = keys.map(k => cleanStr(k));
+      const foundKey = Object.keys(item).find(k => cleanKeys.includes(cleanStr(k)));
+      return foundKey ? item[foundKey] : null;
     };
 
     // 2. TAHAP 1: PRE-PROCESS
     for (let i = 0; i < body.length; i++) {
       const item = body[i];
       try {
-        const sName = String(getVal(item, ["siswa", "namasiswa", "nama"]) || "").trim();
+        const sName = String(getVal(item, ["siswa", "nama_siswa", "nama"]) || "").trim();
         if (!sName) continue;
 
-        const rawWA = getVal(item, ["whatsapp", "wa", "nomorwa"]);
+        const rawWA = getVal(item, ["whatsapp", "wa", "nomor_wa"]);
         const cleanWA = ((p: any) => {
           if (!p) return "";
           let s = String(p).trim();
@@ -85,7 +83,7 @@ export async function POST(request: NextRequest) {
 
         // Cari Program
         const pName = String(getVal(item, ["program", "produk"]) || "").trim();
-        const pKey = pName.toLowerCase().replace(/[^a-z0-9]/g, "");
+        const pKey = cleanStr(pName);
         let pId = programCache.get(pKey);
 
         if (!pId && pName !== "") {
@@ -96,12 +94,26 @@ export async function POST(request: NextRequest) {
           programCache.set(pKey, pId);
         }
 
-        // Cari CS & Talent (Keduanya dari tabel User)
-        const csN = String(getVal(item, ["cs", "nama_cs"]) || "").trim();
-        const cs = allCS.find(c => (c.name||"").toLowerCase().includes(csN.toLowerCase()) || (c.namaPanggilan||"").toLowerCase().includes(csN.toLowerCase()));
+        // Cari CS & Talent (Hanya jika ada isinya)
+        const csSearch = String(getVal(item, ["cs", "nama_cs"]) || "").trim().toLowerCase();
+        let csId = null;
+        if (csSearch !== "" && csSearch !== "null" && csSearch !== "—") {
+          const foundCS = allCS.find(c => 
+            (c.name||"").toLowerCase().includes(csSearch) || 
+            (c.namaPanggilan||"").toLowerCase().includes(csSearch)
+          );
+          csId = foundCS?.id || null;
+        }
 
-        const talN = String(getVal(item, ["talent", "host"]) || "").trim();
-        const tal = allUsers.find(u => (u.name||"").toLowerCase().includes(talN.toLowerCase()) || (u.namaPanggilan||"").toLowerCase().includes(talN.toLowerCase()));
+        const talSearch = String(getVal(item, ["talent", "host"]) || "").trim().toLowerCase();
+        let talId = null;
+        if (talSearch !== "" && talSearch !== "null" && talSearch !== "—") {
+          const foundTal = allUsers.find(u => 
+            (u.name||"").toLowerCase().includes(talSearch) || 
+            (u.namaPanggilan||"").toLowerCase().includes(talSearch)
+          );
+          talId = foundTal?.id || null;
+        }
 
         // Logic Tanggal
         let tgl = new Date();
@@ -119,12 +131,13 @@ export async function POST(request: NextRequest) {
         }
         if (isNaN(tgl.getTime()) || tgl.getFullYear() < 2000) tgl = new Date();
 
-        const hNorm = parseFloat(String(getVal(item, ["harga_normal", "nominal"]) || "0"));
-        const disk = parseFloat(String(getVal(item, ["diskon"]) || "0"));
+        // HARGA & DISKON
+        const hNorm = parseFloat(String(getVal(item, ["harga_normal", "harga", "nominal"]) || "0"));
+        const disk = parseFloat(String(getVal(item, ["diskon", "potongan"]) || "0"));
         const tot = parseFloat(String(getVal(item, ["total", "totalbayar", "hargafinal"]) || "0"));
         const finalP = tot > 0 ? tot : (hNorm - disk);
         
-        let met = String(getVal(item, ["metode", "payment"]) || "TRANSFER").toUpperCase();
+        let met = String(getVal(item, ["metode", "metode_bayar", "payment"]) || "TRANSFER").toUpperCase();
         if (!["TRANSFER", "QRIS", "CASH"].includes(met)) met = "TRANSFER";
 
         let prodT = "REGULAR";
@@ -136,13 +149,13 @@ export async function POST(request: NextRequest) {
           tanggal: tgl,
           siswaId: sId,
           programId: pId,
-          csId: cs?.id || null,
-          talentId: tal?.id || null,
+          csId: csId,
+          talentId: talId,
           hargaNormal: hNorm || finalP || 0,
           diskon: disk || 0,
           hargaFinal: finalP,
           metodeBayar: met,
-          keterangan: `[TYPE:${prodT}] ${getVal(item, ["keterangan"]) || ""}`.trim(),
+          keterangan: `[TYPE:${prodT}] ${getVal(item, ["keterangan", "note"]) || ""}`.trim(),
           isRO: String(getVal(item, ["ro", "isro"]) || "").toLowerCase() === "true" || getVal(item, ["ro"]) === "1" || getVal(item, ["ro"]) === 1,
         });
 

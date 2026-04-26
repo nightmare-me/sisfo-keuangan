@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
       select: { id: true, nama: true }
     });
 
+    const allTalents = await prisma.talent.findMany({
+      select: { id: true, nama: true }
+    });
+
     for (const item of body) {
       try {
         const findValue = (keyNames: string[]) => {
@@ -41,6 +45,7 @@ export async function POST(request: NextRequest) {
 
         const programName = String(findValue(["program", "namaprogram", "produk"]) || "").trim();
         const csName = String(findValue(["cs", "namacs", "staff", "nama_cs"]) || "").trim();
+        const talentName = String(findValue(["talent", "host", "talentname"]) || "").trim();
         
         let hargaNormal = parseFloat(String(findValue(["harganormal", "harga", "nominal", "harga_nor"]) || "0"));
         let diskon = parseFloat(String(findValue(["diskon", "potongan"]) || "0"));
@@ -183,12 +188,19 @@ export async function POST(request: NextRequest) {
         const keterangan = findValue(["keterangan", "note"]) || "";
         const finalKeterangan = `[TYPE:${prodType}] ${keterangan}`.trim();
 
+        const talent = (talentName !== "" && talentName !== "null" && talentName !== "—") 
+          ? allTalents.find(t => 
+              (t.nama || "").toLowerCase().includes(talentName.toLowerCase())
+            ) 
+          : null;
+
         const pemasukan = await prisma.pemasukan.create({
           data: {
             tanggal: tgl,
             siswaId: siswaId,
             programId: programId,
             csId: cs?.id || null,
+            talentId: talent?.id || null,
             hargaNormal: hargaNormal || nominalMurni || 0,
             diskon: diskon || 0,
             hargaFinal: finalPrice || 0,

@@ -47,12 +47,16 @@ export async function POST(request: NextRequest) {
 
         // 1. Cari atau Buat Siswa (Pemasukan butuh siswaId)
         let siswaId = null;
-        if (siswa) {
+        if (siswa && String(siswa).trim() !== "") {
+          const cleanSiswa = String(siswa).trim();
+          const cleanWA = String(findValue(["whatsapp", "wa", "nomorwa"]) || "").trim();
+
+          // Cari yang benar-benar mirip
           let siswaRecord = await prisma.siswa.findFirst({
             where: {
               OR: [
-                { nama: { contains: String(siswa), mode: 'insensitive' } },
-                { telepon: String(findValue(["whatsapp", "wa", "nomorwa"]) || "") }
+                { nama: { equals: cleanSiswa, mode: 'insensitive' } },
+                cleanWA !== "" ? { telepon: cleanWA } : { id: 'NEVER_MATCH' }
               ]
             }
           });
@@ -63,8 +67,8 @@ export async function POST(request: NextRequest) {
             siswaRecord = await prisma.siswa.create({
               data: {
                 noSiswa: `S${(countSiswa + 1).toString().padStart(4, '0')}`,
-                nama: String(siswa),
-                telepon: String(findValue(["whatsapp", "wa", "nomorwa"]) || ""),
+                nama: cleanSiswa,
+                telepon: cleanWA !== "" ? cleanWA : null,
               }
             });
           }
@@ -72,8 +76,10 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Cari Program & CS
-        const program = allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase()));
-        const cs = allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase()));
+        const program = programName !== "" ? allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase())) : null;
+        const cs = (csName !== "" && csName !== "null" && csName !== "—") 
+          ? allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase())) 
+          : null;
 
         // 3. Handle Nominal & Kode Unik
         let finalPrice = nominalInput;
@@ -87,7 +93,7 @@ export async function POST(request: NextRequest) {
         // 4. Handle Date
         let tgl = new Date();
         const tglInput = findValue(["tanggal", "date", "tgl"]);
-        if (tglInput) {
+        if (tglInput && String(tglInput).trim() !== "") {
           const parsedDate = new Date(String(tglInput));
           if (!isNaN(parsedDate.getTime())) {
             tgl = parsedDate;

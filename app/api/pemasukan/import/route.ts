@@ -10,13 +10,18 @@ export async function POST(request: NextRequest) {
 
     const results = [];
     
-    // Ambil semua CS
+    // Ambil semua CS (Termasuk Nama Panggilan)
     const allCS = await prisma.user.findMany({
-      where: { role: { slug: "cs" } },
-      select: { id: true, name: true }
+      where: { 
+        OR: [
+          { role: { slug: "cs" } },
+          { role: { slug: "admin" } }
+        ]
+      },
+      select: { id: true, name: true, namaPanggilan: true }
     });
 
-    // Ambil semua Program
+    // Ambil semua Program untuk mapping nama ke ID
     const allPrograms = await prisma.program.findMany({
       select: { id: true, nama: true }
     });
@@ -35,9 +40,9 @@ export async function POST(request: NextRequest) {
         if (!siswa) continue;
 
         const programName = String(findValue(["program", "namaprogram", "produk"]) || "").trim();
-        const csName = String(findValue(["cs", "namacs", "staff"]) || "").trim();
+        const csName = String(findValue(["cs", "namacs", "staff", "nama_cs"]) || "").trim();
         
-        let hargaNormal = parseFloat(String(findValue(["harganormal", "harga", "nominal"]) || "0"));
+        let hargaNormal = parseFloat(String(findValue(["harganormal", "harga", "nominal", "harga_nor"]) || "0"));
         let diskon = parseFloat(String(findValue(["diskon", "potongan"]) || "0"));
         let nominalInput = parseFloat(String(findValue(["totalbayar", "hargafinal", "total"]) || "0"));
 
@@ -75,10 +80,13 @@ export async function POST(request: NextRequest) {
           siswaId = siswaRecord.id;
         }
 
-        // 2. Cari Program & CS
+        // 2. Cari Program & CS (Cek Nama Lengkap & Nama Panggilan)
         const program = programName !== "" ? allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase())) : null;
         const cs = (csName !== "" && csName !== "null" && csName !== "—") 
-          ? allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase())) 
+          ? allCS.find(c => 
+              (c.name || "").toLowerCase().includes(csName.toLowerCase()) || 
+              (c.namaPanggilan || "").toLowerCase().includes(csName.toLowerCase())
+            ) 
           : null;
 
         // 3. Handle Nominal & Kode Unik

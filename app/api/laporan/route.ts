@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     });
 
     const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
-    const now = new Date();
+    const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
     let startDate: Date, endDate: Date;
 
     // LOGIKA TANGGAL (SAMA DENGAN DASHBOARD)

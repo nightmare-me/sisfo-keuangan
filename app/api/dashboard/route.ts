@@ -21,8 +21,9 @@ export async function GET(request: NextRequest) {
     dbConfigs.forEach(c => { config[c.key] = c.value; });
     const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
 
+    // PAKSA PAKAI WAKTU JAKARTA (WIB)
+    const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Jakarta"}));
     let startDate: Date, endDate: Date, prevStartDate: Date, prevEndDate: Date;
-    const now = new Date();
 
     if (fromParam && toParam && type === "custom") {
       startDate = startOfDay(new Date(fromParam));

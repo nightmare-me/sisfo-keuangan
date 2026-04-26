@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       const revenue = p.hargaFinal;
       
       // LOGIKA GRUP PRODUK
-      if (isSharing) {
+      if (isSharing || p.program?.tipe === "LAINNYA") {
         sourceBreakdown.TOEFL += revenue;
       } else if (progName.includes("LIVE")) {
         sourceBreakdown.LIVE += revenue;

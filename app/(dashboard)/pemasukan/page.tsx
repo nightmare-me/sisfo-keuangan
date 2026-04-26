@@ -118,7 +118,11 @@ export default function PemasukanPage() {
     fetch("/api/siswa?limit=500").then(r => r.json()).then(d => setSiswaDrop(d.data ?? [])).catch(() => {});
     fetch("/api/users?role=CS").then(r => r.json()).then(d => setCsList(d)).catch(() => {});
     fetch("/api/users").then(r => r.json()).then(d => {
-      setTalentList(d.filter((u: any) => u.role !== "CS" && u.role !== "PENGAJAR"));
+      const users = Array.isArray(d) ? d : (d.data || []);
+      setTalentList(users.filter((u: any) => 
+        u.karyawanProfile?.posisi?.toUpperCase() === "TALENT LIVE" &&
+        u.aktif !== false
+      ));
     }).catch(() => {});
   }, []);
 

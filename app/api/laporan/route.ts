@@ -253,7 +253,8 @@ export async function GET(request: NextRequest) {
         labaBersih,
         jumlahTransaksiIn: pemasukanAgg._count,
         jumlahTransaksiOut: pengeluaranAgg._count,
-        sourceBreakdown
+        sourceBreakdown,
+        leaderboard
       },
       pemasukanPerProgram: programs.map((prog: any) => ({
         programId: prog.id,

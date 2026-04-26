@@ -270,8 +270,8 @@ export default function DashboardPage() {
               <div style={{ fontSize: 11, color: 'var(--brand-primary-light)', marginTop: 4 }}>Average Team</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Siswa Baru (30 Hari)</div>
-              <div style={{ fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 800 }}>{akademikData?.trendData.reduce((acc, curr) => acc + curr.murid, 0) || 0}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Siswa Baru ({period === 'TODAY' ? 'Hari Ini' : period === 'MONTH' ? 'Periode Ini' : 'Filter'})</div>
+              <div style={{ fontSize: 'clamp(16px, 3vw, 24px)', fontWeight: 800 }}>{akademikData?.kpi?.muridBariIni || 0}</div>
               <div style={{ fontSize: 11, color: 'var(--success)', marginTop: 4 }}>Bertumbuh</div>
             </div>
             <div>

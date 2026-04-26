@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
       include: {
         program: { select: { nama: true } },
         cs: { select: { name: true } },
+        talent: { select: { name: true } },
       },
     }),
     prisma.lead.count({ where }),
@@ -99,11 +100,12 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, status, csId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId, isRO, tanggalLead, tanggalClosing, sumber } = body;
+  const { id, status, csId, talentId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId, isRO, tanggalLead, tanggalClosing, sumber } = body;
 
   const data: any = {};
   if (status) data.status = status;
-  if (csId !== undefined) data.csId = csId;
+  if (csId !== undefined) data.csId = csId === "" ? null : csId;
+  if (talentId !== undefined) data.talentId = talentId === "" ? null : talentId;
   if (keterangan !== undefined) data.keterangan = keterangan;
   if (nama) data.nama = nama;
   if (whatsapp) data.whatsapp = whatsapp;

@@ -94,6 +94,7 @@ export default function CRMPage() {
     isRO: false,
     tanggalLead: new Date().toLocaleDateString('sv'),
     sumber: "MANUAL",
+    talentId: "",
   });
   const [programs, setPrograms] = useState<any[]>([]);
 
@@ -145,11 +146,24 @@ export default function CRMPage() {
         const text = await r.text();
         return text ? JSON.parse(text) : [];
       })
-      .then(d => setWaTemplates(Array.isArray(d) ? d : []))
+      .then(d => {
+        setWaTemplates(Array.isArray(d) ? d : []);
+      })
       .catch((err) => {
         console.error("Fetch WA Templates error:", err);
         setWaTemplates([]);
       });
+
+    fetch("/api/users")
+      .then(r => r.json())
+      .then(d => {
+        const users = Array.isArray(d) ? d : (d.data || []);
+        setTalentList(users.filter((u: any) => 
+          u.karyawanProfile?.posisi?.toUpperCase() === "TALENT LIVE" &&
+          u.aktif !== false
+        ));
+      })
+      .catch(() => setTalentList([]));
   }, []);
 
   async function ubahStatus(id: string, status: string) {
@@ -201,6 +215,7 @@ export default function CRMPage() {
           sumber: updatedLead.sumber,
           tanggalLead: formatToDateString(updatedLead.tanggalLead),
           tanggalClosing: formatToDateString(updatedLead.tanggalClosing),
+          talentId: updatedLead.talentId || null,
         })
       });
       fetchData();
@@ -250,13 +265,14 @@ export default function CRMPage() {
         whatsapp: wa, 
         isRO: newLeadForm.isRO,
         sumber: newLeadForm.sumber,
+        talentId: newLeadForm.talentId || null,
         csId: role === "CS" ? (session?.user as any)?.id : undefined 
       }),
     });
 
     if (res.ok) {
       setShowNewLeadModal(false);
-      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false, tanggalLead: new Date().toLocaleDateString('sv'), sumber: "MANUAL" });
+      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false, tanggalLead: new Date().toLocaleDateString('sv'), sumber: "MANUAL", talentId: "" });
       fetchData();
     } else {
       alert("Gagal menyimpan lead baru.");
@@ -465,6 +481,11 @@ export default function CRMPage() {
                         {lead.sumber && (
                           <span style={{ background: 'var(--surface-container-highest)', padding: '2px 6px', borderRadius: 4, fontWeight: 700, fontSize: 9, color: 'var(--primary)' }}>
                             {lead.sumber}
+                          </span>
+                        )}
+                        {lead.talent && (
+                          <span style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', padding: '2px 6px', borderRadius: 4, fontWeight: 700, fontSize: 9, border: '1px solid rgba(59,130,246,0.2)' }}>
+                            T: {lead.talent.name}
                           </span>
                         )}
                       </div>
@@ -737,6 +758,16 @@ export default function CRMPage() {
                       <label className="form-label required">Tanggal Lead Masuk</label>
                       <input type="date" className="form-control" value={newLeadForm.tanggalLead} onChange={(e) => setNewLeadForm({ ...newLeadForm, tanggalLead: e.target.value })} required />
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Default hari ini. Ubah jika lead masuk di hari sebelumnya.</div>
+                   </div>
+                   <div className="form-group" style={{ background: 'rgba(59,130,246,0.05)', padding: 12, borderRadius: 12, border: '1px solid rgba(59,130,246,0.1)' }}>
+                      <label className="form-label" style={{ color: '#3b82f6', fontWeight: 700 }}>Penautan Talent (Closing Bonus)</label>
+                      <select className="form-control" value={newLeadForm.talentId} onChange={(e) => setNewLeadForm({ ...newLeadForm, talentId: e.target.value })}>
+                        <option value="">-- Pilih Talent --</option>
+                        {talentList.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Pilih talent yang bertugas saat lead ini masuk.</div>
                    </div>
                 </div>
                 <div className="modal-footer" style={{ borderTop: '1px solid var(--border-default)', paddingTop: 24 }}>
@@ -1041,6 +1072,17 @@ export default function CRMPage() {
                     onChange={(e) => setSelectedEditLead({ ...selectedEditLead, isRO: e.target.checked })}
                   />
                   <label htmlFor="editLeadRO" style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', color: 'var(--primary)' }}>Repeat Order (RO)</label>
+                </div>
+                <div className="form-group" style={{ background: 'rgba(59,130,246,0.05)', padding: 12, borderRadius: 12, border: '1px solid rgba(59,130,246,0.1)', marginBottom: 20 }}>
+                  <label className="form-label" style={{ color: '#3b82f6', fontWeight: 700 }}>Penautan Talent</label>
+                  <select 
+                    className="form-control"
+                    value={selectedEditLead.talentId || ""}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, talentId: e.target.value })}
+                  >
+                    <option value="">Pilih Talent</option>
+                    {talentList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Keterangan / Catatan</label>

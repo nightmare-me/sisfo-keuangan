@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { leadId, hargaFinal, metodeBayar, tanggalLunas } = await request.json();
+    const { leadId, hargaFinal, metodeBayar, tanggalLunas, talentId } = await request.json();
 
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });
     if (!lead) return NextResponse.json({ error: "Lead tidak ditemukan" }, { status: 404 });
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
           hargaFinal: hargaFinal,
           metodeBayar: metodeBayar || "TRANSFER",
           isRO: isRO,
+          talentId: talentId || lead.talentId,
           keterangan: isRO ? "Repeat Order (RO) otomatis" : "Dikonversi otomatis dari CRM Lead",
           invoice: {
             create: {

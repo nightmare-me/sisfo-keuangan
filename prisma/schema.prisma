@@ -28,6 +28,7 @@ model User {
   karyawanProfile KaryawanProfile?
   kelasAjar       Kelas[]          @relation("PengajarKelas")
   leads           Lead[]           @relation("CSLeads")
+  leadsAsTalent   Lead[]           @relation("TalentLeads")
   liveSessions    LiveSession[]
   pemasukan       Pemasukan[]      @relation("CSPemasukan")
   pemasukanTalent Pemasukan[]      @relation("TalentPemasukan")
@@ -305,6 +306,7 @@ model Lead {
   kodeUnik         Int?
   nominalTagihan   Float?
   csId             String?
+  talentId         String?
   keterangan       String?
   tanggalLead      DateTime?
   tanggalClosing   DateTime?
@@ -312,6 +314,7 @@ model Lead {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   cs               User?      @relation("CSLeads", fields: [csId], references: [id])
+  talent           User?      @relation("TalentLeads", fields: [talentId], references: [id])
   program          Program?   @relation(fields: [programId], references: [id])
 
   @@index([nama])

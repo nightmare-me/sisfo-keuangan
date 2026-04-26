@@ -107,10 +107,10 @@ export async function GET(request: NextRequest) {
       const revenue = p.hargaFinal;
       
       // LOGIKA GRUP PRODUK
-      if (isSharing || p.program?.tipe === "LAINNYA") {
-        sourceBreakdown.TOEFL += revenue;
-      } else if (progName.includes("LIVE")) {
+      if (progName.includes("LIVE")) {
         sourceBreakdown.LIVE += revenue;
+      } else if (isSharing || p.program?.tipe === "LAINNYA") {
+        sourceBreakdown.TOEFL += revenue;
       } else if (p.isRO) {
         sourceBreakdown.RO += revenue;
       } else {

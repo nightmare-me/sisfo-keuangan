@@ -80,16 +80,19 @@ export async function POST(request: NextRequest) {
           siswaId = siswaRecord.id;
         }
 
-        // 2. Cari atau Buat Program otomatis jika tidak ada
+        // 2. Cari atau Buat Program otomatis jika tidak ada (Fuzzy matching)
         let programId = null;
         if (programName !== "") {
-          let targetProg = allPrograms.find(p => p.nama.toLowerCase() === programName.toLowerCase());
+          const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+          const targetClean = clean(programName);
+          
+          let targetProg = allPrograms.find(p => clean(p.nama) === targetClean);
           
           if (!targetProg) {
             // Buat program baru jika tidak ada (Misal: Lain-lain)
             targetProg = await prisma.program.create({
               data: {
-                nama: programName.toUpperCase(),
+                nama: programName.toUpperCase().trim(),
                 harga: 0,
                 tipe: 'LAINNYA'
               }

@@ -40,6 +40,11 @@ export function calculateCSFee(
 
   // 2. CADANGAN: Pakai rumus hardcoded (untuk back-compatibility)
   if (csCategory === 'CS_REGULAR' || csCategory === 'CS_SOSMED') {
+    // 1. Jika produk Elite/Master/Lainnya, gunakan 10% jika tidak ada fixed fee di DB
+    if (productType === 'ELITE' || productType === 'MASTER' || productType === 'LAINNYA') {
+      const rate = config?.FEE_CS_REGULAR_PERCENT || 0.10;
+      return basePrice * rate;
+    }
     
     // FALLBACK PRIORITAS: Jika nama mengandung kata kunci khusus, gunakan fee tersebut
     // (Penting jika kategoriFee di DB kosong atau salah set ke REG_1B)
@@ -53,6 +58,7 @@ export function calculateCSFee(
       if (nama.includes('toefl') || nama.includes('ielts')) return 12500;
       if (nama.includes('native')) return 12500;
       if (nama.includes('affiliate')) return config?.FEE_AFFILIATE_FIXED || 25000;
+      if (nama.includes('elite') || nama.includes('master')) return basePrice * 0.10;
     }
 
     // Rules berdasarkan Kategori (Explicit)

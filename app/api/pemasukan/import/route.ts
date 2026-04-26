@@ -110,7 +110,16 @@ export async function POST(request: NextRequest) {
             ) 
           : null;
 
-        // 3. Handle Nominal & Kode Unik
+        // 3. Tentukan Product Type untuk Fee Calculation
+        let prodType = "REGULAR";
+        const upperProg = programName.toUpperCase();
+        if (upperProg.includes("ELITE")) prodType = "ELITE";
+        else if (upperProg.includes("MASTER")) prodType = "MASTER";
+        else if (upperProg.includes("TOEFL") || upperProg.includes("IELTS")) prodType = "TOEFL";
+        else if (upperProg.includes("LAIN")) prodType = "LAINNYA";
+        else if (upperProg.includes("PRIVATE")) prodType = "PRIVATE";
+
+        // 4. Handle Nominal & Kode Unik
         let finalPrice = nominalInput;
         if (finalPrice <= 0) {
           finalPrice = hargaNormal - diskon;
@@ -119,7 +128,7 @@ export async function POST(request: NextRequest) {
         const kodeUnik = finalPrice % 1000;
         const nominalMurni = finalPrice - kodeUnik;
 
-        // 4. Handle Date (Paksa dd/mm/yyyy agar tidak terbalik mm/dd)
+        // 5. Handle Date (Paksa dd/mm/yyyy agar tidak terbalik mm/dd)
         let tgl = new Date();
         const tglInput = findValue(["tanggal", "date", "tgl"]);
         if (tglInput && String(tglInput).trim() !== "") {
@@ -150,6 +159,7 @@ export async function POST(request: NextRequest) {
             siswaId: siswaId,
             programId: programId,
             csId: cs?.id || null,
+            tipeProduk: prodType, // Simpan tipe produk untuk hitung gaji
             hargaNormal: hargaNormal || nominalMurni || 0,
             diskon: diskon || 0,
             hargaFinal: finalPrice || 0,

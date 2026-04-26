@@ -155,17 +155,27 @@ export async function GET(request: NextRequest) {
       const refundAmount = p.refunds.reduce((s: number, r: any) => s + r.jumlah, 0);
       const netAmount = p.hargaFinal - refundAmount;
       
-      // Breakdown Sumber
-      const nama = p.program?.nama?.toUpperCase() || "";
+      // Breakdown Sumber (Logic yang lebih presisi)
+      const nama = (p.program?.nama || "").toUpperCase();
       const isSharing = p.program?.isProfitSharing || false;
-      const teamType = p.cs?.teamType;
+      const teamTypes = p.cs?.teamType || [];
+      const hasTeam = (t: string) => teamTypes.includes(t);
       
-      if (p.isRO) sourceBreakdown.RO += netAmount;
-      else if (teamType === "CS_SOSMED") sourceBreakdown.SOSMED += netAmount;
-      else if (teamType === "CS_AFFILIATE") sourceBreakdown.AFFILIATE += netAmount;
-      else if (isSharing) sourceBreakdown.TOEFL += netAmount;
-      else if (nama.includes("LIVE")) sourceBreakdown.LIVE += netAmount;
-      else sourceBreakdown.REGULAR += netAmount;
+      if (p.isRO || nama.includes("RO") || nama.includes("REPEAT")) {
+        sourceBreakdown.RO += netAmount;
+      } else if (hasTeam("CS_AFFILIATE") || nama.includes("AFFILIATE")) {
+        sourceBreakdown.AFFILIATE += netAmount;
+      } else if (hasTeam("CS_SOSMED") || nama.includes("SOSMED") || nama.includes("VIRAL")) {
+        sourceBreakdown.SOSMED += netAmount;
+      } else if (isSharing || nama.includes("ELITE") || nama.includes("MASTER") || nama.includes("TOEFL") || nama.includes("IELTS")) {
+        // Hanya yang sharing profit yang masuk kategori TOEFL
+        if (isSharing) sourceBreakdown.TOEFL += netAmount;
+        else sourceBreakdown.REGULAR += netAmount;
+      } else if (nama.includes("LIVE")) {
+        sourceBreakdown.LIVE += netAmount;
+      } else {
+        sourceBreakdown.REGULAR += netAmount;
+      }
 
       // Per Program
       if (p.programId) {

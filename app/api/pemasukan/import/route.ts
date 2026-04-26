@@ -44,27 +44,14 @@ export async function POST(request: NextRequest) {
       const program = allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase()));
       const cs = allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase()));
 
-      // 2. Handle Nominal & Kode Unik
+      // 2. Handle Nominal & Kode Unik (Import pakai angka apa adanya)
       let finalPrice = nominalInput;
       if (finalPrice <= 0) {
         finalPrice = hargaNormal - diskon;
       }
 
-      let kodeUnik = 0;
-      let nominalMurni = finalPrice;
-
-      if (finalPrice > 0) {
-        // Cek apakah sudah ada kode unik (bukan kelipatan 1000)
-        if (finalPrice % 1000 !== 0) {
-           kodeUnik = finalPrice % 1000;
-           nominalMurni = finalPrice - kodeUnik;
-        } else {
-           // Jika kelipatan 1000, biarkan kodeUnik 0 atau generate jika perlu?
-           // Untuk pemasukan biasanya data historis, jadi pakai 0 saja jika pas
-           kodeUnik = 0;
-           nominalMurni = finalPrice;
-        }
-      }
+      const kodeUnik = finalPrice % 1000;
+      const nominalMurni = finalPrice - kodeUnik;
 
       const pemasukan = await prisma.pemasukan.create({
         data: {

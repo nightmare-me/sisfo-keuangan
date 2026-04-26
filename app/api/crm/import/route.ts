@@ -45,23 +45,16 @@ export async function POST(request: NextRequest) {
       // 2. Cari CS ID
       const cs = allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase()));
 
-      // 3. Handle Harga & Kode Unik
+      // 3. Handle Harga & Kode Unik (Import pakai angka apa adanya)
       let nominalTagihan = nominalInput;
       let kodeUnik = 0;
 
       if (nominalInput > 0) {
-        // Jika nominal > 0, cek apakah ini kelipatan 1000 atau bukan
-        if (nominalInput % 1000 === 0 && program) {
-           // Jika kelipatan 1000 (misal 35000), maka tambahkan kode unik
-           kodeUnik = Math.floor(Math.random() * 999) + 1;
-           nominalTagihan = nominalInput + kodeUnik;
-        } else {
-           // Jika bukan kelipatan 1000 (misal 35231), berarti sudah ada kode uniknya
-           kodeUnik = nominalInput % 1000;
-           nominalTagihan = nominalInput;
-        }
+        // Import: Pakai angka dari file apa adanya. Jika bulat ya biarkan bulat.
+        kodeUnik = nominalInput % 1000;
+        nominalTagihan = nominalInput;
       } else if (program) {
-        // Jika nominal kosong, ambil dari program + generate kode unik
+        // Jika nominal kosong di file, baru generate dari harga program + kode unik
         kodeUnik = Math.floor(Math.random() * 999) + 1;
         nominalTagihan = program.harga + kodeUnik;
       }

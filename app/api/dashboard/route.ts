@@ -156,9 +156,12 @@ export async function GET(request: NextRequest) {
     const transaksiTerkini = await prisma.pemasukan.findMany({
       take: 10,
       orderBy: { tanggal: "desc" },
-      include: { 
-        siswa: { select: { nama: true } }, 
-        program: { select: { nama: true } } 
+      select: {
+        id: true,
+        tanggal: true,
+        hargaFinal: true,
+        siswa: { select: { nama: true } },
+        program: { select: { nama: true } }
       }
     });
 

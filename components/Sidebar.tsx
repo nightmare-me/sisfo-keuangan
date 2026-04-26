@@ -57,6 +57,7 @@ const navItems: NavGroup[] = [
     { href: "/laporan-keuangan", label: "Laporan Keuangan", icon: <PieChart size={16} />, permission: "report:view" },
     { href: "/refund", label: "Manajemen Refund", icon: <History size={16} />, permission: "refund:view" },
     { href: "/payroll/staff", label: "Payroll Staf", icon: <Briefcase size={16} />, permission: "payroll_staff:view" },
+    { href: "/settings/financial", label: "Pengaturan Keuangan", icon: <DollarSign size={16} />, permission: "settings:view" },
   ]},
   { group: "AKADEMIK", items: [
     { href: "/siswa", label: "Siswa", icon: <Users size={16} />, permission: "siswa:view" },
@@ -78,7 +79,6 @@ const navItems: NavGroup[] = [
     { href: "/karyawan", label: "Data Karyawan", icon: <Contact size={16} />, permission: "user:view" },
     { href: "/admin/sub-roles", label: "Manajemen Sub-Role", icon: <ShieldCheck size={16} />, permission: "settings:view" },
     { href: "/settings/roles", label: "Pengaturan Role", icon: <Package size={16} />, permission: "settings:view" },
-    { href: "/settings/financial", label: "Pengaturan Keuangan", icon: <DollarSign size={16} />, permission: "settings:view" },
     { href: "/logs", label: "Audit Log", icon: <History size={16} />, permission: "audit:view" },
     { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, permission: "archive:view" },
     { href: "/settings/wa", label: "Template WhatsApp", icon: <MessageCircle size={16} />, permission: "wa_template:view" },

@@ -105,6 +105,35 @@ export default function FinancialSettingsPage() {
         <p className="body-lg">Atur parameter gaji, fee, dan persentase sharing profit secara dinamis</p>
       </div>
 
+      {/* SECTION KHUSUS: GENERAL / CUTOFF SETTINGS */}
+      <div className="card" style={{ marginBottom: 32, border: "1px solid var(--primary-container)", background: "rgba(99,102,241,0.02)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "20px 24px" }}>
+          <Clock size={24} style={{ color: "var(--primary)" }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>Tanggal Cutoff Payroll & Laporan</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Tanggal dimulainya siklus perhitungan baru (Contoh: 25 untuk siklus 25 s/d 24)</div>
+          </div>
+          <div style={{ width: 120 }}>
+            <input 
+              type="number" 
+              className="form-control" 
+              min={1} max={31}
+              defaultValue={configs.find(c => c.key === "PAYROLL_CUTOFF_DAY")?.value || 25}
+              style={{ fontWeight: 800, textAlign: "center", fontSize: 18, color: "var(--primary)" }}
+              onBlur={(e) => {
+                const val = parseInt(e.target.value);
+                const item = configs.find(c => c.key === "PAYROLL_CUTOFF_DAY");
+                if (item) {
+                   handleSave(item.id, val);
+                } else {
+                   alert("Gunakan tombol + untuk inisialisasi jika config belum ada.");
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
         {categories.map(cat => (
           <div key={cat} className="card" style={{ padding: 0, overflow: "hidden" }}>

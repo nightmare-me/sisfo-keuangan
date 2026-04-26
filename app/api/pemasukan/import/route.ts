@@ -57,12 +57,11 @@ export async function POST(request: NextRequest) {
           const cleanWA = String(findValue(["whatsapp", "wa", "nomorwa"]) || "").trim();
 
           // Cari yang benar-benar mirip
+          // Cari siswa yang Nama DAN WA-nya cocok (untuk support Kakak-Adik 1 WA)
           let siswaRecord = await prisma.siswa.findFirst({
             where: {
-              OR: [
-                { nama: { equals: cleanSiswa, mode: 'insensitive' } },
-                cleanWA !== "" ? { telepon: cleanWA } : { id: 'NEVER_MATCH' }
-              ]
+              nama: { equals: cleanSiswa, mode: 'insensitive' },
+              telepon: cleanWA !== "" ? cleanWA : null
             }
           });
 

@@ -380,7 +380,11 @@ export default function PemasukanPage() {
                         <label className="form-label">Siswa</label>
                         <select className="form-control" value={form.siswaId} onChange={e => setForm(f => ({ ...f, siswaId: e.target.value }))}>
                           <option value="">Pilih Siswa</option>
-                          {siswaDrop.map((s: any) => <option key={s.id} value={s.id}>{s.nama}</option>)}
+                          {siswaDrop.map((s: any) => (
+                            <option key={s.id} value={s.id}>
+                              {s.nama} {s.telepon ? `(${s.telepon})` : ""}
+                            </option>
+                          ))}
                         </select>
                      </div>
                      <div className="form-group">

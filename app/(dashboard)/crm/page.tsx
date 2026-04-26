@@ -750,6 +750,7 @@ export default function CRMPage() {
                          <option value="MANUAL">MANUAL (Input Langsung)</option>
                          <option value="SOSMED">SOSMED</option>
                          <option value="REGULAR">REGULAR</option>
+                         <option value="AFFILIATE">AFFILIATE</option>
                        </select>
                     </div>
                     <div className="form-group">

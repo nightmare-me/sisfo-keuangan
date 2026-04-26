@@ -758,18 +758,28 @@ export default function CRMPage() {
                    <div className="form-group">
                       <label className="form-label required">Tanggal Lead Masuk</label>
                       <input type="date" className="form-control" value={newLeadForm.tanggalLead} onChange={(e) => setNewLeadForm({ ...newLeadForm, tanggalLead: e.target.value })} required />
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Default hari ini. Ubah jika lead masuk di hari sebelumnya.</div>
+                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>Default hari ini. Ubah jika lead masuk di hari sebelumnya.</div>
                    </div>
-                   <div className="form-group" style={{ background: 'rgba(59,130,246,0.05)', padding: 12, borderRadius: 12, border: '1px solid rgba(59,130,246,0.1)' }}>
-                      <label className="form-label" style={{ color: '#3b82f6', fontWeight: 700 }}>Penautan Talent (Closing Bonus)</label>
-                      <select className="form-control" value={newLeadForm.talentId} onChange={(e) => setNewLeadForm({ ...newLeadForm, talentId: e.target.value })}>
-                        <option value="">-- Pilih Talent --</option>
-                        {talentList.map(t => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Pilih talent yang bertugas saat lead ini masuk.</div>
-                   </div>
+                   
+                   {/* Conditional Talent Dropdown */}
+                   {(() => {
+                      const selectedProg = programs.find(p => p.id === newLeadForm.programId);
+                      const isLiveProg = selectedProg?.nama?.toUpperCase()?.includes("LIVE");
+                      if (!isLiveProg) return null;
+
+                      return (
+                        <div className="form-group" style={{ background: 'rgba(59,130,246,0.05)', padding: 12, borderRadius: 12, border: '1px solid rgba(59,130,246,0.1)' }}>
+                            <label className="form-label" style={{ color: '#3b82f6', fontWeight: 700 }}>Penautan Talent (Closing Bonus)</label>
+                            <select className="form-control" value={newLeadForm.talentId} onChange={(e) => setNewLeadForm({ ...newLeadForm, talentId: e.target.value })}>
+                              <option value="">-- Pilih Talent --</option>
+                              {talentList.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>Pilih talent yang bertugas saat lead ini masuk.</div>
+                        </div>
+                      );
+                   })()}
                 </div>
                 <div className="modal-footer" style={{ borderTop: '1px solid var(--border-default)', paddingTop: 24 }}>
                    <button type="button" className="btn btn-secondary" onClick={() => setShowNewLeadModal(false)}>Batal</button>
@@ -1074,17 +1084,28 @@ export default function CRMPage() {
                   />
                   <label htmlFor="editLeadRO" style={{ fontSize: 13, fontWeight: 700, cursor: 'pointer', color: 'var(--primary)' }}>Repeat Order (RO)</label>
                 </div>
-                <div className="form-group" style={{ background: 'rgba(59,130,246,0.05)', padding: 12, borderRadius: 12, border: '1px solid rgba(59,130,246,0.1)', marginBottom: 20 }}>
-                  <label className="form-label" style={{ color: '#3b82f6', fontWeight: 700 }}>Penautan Talent</label>
-                  <select 
-                    className="form-control"
-                    value={selectedEditLead.talentId || ""}
-                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, talentId: e.target.value })}
-                  >
-                    <option value="">Pilih Talent</option>
-                    {talentList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                </div>
+
+                {/* Conditional Talent Dropdown for Edit Modal */}
+                {(() => {
+                  const selectedProg = programs.find(p => p.id === selectedEditLead.programId);
+                  const isLiveProg = selectedProg?.nama?.toUpperCase()?.includes("LIVE");
+                  if (!isLiveProg) return null;
+
+                  return (
+                    <div className="form-group" style={{ background: 'rgba(59,130,246,0.05)', padding: 12, borderRadius: 12, border: '1px solid rgba(59,130,246,0.1)', marginBottom: 20 }}>
+                      <label className="form-label" style={{ color: '#3b82f6', fontWeight: 700 }}>Penautan Talent</label>
+                      <select 
+                        className="form-control"
+                        value={selectedEditLead.talentId || ""}
+                        onChange={(e) => setSelectedEditLead({ ...selectedEditLead, talentId: e.target.value })}
+                      >
+                        <option value="">Pilih Talent</option>
+                        {talentList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      </select>
+                    </div>
+                  );
+                })()}
+
                 <div className="form-group">
                   <label className="form-label">Keterangan / Catatan</label>
                   <textarea 

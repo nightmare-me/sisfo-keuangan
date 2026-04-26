@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { startOfDay, endOfDay } from "date-fns";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +11,9 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const from = searchParams.get("from");
-    const to = searchParams.get("to");
-    const type = searchParams.get("type") ?? "month";
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+    const type = searchParams.get("type") || (fromParam ? "custom" : "month");
 
     // 0. AMBIL CONFIG KEUANGAN DARI DB
     const dbConfigs = await prisma.financialConfig.findMany();
@@ -24,23 +25,22 @@ export async function GET(request: NextRequest) {
     const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
 
     const now = new Date();
-    let startDate: Date;
-    let endDate: Date;
+    let startDate: Date, endDate: Date;
 
-    if (type === "today") {
-      startDate = new Date(now.setHours(0, 0, 0, 0));
-      endDate = new Date(now.setHours(23, 59, 59, 999));
+    // LOGIKA TANGGAL SAMA PERSIS DENGAN DASHBOARD
+    if (fromParam && toParam && type === "custom") {
+      startDate = startOfDay(new Date(fromParam));
+      endDate = endOfDay(new Date(toParam));
+    } else if (type === "today") {
+      startDate = startOfDay(now);
+      endDate = endOfDay(now);
     } else if (type === "week") {
       const day = now.getDay();
       startDate = new Date(now);
-      startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1)); // Monday start
+      startDate.setDate(now.getDate() - day + (day === 0 ? -6 : 1)); // Mon start
       startDate.setHours(0, 0, 0, 0);
       endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + 6);
-      endDate.setHours(23, 59, 59, 999);
-    } else if (type === "custom" && from && to) {
-      startDate = new Date(from);
-      endDate = new Date(to);
       endDate.setHours(23, 59, 59, 999);
     } else {
       // DEFAULT: MONTH (DENGAN CUTOFF SAKLEK)
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     const dateFilter = { gte: startDate, lte: endDate };
 
-    // 4. AMBIL SEMUA DATA UNTUK AGGREGATION CERDAS (RADAR REFUND)
+    // 4. AMBIL SEMUA DATA (findMany untuk Radar Refund)
     const [
       allPemasukan,
       approvedRefunds,
@@ -95,14 +95,8 @@ export async function GET(request: NextRequest) {
 
     const activePemasukan = allPemasukan.filter(p => !checkRefund(p));
 
-    // 6. HITUNG BREAKDOWN CERDAS & TABEL
-    let revenueRO = 0;
-    let revenueTOEFL = 0;
-    let revenueLive = 0;
-    let revenueSocial = 0;
-    let revenueAffiliate = 0;
-    let revenueRegular = 0;
-
+    // 6. HITUNG BREAKDOWN CERDAS (MATCH FRONTEND KEYS)
+    const sourceBreakdown = { REGULAR: 0, RO: 0, SOSMED: 0, AFFILIATE: 0, LIVE: 0, TOEFL: 0 };
     const programBreakdown: Record<string, { name: string, total: number, count: number }> = {};
     const csBreakdown: Record<string, { name: string, total: number, count: number }> = {};
     const methodBreakdown: Record<string, { total: number, count: number }> = {};
@@ -110,32 +104,32 @@ export async function GET(request: NextRequest) {
     activePemasukan.forEach(p => {
       const progName = (p.program?.nama || "").toUpperCase();
       const isSharing = p.program?.isProfitSharing || false;
+      const revenue = p.hargaFinal;
       
-      // LOGIKA GRUP PRODUK (Berdasarkan Profit Sharing)
+      // LOGIKA GRUP PRODUK
       if (isSharing) {
-        // Semua yang bagi hasil masuk ke kategori TOEFL (Produk Premium)
-        revenueTOEFL += p.hargaFinal;
+        sourceBreakdown.TOEFL += revenue;
       } else if (progName.includes("LIVE")) {
-        revenueLive += p.hargaFinal;
+        sourceBreakdown.LIVE += revenue;
       } else if (p.isRO) {
-        revenueRO += p.hargaFinal;
+        sourceBreakdown.RO += revenue;
       } else {
-        revenueRegular += p.hargaFinal;
+        sourceBreakdown.REGULAR += revenue;
       }
 
-      // Grouping by ID for Tables
+      // Grouping for Tables
       const progId = p.programId || "unknown";
       if (!programBreakdown[progId]) programBreakdown[progId] = { name: p.program?.nama || "Tanpa Program", total: 0, count: 0 };
-      programBreakdown[progId].total += p.hargaFinal;
+      programBreakdown[progId].total += revenue;
       programBreakdown[progId].count += 1;
 
       const csId = p.csId || "unknown";
       if (!csBreakdown[csId]) csBreakdown[csId] = { name: p.cs?.name || "Tanpa CS", total: 0, count: 0 };
-      csBreakdown[csId].total += p.hargaFinal;
+      csBreakdown[csId].total += revenue;
       csBreakdown[csId].count += 1;
 
       if (!methodBreakdown[p.metodeBayar]) methodBreakdown[p.metodeBayar] = { total: 0, count: 0 };
-      methodBreakdown[p.metodeBayar].total += p.hargaFinal;
+      methodBreakdown[p.metodeBayar].total += revenue;
       methodBreakdown[p.metodeBayar].count += 1;
     });
 
@@ -144,12 +138,8 @@ export async function GET(request: NextRequest) {
     const totalAds = (adsSpentSum._sum.jumlah || 0) + (adsPerfSum._sum.spent || 0);
     const labaBersih = totalPemasukan - totalPengeluaran - totalAds;
 
-    // 7. FORMAT LEADERBOARD CS
-    const leaderboard = Object.values(csBreakdown)
-      .map(b => ({ name: b.name, revenue: b.total }))
-      .sort((a, b) => b.revenue - a.revenue);
-
     return NextResponse.json({
+      periode: { from: startDate, to: endDate },
       ringkasan: {
         totalPemasukan,
         totalDiskon: activePemasukan.reduce((sum, p) => sum + (p.diskon || 0), 0),
@@ -158,24 +148,12 @@ export async function GET(request: NextRequest) {
         labaBersih,
         jumlahTransaksiIn: activePemasukan.length,
         jumlahTransaksiOut: pengeluaranSum._count,
+        sourceBreakdown,
       },
-      breakdown: {
-        regular: revenueRegular,
-        ro: revenueRO,
-        social: revenueSocial,
-        affiliate: revenueAffiliate,
-        live: revenueLive,
-        toefl: revenueTOEFL,
-      },
-      leaderboard,
-      pemasukanPerProgram: Object.values(programBreakdown)
-        .sort((a, b) => b.total - a.total)
-        .map(p => ({ nama: p.name, total: p.total, count: p.count })),
-      pemasukanPerCS: Object.values(csBreakdown)
-        .sort((a, b) => b.total - a.total)
-        .map(c => ({ nama: c.name, total: c.total, count: c.count })),
+      pemasukanPerProgram: Object.values(programBreakdown).sort((a, b) => b.total - a.total).map(p => ({ nama: p.name, total: p.total, count: p.count })),
+      pemasukanPerCS: Object.values(csBreakdown).sort((a, b) => b.total - a.total).map(c => ({ nama: c.name, total: c.total, count: c.count })),
       pemasukanPerMetode: Object.entries(methodBreakdown).map(([name, data]) => ({
-        metode: name,
+        metodeBayar: name,
         total: data.total,
         count: data.count
       }))

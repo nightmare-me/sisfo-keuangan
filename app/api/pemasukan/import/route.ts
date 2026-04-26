@@ -45,11 +45,37 @@ export async function POST(request: NextRequest) {
         if (isNaN(diskon)) diskon = 0;
         if (isNaN(nominalInput)) nominalInput = 0;
 
-        // 1. Cari Program & CS
+        // 1. Cari atau Buat Siswa (Pemasukan butuh siswaId)
+        let siswaId = null;
+        if (siswa) {
+          let siswaRecord = await prisma.siswa.findFirst({
+            where: {
+              OR: [
+                { nama: { contains: String(siswa), mode: 'insensitive' } },
+                { telepon: String(findValue(["whatsapp", "wa", "nomorwa"]) || "") }
+              ]
+            }
+          });
+
+          if (!siswaRecord) {
+            // Jika siswa tidak ada, buat baru
+            const countSiswa = await prisma.siswa.count();
+            siswaRecord = await prisma.siswa.create({
+              data: {
+                noSiswa: `S${(countSiswa + 1).toString().padStart(4, '0')}`,
+                nama: String(siswa),
+                telepon: String(findValue(["whatsapp", "wa", "nomorwa"]) || ""),
+              }
+            });
+          }
+          siswaId = siswaRecord.id;
+        }
+
+        // 2. Cari Program & CS
         const program = allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase()));
         const cs = allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase()));
 
-        // 2. Handle Nominal & Kode Unik
+        // 3. Handle Nominal & Kode Unik
         let finalPrice = nominalInput;
         if (finalPrice <= 0) {
           finalPrice = hargaNormal - diskon;
@@ -58,7 +84,7 @@ export async function POST(request: NextRequest) {
         const kodeUnik = finalPrice % 1000;
         const nominalMurni = finalPrice - kodeUnik;
 
-        // 3. Handle Date
+        // 4. Handle Date
         let tgl = new Date();
         const tglInput = findValue(["tanggal", "date", "tgl"]);
         if (tglInput) {
@@ -71,14 +97,13 @@ export async function POST(request: NextRequest) {
         const pemasukan = await prisma.pemasukan.create({
           data: {
             tanggal: tgl,
-            siswa: String(siswa),
-            whatsapp: String(findValue(["whatsapp", "wa", "nomorwa"]) || ""),
+            siswaId: siswaId,
             programId: program?.id || null,
             csId: cs?.id || null,
-            nominal: nominalMurni || 0,
-            kodeUnik: Math.round(kodeUnik || 0),
+            hargaNormal: hargaNormal || nominalMurni || 0,
+            diskon: diskon || 0,
             hargaFinal: finalPrice || 0,
-            metodeBayar: String(findValue(["metode", "metodebayar", "payment"]) || "TRANSFER").toUpperCase(),
+            metodeBayar: String(findValue(["metode", "metodebayar", "payment"]) || "TRANSFER").toUpperCase() as any,
             keterangan: findValue(["keterangan", "note"]) || null,
             isRO: String(findValue(["isro", "ro", "repeatorder"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
           }

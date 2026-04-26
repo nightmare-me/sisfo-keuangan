@@ -54,7 +54,23 @@ export async function POST(request: NextRequest) {
         let siswaId = null;
         if (siswa && String(siswa).trim() !== "") {
           const cleanSiswa = String(siswa).trim();
-          const cleanWA = String(findValue(["whatsapp", "wa", "nomorwa"]) || "").trim();
+          const rawWA = findValue(["whatsapp", "wa", "nomorwa"]);
+          
+          // ALAT PEMBERSIH WA (ANTI-SCIENTIFIC)
+          const cleanPhone = (p: any) => {
+            if (!p) return "";
+            let s = String(p).trim();
+            if (s.toUpperCase().includes('E')) {
+              const num = Number(s);
+              if (!isNaN(num)) s = num.toLocaleString('fullwide', {useGrouping:false});
+            }
+            let cleaned = s.replace(/[^0-9]/g, "");
+            if (cleaned.startsWith("62")) cleaned = "0" + cleaned.slice(2);
+            else if (cleaned.startsWith("8")) cleaned = "0" + cleaned;
+            return cleaned;
+          };
+
+          const cleanWA = cleanPhone(rawWA);
 
           // Cari yang benar-benar mirip
           // Cari siswa yang Nama DAN WA-nya cocok (jika ada WA)

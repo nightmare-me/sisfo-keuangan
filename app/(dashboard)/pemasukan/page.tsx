@@ -505,6 +505,7 @@ export default function PemasukanPage() {
                     <input type="file" accept=".csv" style={{ display: 'none' }} disabled={csvLoading} onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
+                      e.target.value = ""; // Reset agar bisa pilih file yang sama atau file baru dengan bersih
                       
                       const reader = new FileReader();
                       reader.onload = async (event) => {

@@ -13,23 +13,45 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const fromParam = searchParams.get("from");
     const toParam = searchParams.get("to");
+    const type = searchParams.get("type") || (fromParam ? "custom" : "month");
+
+    // 0. AMBIL CONFIG KEUANGAN DARI DB (Untuk Cutoff)
+    const dbConfigs = await prisma.financialConfig.findMany();
+    const config: Record<string, number> = {};
+    dbConfigs.forEach(c => {
+      config[c.key] = c.value;
+    });
+    const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
 
     let startDate: Date, endDate: Date, prevStartDate: Date, prevEndDate: Date;
+    const now = new Date();
 
-    if (fromParam && toParam) {
+    if (fromParam && toParam && type === "custom") {
       startDate = startOfDay(new Date(fromParam));
       endDate = endOfDay(new Date(toParam));
-      const diff = endDate.getTime() - startDate.getTime();
-      prevStartDate = new Date(startDate.getTime() - diff - 1);
-      prevEndDate = new Date(startDate.getTime() - 1);
+    } else if (type === "today") {
+      startDate = startOfDay(now);
+      endDate = endOfDay(now);
     } else {
-      // Default: Today
-      const today = new Date();
-      startDate = startOfDay(today);
-      endDate = endOfDay(today);
-      prevStartDate = startOfDay(subDays(today, 1));
-      prevEndDate = endOfDay(subDays(today, 1));
+      // DEFAULT: MONTH (DENGAN CUTOFF)
+      if (cutoffDay === 1) {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      } else {
+        if (now.getDate() >= cutoffDay) {
+          startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
+        } else {
+          startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
+          endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
+        }
+      }
     }
+
+    // Hitung Periode Sebelumnya untuk perbandingan (YoY/MoM)
+    const diff = endDate.getTime() - startDate.getTime();
+    prevStartDate = new Date(startDate.getTime() - diff - 1);
+    prevEndDate = new Date(startDate.getTime() - 1);
 
     // AMBIL SEMUA REFUND APPROVED UNTUK FILTERING
     const approvedRefunds = await prisma.refund.findMany({

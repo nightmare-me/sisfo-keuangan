@@ -154,7 +154,7 @@ export default function DashboardPage() {
     setLoading(true);
     const promises = [];
     const { from, to } = getPeriodParams();
-    const query = from && to ? `?from=${from}&to=${to}` : "";
+    const query = `?type=${period.toLowerCase()}${period === "CUSTOM" ? `&from=${from}&to=${to}` : ""}`;
     
     if (canViewAkademik) {
       promises.push(

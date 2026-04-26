@@ -11,17 +11,42 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const type = searchParams.get("type") || (from ? "custom" : "month");
+
+  // 0. AMBIL CONFIG KEUANGAN DARI DB (Untuk Cutoff)
+  const dbConfigs = await prisma.financialConfig.findMany();
+  const config: Record<string, number> = {};
+  dbConfigs.forEach(c => {
+    config[c.key] = c.value;
+  });
+  const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
 
   let startDate: Date, endDate: Date;
-  if (from && to) {
+  const now = new Date();
+
+  if (from && to && type === "custom") {
     startDate = startOfDay(new Date(from));
     endDate = endOfDay(new Date(to));
+  } else if (type === "today") {
+    startDate = startOfDay(now);
+    endDate = endOfDay(now);
   } else {
-    startDate = startOfDay(subDays(new Date(), 30));
-    endDate = endOfDay(new Date());
+    // DEFAULT: MONTH (DENGAN CUTOFF)
+    if (cutoffDay === 1) {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    } else {
+      if (now.getDate() >= cutoffDay) {
+        startDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, cutoffDay - 1, 23, 59, 59);
+      } else {
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, cutoffDay, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth(), cutoffDay - 1, 23, 59, 59);
+      }
+    }
   }
 
-  // 1. Pemasukan Saya Hari Ini (Dalam Range Filter)
+  // 1. Pemasukan Saya (Dalam Range Filter)
   const myRevenueToday = await prisma.pemasukan.aggregate({
     where: {
       csId: userId,

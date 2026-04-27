@@ -72,6 +72,21 @@ export async function GET(request: NextRequest) {
     })
   ]);
 
+  // Map leads to include Siswa info if they are PAID
+  const paidLeadsWa = leads.filter(l => l.status === "PAID").map(l => l.whatsapp);
+  const siswaData = await prisma.siswa.findMany({
+    where: { telepon: { in: paidLeadsWa } },
+    select: { noSiswa: true, telepon: true }
+  });
+
+  const leadsWithSiswa = leads.map((l: any) => {
+    const siswa = siswaData.find(s => s.telepon === l.whatsapp);
+    return {
+      ...l,
+      noSiswa: siswa?.noSiswa || null
+    };
+  });
+
   // Convert groupBy array to object { NEW: 10, PAID: 5, ... }
   const counts: any = {};
   statusCounts.forEach(c => {
@@ -79,7 +94,7 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({
-    data: leads,
+    data: leadsWithSiswa,
     meta: {
       total,
       page,

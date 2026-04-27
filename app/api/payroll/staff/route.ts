@@ -155,11 +155,17 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // C. Hitung Fee Advertiser
+      // C. Hitung Fee Advertiser (Berdasarkan RATA-RATA CPL Periode Ini)
       if (roleSlug === "advertiser" || posisi.toUpperCase().includes("ADV")) {
-        emp.adPerformances.forEach((perf: any) => {
-          totalFee += perf.fee; // Already calculated in API Performance
-        });
+        const totalSpent = emp.adPerformances.reduce((s: number, p: any) => s + p.spent, 0);
+        const totalLeads = emp.adPerformances.reduce((s: number, p: any) => s + p.leads, 0);
+        
+        if (totalLeads > 0) {
+          const avgCPL = totalSpent / totalLeads;
+          // Gunakan teamType pertama sebagai kategori (atau fallback ke REGULAR)
+          const advCat = (Array.isArray(emp.teamType) ? emp.teamType[0] : emp.teamType) || 'ADV_REGULAR';
+          totalFee = calculateAdvFee(advCat as AdvCategory, avgCPL, totalLeads);
+        }
       }
 
       // D. Bonus Omset Talent

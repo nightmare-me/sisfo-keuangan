@@ -62,6 +62,22 @@ export async function POST(request: NextRequest) {
           return cleaned;
         })(rawWA);
 
+        // Logic Tanggal (DIPINDAH KE ATAS AGAR BISA DIGUNAKAN UNTUK SISWA)
+        let tgl = new Date();
+        const tglIn = getVal(item, ["tanggal", "date"]);
+        if (tglIn) {
+          const s = String(tglIn).trim();
+          if (/^\d+$/.test(s) && parseInt(s) > 10000) tgl = new Date((parseInt(s) - 25569) * 86400 * 1000);
+          else if (s.includes("/")) {
+            const p = s.split("/");
+            if (p.length === 3) tgl = new Date(parseInt(p[2].length === 2 ? "20"+p[2] : p[2]), parseInt(p[1])-1, parseInt(p[0]));
+          } else {
+            const d = new Date(s);
+            if (!isNaN(d.getTime())) tgl = d;
+          }
+        }
+        if (isNaN(tgl.getTime()) || tgl.getFullYear() < 2000) tgl = new Date();
+
         // Cari Siswa
         const sKey = `${sName.toLowerCase()}|${cleanWA}`;
         let sId = siswaCache.get(sKey);
@@ -73,7 +89,12 @@ export async function POST(request: NextRequest) {
           } else {
             countSiswa++;
             const newS = await prisma.siswa.create({
-              data: { noSiswa: `S${countSiswa.toString().padStart(4, '0')}`, nama: sName, telepon: cleanWA || null }
+              data: { 
+                noSiswa: `S${countSiswa.toString().padStart(4, '0')}`, 
+                nama: sName, 
+                telepon: cleanWA || null,
+                createdAt: tgl // SINKRONKAN TANGGAL SISWA DENGAN TRANSAKSI
+              }
             });
             sId = newS.id;
             allSiswa.push(newS);
@@ -128,22 +149,6 @@ export async function POST(request: NextRequest) {
           );
           talId = foundTal?.id || null;
         }
-
-        // Logic Tanggal
-        let tgl = new Date();
-        const tglIn = getVal(item, ["tanggal", "date"]);
-        if (tglIn) {
-          const s = String(tglIn).trim();
-          if (/^\d+$/.test(s) && parseInt(s) > 10000) tgl = new Date((parseInt(s) - 25569) * 86400 * 1000);
-          else if (s.includes("/")) {
-            const p = s.split("/");
-            if (p.length === 3) tgl = new Date(parseInt(p[2].length === 2 ? "20"+p[2] : p[2]), parseInt(p[1])-1, parseInt(p[0]));
-          } else {
-            const d = new Date(s);
-            if (!isNaN(d.getTime())) tgl = d;
-          }
-        }
-        if (isNaN(tgl.getTime()) || tgl.getFullYear() < 2000) tgl = new Date();
 
         // HARGA & DISKON
         const hNorm = parseFloat(String(getVal(item, ["harga_normal", "harga", "nominal"]) || "0"));

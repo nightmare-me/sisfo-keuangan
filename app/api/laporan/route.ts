@@ -89,7 +89,13 @@ export async function GET(request: NextRequest) {
         _count: true
       }),
       prisma.spentAds.aggregate({
-        where: { tanggal: dateFilter },
+        where: { 
+          tanggal: dateFilter,
+          OR: [
+            { keterangan: { equals: null } },
+            { keterangan: { not: { contains: "[Sync Otomatis]" } } }
+          ]
+        },
         _sum: { jumlah: true }
       }),
       prisma.adPerformance.aggregate({
@@ -149,10 +155,9 @@ export async function GET(request: NextRequest) {
     const csMap: Record<string, string> = {};
     activeCS.forEach(c => csMap[c.id] = c.name);
 
-    // 5. SOURCE BREAKDOWN (Mesti narik dikit data Pemasukan atau pakai groupBy isRO & programId)
-    // Untuk efisiensi maksimal, kita pakai groupBy isRO dan asumsikan sisanya
-    const bySource = await prisma.pemasukan.groupBy({
-      by: ['isRO'],
+    // 5. SOURCE BREAKDOWN (Mesti narik data Pemasukan atau pakai groupBy isRO & programId)
+    const sourceData = await prisma.pemasukan.groupBy({
+      by: ['programId', 'isRO'],
       where: { tanggal: dateFilter },
       _sum: { hargaFinal: true }
     });
@@ -164,9 +169,52 @@ export async function GET(request: NextRequest) {
     const totalAds = (adsAgg._sum.jumlah || 0) + (perfAgg._sum.spent || 0);
     const labaBersih = totalPemasukanNet - totalPengeluaran - totalAds;
 
-    // Hitung source breakdown secara estimasi cepat
-    const roRevenue = bySource.find(s => s.isRO)?._sum.hargaFinal || 0;
-    const regularRevenue = totalPemasukan - roRevenue;
+    // Hitung source breakdown
+    const sourceBreakdown = {
+      REGULAR: 0,
+      RO: 0,
+      SOSMED: 0,
+      AFFILIATE: 0,
+      LIVE: 0,
+      TOEFL: 0
+    };
+
+    // Kita hitung gross dulu, lalu nanti kita adjust proporsional terhadap net (jika ada refund)
+    let totalGrossCalculated = 0;
+    sourceData.forEach(item => {
+      const revenue = item._sum.hargaFinal || 0;
+      totalGrossCalculated += revenue;
+
+      if (item.isRO) {
+        sourceBreakdown.RO += revenue;
+      } else {
+        const prog = item.programId ? progMap[item.programId] : null;
+        const name = (prog?.nama || "").toUpperCase();
+
+        if (prog?.isProfitSharing) {
+          sourceBreakdown.TOEFL += revenue;
+        } else if (name.includes("SOSMED")) {
+          sourceBreakdown.SOSMED += revenue;
+        } else if (name.includes("AFFILIATE")) {
+          sourceBreakdown.AFFILIATE += revenue;
+        } else if (name.includes("LIVE")) {
+          sourceBreakdown.LIVE += revenue;
+        } else {
+          sourceBreakdown.REGULAR += revenue;
+        }
+      }
+    });
+
+    // Adjust proporsional agar totalnya sesuai dengan totalPemasukanNet (net setelah refund)
+    if (totalGrossCalculated > 0 && totalRefund > 0) {
+      const factor = totalPemasukanNet / totalGrossCalculated;
+      sourceBreakdown.REGULAR *= factor;
+      sourceBreakdown.RO *= factor;
+      sourceBreakdown.SOSMED *= factor;
+      sourceBreakdown.AFFILIATE *= factor;
+      sourceBreakdown.LIVE *= factor;
+      sourceBreakdown.TOEFL *= factor;
+    }
 
     return NextResponse.json({
       periode: { from: startDate, to: endDate },
@@ -178,14 +226,7 @@ export async function GET(request: NextRequest) {
         labaBersih,
         jumlahTransaksiIn: pemasukanAgg._count,
         jumlahTransaksiOut: pengeluaranAgg._count,
-        sourceBreakdown: {
-          REGULAR: regularRevenue,
-          RO: roRevenue,
-          SOSMED: 0, // Estimasi manual sulit tanpa scan satu-satu
-          AFFILIATE: 0,
-          LIVE: 0,
-          TOEFL: 0
-        },
+        sourceBreakdown,
       },
       pemasukanPerProgram: byProgram.map(p => ({
         nama: progMap[p.programId || ""]?.nama || "Tanpa Program",

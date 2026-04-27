@@ -30,6 +30,11 @@ export async function GET(request: NextRequest) {
   } else if (type === "today") {
     startDate = startOfDay(now);
     endDate = endOfDay(now);
+  } else if (type === "yesterday") {
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    startDate = startOfDay(yesterday);
+    endDate = endOfDay(yesterday);
   } else if (type === "week") {
     const day = now.getDay();
     startDate = new Date(now);

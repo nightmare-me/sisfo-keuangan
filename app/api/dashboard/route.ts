@@ -33,6 +33,11 @@ export async function GET(request: NextRequest) {
     } else if (type === "today") {
       startDate = new Date(startOfDay(jktNow).getTime() - (3600000 * 7));
       endDate = new Date(endOfDay(jktNow).getTime() - (3600000 * 7));
+    } else if (type === "yesterday") {
+      const yesterday = new Date(jktNow);
+      yesterday.setDate(jktNow.getDate() - 1);
+      startDate = new Date(startOfDay(yesterday).getTime() - (3600000 * 7));
+      endDate = new Date(endOfDay(yesterday).getTime() - (3600000 * 7));
     } else if (type === "week") {
       const day = jktNow.getDay();
       const weekStart = new Date(jktNow);
@@ -86,8 +91,8 @@ export async function GET(request: NextRequest) {
       prisma.pemasukan.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { hargaFinal: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
-      prisma.spentAds.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
-      prisma.spentAds.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
+      prisma.spentAds.aggregate({ where: { tanggal: { gte: startDate, lte: endDate }, OR: [{ keterangan: null }, { NOT: { keterangan: { contains: "[Sync Otomatis]" } } }] }, _sum: { jumlah: true } }),
+      prisma.spentAds.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate }, OR: [{ keterangan: null }, { NOT: { keterangan: { contains: "[Sync Otomatis]" } } }] }, _sum: { jumlah: true } }),
       prisma.adPerformance.aggregate({ where: { date: { gte: startDate, lte: endDate } }, _sum: { spent: true } }),
       prisma.adPerformance.aggregate({ where: { date: { gte: prevStartDate, lte: prevEndDate } }, _sum: { spent: true } }),
       prisma.refund.aggregate({ where: { status: "APPROVED", pemasukan: { tanggal: { gte: startDate, lte: endDate } } }, _sum: { jumlah: true } }),
@@ -114,7 +119,10 @@ export async function GET(request: NextRequest) {
       }),
       prisma.spentAds.groupBy({ 
         by: ['tanggal'], 
-        where: { tanggal: { gte: startOfDay(trendStart) } }, 
+        where: { 
+          tanggal: { gte: startOfDay(trendStart) },
+          OR: [{ keterangan: null }, { NOT: { keterangan: { contains: "[Sync Otomatis]" } } }]
+        }, 
         _sum: { jumlah: true } 
       }),
       prisma.adPerformance.groupBy({ 

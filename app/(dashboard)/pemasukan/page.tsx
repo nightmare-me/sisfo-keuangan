@@ -129,7 +129,7 @@ export default function PemasukanPage() {
     fetch("/api/program?hasPemasukanOnly=true").then(r => r.json()).then(d => setFilterPrograms(d)).catch(() => {});
 
     fetch("/api/siswa?limit=500").then(r => r.json()).then(d => setSiswaDrop(d.data ?? [])).catch(() => {});
-    fetch("/api/users?role=CS").then(r => r.json()).then(d => setCsList(d)).catch(() => {});
+    fetch("/api/users?role=CS").then(r => r.json()).then(d => setCsList(Array.isArray(d) ? d : (d.data || []))).catch(() => {});
     fetch("/api/users").then(r => r.json()).then(d => {
       const users = Array.isArray(d) ? d : (d.data || []);
       setTalentList(users.filter((u: any) => 
@@ -138,6 +138,9 @@ export default function PemasukanPage() {
       ));
     }).catch(() => {});
   }, []);
+
+  const selectedProgram = programs.find(p => p.id === form.programId);
+  const isLiveProgram = selectedProgram?.nama?.toUpperCase().includes("LIVE");
 
   useEffect(() => {
     const normal = parseFloat(form.hargaNormal) || 0;
@@ -439,15 +442,15 @@ export default function PemasukanPage() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" style={{ width: 600 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="modal" style={{ width: 600 }}>
             <div className="modal-header">
                <div className="modal-title">{editId ? "Ubah Data Pemasukan" : "Catat Pemasukan Baru"}</div>
                <button className="modal-close" onClick={() => setShowModal(false)}><X size={18} /></button>
             </div>
             <form onSubmit={handleSubmit}>
                <div className="modal-body">
-                  <div className="form-grid-2">
+                  <div className="form-grid-3">
                      <div className="form-group">
                         <label className="form-label">Siswa</label>
                         <select className="form-control" value={form.siswaId} onChange={e => setForm(f => ({ ...f, siswaId: e.target.value }))}>
@@ -466,6 +469,15 @@ export default function PemasukanPage() {
                           {programs.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
                         </select>
                      </div>
+                     {role === "ADMIN" && (
+                        <div className="form-group">
+                           <label className="form-label">CS Penanggung Jawab</label>
+                           <select className="form-control" value={form.csId} onChange={e => setForm(f => ({ ...f, csId: e.target.value }))}>
+                             <option value="">Pilih CS</option>
+                             {csList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                           </select>
+                        </div>
+                     )}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, padding: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
@@ -476,7 +488,7 @@ export default function PemasukanPage() {
                       <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>— Beri tanda jika pendaftaran ulang siswa lama</span>
                   </div>
 
-                  {(isCSLive || role === "ADMIN") && (
+                  {isLiveProgram && (isCSLive || role === "ADMIN") && (
                      <div className="form-group" style={{ marginBottom: 20 }}>
                         <label className="form-label required">Penautan Talent</label>
                         <select className="form-control" value={form.talentId} onChange={e => setForm(f => ({ ...f, talentId: e.target.value }))} required={isCSLive}>

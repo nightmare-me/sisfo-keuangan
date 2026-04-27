@@ -29,7 +29,7 @@ export default function AdsPage() {
   const role = (session?.user as any)?.role?.toUpperCase();
   const isAdmin = role === "ADMIN";
   const [data, setData] = useState<any[]>([]);
-  const [summary, setSummary] = useState({ total:0, count:0 });
+  const [summary, setSummary] = useState({ total:0, count:0, leads:0, avgCpl:0 });
   const [byPlatform, setByPlatform] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [csvLoading, setCsvLoading] = useState(false);
@@ -37,7 +37,7 @@ export default function AdsPage() {
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState({ from:"", to:"", platform:"" });
-  const [form, setForm] = useState({ platform:"META", jumlah:"", keterangan:"", tanggal: new Date().toISOString().slice(0,10) });
+  const [form, setForm] = useState({ platform:"META", jumlah:"", keterangan:"", leads:"", tanggal: new Date().toISOString().slice(0,10) });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -72,9 +72,9 @@ export default function AdsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
     await fetch("/api/ads",{ method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({...form, jumlah: parseFloat(form.jumlah)}) });
+      body: JSON.stringify({...form, jumlah: parseFloat(form.jumlah), leads: parseInt(form.leads || "0")}) });
     setSaving(false); setShowModal(false);
-    setForm({ platform:"META", jumlah:"", keterangan:"", tanggal: new Date().toISOString().slice(0,10) });
+    setForm({ platform:"META", jumlah:"", keterangan:"", leads:"", tanggal: new Date().toISOString().slice(0,10) });
     fetchData();
   }
 
@@ -108,7 +108,7 @@ export default function AdsPage() {
       "# - tanggal: format YYYY-MM-DD",
       "# - platform: GOOGLE / META / TIKTOK / INSTAGRAM / YOUTUBE / LAINNYA",
       "# - jumlah: angka saja tanpa titik/koma (contoh: 1500000)",
-      "# - leads: (Opsional) Jika diisi angka, akan otomatis masuk ke data 'Performa Iklan'",
+      "# - leads: Jumlah leads yang didapat dari iklan ini",
       "# - email_advertiser: (Opsional) Email user advertiser untuk perhitungan bonus fee. Jika kosong, akan memakai akun Anda."
     ].join("\n");
     const blob = new Blob([header + examples + notes], { type: "text/csv;charset=utf-8;" });
@@ -145,7 +145,8 @@ export default function AdsPage() {
             const err = await res.json();
             alert("❌ Gagal import: " + (err.error ?? "Terjadi kesalahan"));
           } else {
-            alert(`✅ Berhasil import ${rows.length} data ads!`);
+            const result = await res.json();
+            alert(`✅ Berhasil import ${result.success || 0} data ads!`);
             fetchData();
           }
         } catch (error: any) {
@@ -194,8 +195,8 @@ export default function AdsPage() {
              <Megaphone size={18} />
              <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Marketing Performance</span>
           </div>
-          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Spent Ads</h1>
-          <p className="body-lg" style={{ margin: 0 }}>Lacak pengeluaran iklan harian per platform</p>
+          <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Manajemen Iklan</h1>
+          <p className="body-lg" style={{ margin: 0 }}>Lacak pengeluaran iklan dan performa leads harian</p>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {isAdmin && (
@@ -224,15 +225,20 @@ export default function AdsPage() {
             <div className="kpi-label">Total Spent Ads</div>
             <div className="kpi-value">{formatCurrency(summary.total)}</div>
           </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--primary)", "--kpi-bg": "var(--primary-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--primary)" }}><Activity size={24} /></div>
+            <div className="kpi-label">Total Leads</div>
+            <div className="kpi-value">{summary.leads} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>leads</span></div>
+          </div>
+          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
+            <div className="kpi-icon" style={{ color: "var(--success)" }}><TrendingUp size={24} /></div>
+            <div className="kpi-label">Avg CPL</div>
+            <div className="kpi-value">{formatCurrency(summary.avgCpl)}</div>
+          </div>
           <div className="kpi-card" style={{ "--kpi-color": "var(--info)", "--kpi-bg": "var(--info-bg)" } as any}>
             <div className="kpi-icon" style={{ color: "var(--info)" }}><Layers size={24} /></div>
             <div className="kpi-label">Jumlah Input</div>
             <div className="kpi-value">{summary.count} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>records</span></div>
-          </div>
-          <div className="kpi-card" style={{ "--kpi-color": "var(--success)", "--kpi-bg": "var(--success-bg)" } as any}>
-            <div className="kpi-icon" style={{ color: "var(--success)" }}><Activity size={24} /></div>
-            <div className="kpi-label">Active Platforms</div>
-            <div className="kpi-value">{byPlatform.length}</div>
           </div>
         </div>
         {/* Summary Breakdown & Chart */}
@@ -311,9 +317,9 @@ export default function AdsPage() {
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 200 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Filter size={18} style={{ color: "var(--primary)" }} />
-              <select className="form-control" value={filter.platform} onChange={e=>setFilter(f=>({...f,platform:e.target.value}))} style={{ padding: '8px 12px' }}>
+              <select className="form-control" value={filter.platform} onChange={e=>setFilter(f=>({...f,platform:e.target.value}))} style={{ padding: '8px 12px', width: 220 }}>
                 <option value="">Semua Platform</option>
                 {PLATFORMS.map(p=><option key={p} value={p}>{p}</option>)}
               </select>
@@ -335,7 +341,10 @@ export default function AdsPage() {
                 <th>Platform</th>
                 <th>Keterangan</th>
                 <th>Dibuat Oleh</th>
-                <th className="text-right">Jumlah Spent</th>
+                <th className="text-right">Spent</th>
+                <th className="text-right">Leads</th>
+                <th className="text-right">CPL</th>
+                <th className="text-right">Est. Fee Adv</th>
                 <th className="text-center">Aksi</th>
               </tr>
             </thead>
@@ -366,7 +375,10 @@ export default function AdsPage() {
                     )}
                   </td>
                   <td style={{ fontSize:14, color:"var(--text-muted)" }}>{item.user?.name??"—"}</td>
-                  <td className="text-right" style={{ fontWeight:800, color: "var(--on-surface)", fontSize: 16 }}>{formatCurrency(item.jumlah)}</td>
+                  <td className="text-right" style={{ fontWeight:800, color: "var(--on-surface)", fontSize: 15 }}>{formatCurrency(item.jumlah)}</td>
+                  <td className="text-right" style={{ fontWeight:600, color: "var(--primary)" }}>{item.leads || 0}</td>
+                  <td className="text-right" style={{ fontWeight:600, color: "var(--success)" }}>{formatCurrency(item.cpl || 0)}</td>
+                  <td className="text-right" style={{ fontWeight:700, color: "#8b5cf6" }}>{formatCurrency(item.fee || 0)}</td>
                   <td className="text-center">
                     {!item.isPerformanceData && (
                       <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
@@ -462,9 +474,15 @@ export default function AdsPage() {
                     <input type="date" className="form-control" value={form.tanggal} onChange={e=>setForm(f=>({...f,tanggal:e.target.value}))} required />
                   </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label required">Jumlah Ads Spend (Rp)</label>
-                  <input id="inp-jumlah-ads" type="number" className="form-control" placeholder="0" value={form.jumlah} onChange={e=>setForm(f=>({...f,jumlah:e.target.value}))} required min={1} />
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label required">Jumlah Ads Spend (Rp)</label>
+                    <input id="inp-jumlah-ads" type="number" className="form-control" placeholder="0" value={form.jumlah} onChange={e=>setForm(f=>({...f,jumlah:e.target.value}))} required min={1} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Leads Didapat</label>
+                    <input type="number" className="form-control" placeholder="0" value={form.leads} onChange={e=>setForm(f=>({...f,leads:e.target.value}))} min={0} />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Keterangan</label>

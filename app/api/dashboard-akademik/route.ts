@@ -39,6 +39,13 @@ export async function GET(request: NextRequest) {
       endDate = new Date(endOfDay(jktNow).getTime() - (3600000 * 7));
       yesterdayStart = new Date(startDate.getTime() - (24 * 3600000));
       yesterdayEnd = new Date(endDate.getTime() - (24 * 3600000));
+    } else if (type === "yesterday") {
+      const yesterday = new Date(jktNow);
+      yesterday.setDate(jktNow.getDate() - 1);
+      startDate = new Date(startOfDay(yesterday).getTime() - (3600000 * 7));
+      endDate = new Date(endOfDay(yesterday).getTime() - (3600000 * 7));
+      yesterdayStart = new Date(startDate.getTime() - (24 * 3600000));
+      yesterdayEnd = new Date(endDate.getTime() - (24 * 3600000));
     } else if (type === "week") {
       const day = jktNow.getDay();
       const weekStart = new Date(jktNow);

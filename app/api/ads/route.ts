@@ -26,9 +26,10 @@ export async function GET(request: NextRequest) {
   }
 
   // EXCLUDE OLD SYNC RECORDS to prevent double counting
-  where.NOT = {
-    keterangan: { contains: "Sync Otomatis" }
-  };
+  where.OR = [
+    { keterangan: { equals: null } },
+    { keterangan: { not: { contains: "[Sync Otomatis]" } } }
+  ];
 
   // Fetch from both tables
   const [spentData, perfData, summarySpent, summaryPerf, byPlatformSpent, byPlatformPerf] = await Promise.all([
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
       take: limit,
     }),
     prisma.spentAds.aggregate({ where, _sum: { jumlah: true }, _count: true }),
-    prisma.adPerformance.aggregate({ where: wherePerf, _sum: { spent: true }, _count: true }),
+    prisma.adPerformance.aggregate({ where: wherePerf, _sum: { spent: true, leads: true }, _count: true }),
     prisma.spentAds.groupBy({
       by: ["platform"],
       where,
@@ -56,41 +57,59 @@ export async function GET(request: NextRequest) {
     prisma.adPerformance.groupBy({
       by: ["platform"],
       where: wherePerf,
-      _sum: { spent: true },
+      _sum: { spent: true, leads: true },
     }),
   ]);
 
   // Combine and Format data for table display
+  const formattedSpentData = spentData.map((s: any) => {
+    return {
+      ...s,
+      leads: 0,
+      cpl: 0,
+      fee: 0,
+      isPerformanceData: false
+    };
+  });
+
   const formattedPerfData = perfData.map((p: any) => ({
     id: p.id,
     tanggal: p.date,
     platform: p.platform,
     jumlah: p.spent,
+    leads: p.leads,
+    cpl: p.cpl,
+    fee: p.fee || 0,
     keterangan: `Laporan Advertiser: ${p.adv.name}`,
     user: { name: p.adv.name },
     isPerformanceData: true
   }));
 
-  const allData = [...spentData, ...formattedPerfData].sort((a: any, b: any) => 
+  const allData = [...formattedSpentData, ...formattedPerfData].sort((a: any, b: any) => 
     new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime()
   ).slice(0, limit);
 
   // Combine Summaries
   const totalAmount = (summarySpent._sum.jumlah ?? 0) + (summaryPerf._sum.spent ?? 0);
+  const totalLeads = (summaryPerf._sum.leads ?? 0);
   const totalCount = (summarySpent._count ?? 0) + (summaryPerf._count ?? 0);
+  const avgCpl = totalLeads > 0 ? totalAmount / totalLeads : 0;
 
   // Combine platform breakdown
-  const platformMap: Record<string, number> = {};
+  const platformMap: Record<string, { spent: number; leads: number }> = {};
   byPlatformSpent.forEach((p: any) => {
-    platformMap[p.platform] = (platformMap[p.platform] || 0) + (p._sum.jumlah || 0);
+    if (!platformMap[p.platform]) platformMap[p.platform] = { spent: 0, leads: 0 };
+    platformMap[p.platform].spent += (p._sum.jumlah || 0);
   });
   byPlatformPerf.forEach((p: any) => {
-    platformMap[p.platform] = (platformMap[p.platform] || 0) + (p._sum.spent || 0);
+    if (!platformMap[p.platform]) platformMap[p.platform] = { spent: 0, leads: 0 };
+    platformMap[p.platform].spent += (p._sum.spent || 0);
+    platformMap[p.platform].leads += (p._sum.leads || 0);
   });
 
-  const combinedByPlatform = Object.entries(platformMap).map(([platform, amount]) => ({
+  const combinedByPlatform = Object.entries(platformMap).map(([platform, val]) => ({
     platform,
-    _sum: { jumlah: amount }
+    _sum: { jumlah: val.spent, leads: val.leads }
   }));
 
   return NextResponse.json({ 
@@ -98,7 +117,7 @@ export async function GET(request: NextRequest) {
     total: totalCount,
     page,
     totalPages: Math.ceil(totalCount / limit),
-    summary: { total: totalAmount, count: totalCount }, 
+    summary: { total: totalAmount, count: totalCount, leads: totalLeads, avgCpl }, 
     byPlatform: combinedByPlatform 
   });
 }
@@ -123,20 +142,21 @@ export async function POST(request: NextRequest) {
           if (isNaN(spent)) continue;
 
           // 1. Buat data SpentAds
+          // Selalu tandai sebagai [Sync Otomatis] jika diimpor bersama leads agar tidak double count di laporan
           await tx.spentAds.create({
             data: {
               tanggal,
               platform,
               jumlah: spent,
-              keterangan: item.keterangan || null,
+              keterangan: item.keterangan ? `${item.keterangan} [Sync Otomatis]` : "[Sync Otomatis]",
               dibuatOleh: sessionUserId,
             }
           });
           successCount++;
 
-          // 2. Jika ada data Leads, masukkan juga ke AdPerformance
+          // 2. Masukkan juga ke AdPerformance jika ada data leads (0 tetap dimasukkan)
           const leads = parseInt(item.leads);
-          if (!isNaN(leads) && leads > 0) {
+          if (!isNaN(leads)) {
             let advId = sessionUserId;
             let teamTypeRaw = (session.user as any).teamType || 'ADV_REGULAR';
 

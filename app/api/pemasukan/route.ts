@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
           noSiswa: generateSiswaNumber(),
           nama: namaSiswa,
           status: "AKTIF",
+          createdAt: tanggal ? new Date(tanggal) : new Date()
         }
       });
       finalSiswaId = newSiswa.id;

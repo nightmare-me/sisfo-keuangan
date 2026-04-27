@@ -3,7 +3,7 @@
  */
 
 export type CSCategory = 'CS_REGULAR' | 'CS_LIVE' | 'CS_TOEFL' | 'CS_RO' | 'CS_SOSMED' | 'CS_AFFILIATE';
-export type AdvCategory = 'ADV_REGULAR' | 'ADV_PART_TIME' | 'ADV_PROJECT';
+export type AdvCategory = 'ADV_REGULAR' | 'ADV_PART_TIME' | 'ADV_PROJECT' | 'ADV_TOEFL';
 export type PayrollConfig = Record<string, number>;
 
 /**
@@ -145,7 +145,12 @@ export function calculateAdvFee(
     else feePerLead = 300;
   }
 
-  if (advCategory === 'ADV_PROJECT' || advCategory === 'ADV_TOEFL' as any) {
+  if (advCategory === 'ADV_PROJECT') {
+    if (cpl < 5000) feePerLead = 500;
+    else feePerLead = 250;
+  }
+
+  if (advCategory === 'ADV_TOEFL') {
     if (cpl < 15000) feePerLead = 500;
     else feePerLead = 250;
   }

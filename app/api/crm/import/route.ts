@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     // Ambil semua CS untuk mapping nama ke ID
     const allCS = await prisma.user.findMany({
       where: { role: { slug: "cs" } },
-      select: { id: true, name: true }
+      select: { id: true, name: true, namaPanggilan: true }
     });
 
     // Ambil semua Program untuk mapping nama ke ID
@@ -35,29 +35,51 @@ export async function POST(request: NextRequest) {
       if (!namaSiswa) continue;
 
       const programName = String(findValue(["program", "namaprogram", "produk"]) || "").trim();
-      const csName = String(findValue(["cs", "namacs", "staff"]) || "").trim();
-      const whatsapp = String(findValue(["whatsapp", "wa", "nomorwa"]) || "").trim();
-      const nominalInput = parseFloat(String(findValue(["nominal", "harga", "harganormal", "total"]) || "0"));
+      const csName = String(findValue(["cs", "namacs", "staff", "nama_cs"]) || "").trim();
+      const whatsapp = String(findValue(["whatsapp", "wa", "nomorwa", "telepon"]) || "").trim();
+      const nominalInput = parseFloat(String(findValue(["nominal", "harga", "harganormal", "total", "tagihan"]) || "0"));
+      const rawStatus = String(findValue(["status", "crm_status", "tahap"]) || "").trim().toUpperCase();
+      const keterangan = String(findValue(["keterangan", "note", "catatan", "preferensi"]) || "").trim();
+      
+      const tglLeadRaw = findValue(["tanggal", "date", "tgl", "tanggal_lead", "tgl_lead"]);
+      const tglClosingRaw = findValue(["tanggal_closing", "tgl_closing", "closing_date", "deal_date"]);
 
       // 1. Cari Program ID
       const program = allPrograms.find(p => p.nama.toLowerCase().includes(programName.toLowerCase()));
       
-      // 2. Cari CS ID
-      const cs = allCS.find(c => (c.name || "").toLowerCase().includes(csName.toLowerCase()));
+      // 2. Cari CS ID (Nama Lengkap atau Nama Panggilan)
+      const cs = allCS.find(c => 
+        (c.name || "").toLowerCase().includes(csName.toLowerCase()) || 
+        (c.namaPanggilan || "").toLowerCase().includes(csName.toLowerCase())
+      );
 
-      // 3. Handle Harga & Kode Unik (Import pakai angka apa adanya)
+      // 3. Mapping Status
+      let status: any = "NEW";
+      if (["LUNAS", "PAID", "DONE"].includes(rawStatus)) status = "PAID";
+      else if (["FOLLOW_UP", "FU", "PROSES"].includes(rawStatus)) status = "FOLLOW_UP";
+      else if (["PENDING", "MENUNGGU", "WAITING"].includes(rawStatus)) status = "PENDING";
+      else if (["REFUNDED", "REFUND"].includes(rawStatus)) status = "REFUNDED";
+      else if (["CANCELLED", "CANCEL", "BATAL"].includes(rawStatus)) status = "CANCELLED";
+      else if (cs?.id) status = "FOLLOW_UP";
+
+      // 4. Handle Harga & Kode Unik
       let nominalTagihan = nominalInput;
       let kodeUnik = 0;
 
       if (nominalInput > 0) {
-        // Import: Pakai angka dari file apa adanya. Jika bulat ya biarkan bulat.
         kodeUnik = nominalInput % 1000;
         nominalTagihan = nominalInput;
       } else if (program) {
-        // Jika nominal kosong di file, baru generate dari harga program + kode unik
         kodeUnik = Math.floor(Math.random() * 999) + 1;
         nominalTagihan = program.harga + kodeUnik;
       }
+
+      // 5. Handle Tanggal
+      const parseDate = (val: any) => {
+        if (!val) return null;
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d;
+      };
 
       const lead = await prisma.lead.create({
         data: {
@@ -66,12 +88,14 @@ export async function POST(request: NextRequest) {
           email: findValue(["email", "surel"]) || null,
           programId: program?.id || null,
           csId: cs?.id || null,
-          status: cs?.id ? "FOLLOW_UP" : "NEW",
+          status: status,
           nominalTagihan: nominalTagihan,
           kodeUnik: Math.round(kodeUnik),
           isRO: String(findValue(["isro", "ro", "repeatorder"]) || "").toLowerCase() === "true" || findValue(["isro", "ro"]) === "1",
           sumber: String(findValue(["sumber", "source"]) || "IMPORT").toUpperCase(),
-          tanggalLead: findValue(["tanggal", "date", "tgl"]) ? new Date(String(findValue(["tanggal", "date", "tgl"]))) : new Date(),
+          keterangan: keterangan || null,
+          tanggalLead: parseDate(tglLeadRaw) || new Date(),
+          tanggalClosing: parseDate(tglClosingRaw) || null,
         }
       });
       results.push(lead);

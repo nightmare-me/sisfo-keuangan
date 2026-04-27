@@ -2,12 +2,18 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Big Data Optimization & Server-Side Pagination (v4.60) 🚀 (TERBARU!)
-*   **Unified Server-Side Pagination**: Seluruh modul utama (14+ modul) kini menggunakan pagination di sisi server. Memuat ribuan data kini secepat kilat tanpa membebani browser.
-*   **Smart Limit Dropdown**: Navigasi tabel kini dilengkapi pilihan jumlah baris (10, 50, 100, 200) dengan fitur *auto-refresh* otomatis saat opsi dipilih.
-*   **Ads Performance Merging**: Logika penggabungan data performa iklan dari tabel `SpentAds` dan `AdPerformance` kini mendukung pagination global yang akurat.
-*   **Consistent Footer Navigation**: Standardisasi UI navigasi halaman di seluruh modul untuk pengalaman pengguna yang seragam dan profesional.
-*   **Smart Filter Logic**: Filter program pada modul pemasukan kini hanya menampilkan program yang memiliki riwayat transaksi, membuat dropdown filter lebih bersih dan relevan.
+## 📢 Fitur Baru: Student Portal & Smart Ads Fee (v4.70) 🚀 (TERBARU!)
+*   **Automated Student Portal**: Setiap Lead yang dikonversi menjadi siswa kini otomatis memiliki akun login. Menggunakan **Nomor Siswa** sebagai ID Login dan **Nomor WhatsApp** sebagai password default.
+*   **WhatsApp Portal Access**: Tombol "Kirim Akses" di CRM memudahkan CS mengirim detail login siswa (Link Portal, ID, & Password) dengan sekali klik via WhatsApp.
+*   **Average CPL Payroll Logic**: Revisi mesin penggajian advertiser; bonus kini dihitung berdasarkan **Rata-Rata CPL sebulan** (Total Spent / Total Leads) untuk keadilan performa yang lebih akurat.
+*   **Advertiser Tiering Separation**: Pemisahan ambang batas (threshold) CPL antara kategori `ADV_PROJECT` (Rp 5.000) dan `ADV_TOEFL` (Rp 15.000) sesuai kebijakan operasional terbaru.
+*   **Ads UI Enhancements**: Penambahan kolom **Est. Fee Adv** di tabel iklan untuk simulasi bonus harian, serta perbaikan visual pada filter platform dan kartu ringkasan (Summary Cards).
+*   **Advanced CRM Bulk Import**: Format import CSV CRM kini mendukung 9+ kolom lengkap termasuk Status, CS, Nominal, Tanggal Closing, hingga Keterangan tambahan.
+*   **Smart KPI Accuracy**: Perbaikan logika double-counting pada dashboard dan sinkronisasi otomatis "Tanggal Join Siswa" dengan tanggal transaksi pertama (Retroactive Sync).
+
+---
+
+## 📢 Fitur Sebelumnya: Big Data Optimization & Server-Side Pagination (v4.60) 🚀
 
 ---
 

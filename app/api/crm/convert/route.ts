@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { generateSiswaNumber, generateInvoiceNumber } from "@/lib/utils";
 import { recordLog } from "@/lib/audit";
+import bcrypt from "bcryptjs";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -30,7 +31,9 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 2. Cek Siswa (RO Check)
+      // 2. Cek Siswa (RO Check) & Set Password Portal
+      const hashedPw = await bcrypt.hash(lead.whatsapp, 10);
+      
       let siswa = await tx.siswa.findFirst({
         where: { telepon: lead.whatsapp }
       });
@@ -38,6 +41,11 @@ export async function POST(request: NextRequest) {
       let isRO = false;
       if (siswa) {
         isRO = true;
+        // Update password siswa lama jika diperlukan
+        await tx.siswa.update({
+          where: { id: siswa.id },
+          data: { password: hashedPw }
+        });
       } else {
         const noSiswa = generateSiswaNumber();
         siswa = await tx.siswa.create({
@@ -47,6 +55,7 @@ export async function POST(request: NextRequest) {
             telepon: lead.whatsapp,
             email: lead.email,
             status: "AKTIF",
+            password: hashedPw,
           },
         });
       }

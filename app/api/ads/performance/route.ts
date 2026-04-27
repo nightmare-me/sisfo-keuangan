@@ -58,18 +58,30 @@ export async function POST(request: NextRequest) {
     const validPlatforms = ["META", "GOOGLE", "TIKTOK", "INSTAGRAM", "YOUTUBE", "LAINNYA"];
     const targetPlatform: any = validPlatforms.includes(platform) ? platform : "META";
 
-    // 1. Simpan Performance Personal
-    const performance = await prisma.adPerformance.create({
-      data: {
-        advId: userId,
-        date: targetDate,
-        platform: targetPlatform,
-        spent,
-        leads,
-        cpl,
-        fee
-      }
-    });
+    // 1. Simpan ke SpentAds juga agar masuk ke laporan keuangan perusahaan
+    // Kita gunakan $transaction agar atomis
+    const [performance] = await prisma.$transaction([
+      prisma.adPerformance.create({
+        data: {
+          advId: userId,
+          date: targetDate,
+          platform: targetPlatform,
+          spent,
+          leads,
+          cpl,
+          fee
+        }
+      }),
+      prisma.spentAds.create({
+        data: {
+          tanggal: targetDate,
+          platform: targetPlatform,
+          jumlah: spent,
+          keterangan: `Sync Otomatis: Advertiser ${user.name}`,
+          dibuatOleh: userId
+        }
+      })
+    ]);
 
     return NextResponse.json(performance);
   } catch (err: any) {

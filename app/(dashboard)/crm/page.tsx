@@ -479,7 +479,13 @@ export default function CRMPage() {
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--on-surface)' }}>{lead.nama}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><MessageCircle size={10} /> {lead.whatsapp}</div>
+                        <div 
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', color: 'var(--primary)', fontWeight: 600 }}
+                          onClick={() => { setSelectedChatLead(lead); setShowChatModal(true); }}
+                          className="hover-underline"
+                        >
+                          <MessageCircle size={10} /> {lead.whatsapp}
+                        </div>
                         {lead.sumber && (
                           <span style={{ background: 'var(--surface-container-highest)', padding: '2px 6px', borderRadius: 4, fontWeight: 700, fontSize: 9, color: 'var(--primary)' }}>
                             {lead.sumber}
@@ -864,6 +870,22 @@ export default function CRMPage() {
             </div>
             <div className="modal-body">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* TOMBOL KHUSUS AKSES PORTAL */}
+                <div className="card" style={{ padding: 16, margin: 0, border: '2px solid var(--success)', background: 'rgba(16,185,129,0.05)' }}>
+                  <div style={{ fontWeight: 800, fontSize: 13, marginBottom: 8, color: 'var(--success)', display: 'flex', justifyContent: 'space-between' }}>
+                    🔑 AKSES PORTAL SISWA
+                    <button className="btn btn-success btn-sm" style={{ padding: '4px 10px', fontSize: 11, background: '#10b981', color: 'white' }} onClick={() => {
+                      const loginId = selectedChatLead.noSiswa || selectedChatLead.email || '-';
+                      const msg = `Halo *${selectedChatLead.nama}*,\n\nPembayaran Anda telah kami verifikasi. Selamat bergabung di Speaking Partner! 🎉\n\nAnda sekarang dapat mengakses portal siswa untuk melihat jadwal dan materi belajar melalui link berikut:\n\n🌐 *Link Portal:* ${window.location.origin}/login\n👤 *ID Login:* ${loginId}\n🔑 *Password:* ${selectedChatLead.whatsapp}\n\nMohon simpan data ini baik-baik ya. Terima kasih!`;
+                      window.open(`https://wa.me/${selectedChatLead.whatsapp}?text=${encodeURIComponent(msg)}`, "_blank");
+                      setShowChatModal(false);
+                    }}>Kirim Akses 🚀</button>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                    Kirim email dan password (nomor WA) agar siswa bisa login ke portal.
+                  </div>
+                </div>
+
                 {waTemplates.length === 0 && <div style={{ textAlign: "center", padding: 20 }}>Belum ada template. Atur di menu Pengaturan.</div>}
                 {waTemplates.map(t => {
                   const message = t.text
@@ -921,15 +943,15 @@ export default function CRMPage() {
                   Gunakan format CSV berikut untuk mengimpor data masal calon siswa.
                 </p>
                 <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
-                  nama,whatsapp,program,preferensi,tanggal
+                  nama,whatsapp,program,status,nama_cs,nominal,tanggal_lead,tanggal_closing,keterangan
                 </div>
                 <button 
                   className="btn btn-sm" 
                   style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
                   onClick={() => {
-                    const csvContent = "nama,whatsapp,program,preferensi,tanggal\n" +
-                                     "Ahmad Fauzi,081234567890,REGULAR 1 BULAN,Malam hari,2024-03-20\n" +
-                                     "Linda Sari,089988776655,IELTS PREPARATION,Pagi hari,2024-03-21";
+                    const csvContent = "nama,whatsapp,program,status,nama_cs,nominal,tanggal_lead,tanggal_closing,keterangan\n" +
+                                     "Ahmad Fauzi,081234567890,REGULAR 1 BULAN,FOLLOW_UP,Admin,1500000,2024-03-20,,Tertarik kelas malam\n" +
+                                     "Linda Sari,089988776655,IELTS PREPARATION,PAID,Lisa,2500123,2024-03-21,2024-03-22,Lunas via Transfer";
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");

@@ -94,7 +94,14 @@ export async function GET(request: NextRequest) {
        });
     });
 
-    const toeflProfit = toeflRevenue - toeflFeeCS - toeflFeeAdv - toeflAdsSpent;
+    // IDENTIFIKASI PENGELUARAN KHUSUS TOEFL (Operasional & Gaji Data Support)
+    // Otomatis memotong pengeluaran yang kategorinya mengandung kata "TOEFL"
+    const toeflExpenses = pengeluaranAll
+      .filter((exp: any) => exp.kategori && exp.kategori.toUpperCase().includes("TOEFL"))
+      .reduce((s: number, e: any) => s + e.jumlah, 0);
+
+    const toeflProfit = toeflRevenue - toeflFeeCS - toeflFeeAdv - toeflAdsSpent - toeflExpenses;
+
 
     // 3. AMBIL KARYAWAN (Paginated)
     const empWhere = { karyawanProfile: { isNot: null }, aktif: true };

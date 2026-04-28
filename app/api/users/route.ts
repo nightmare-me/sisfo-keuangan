@@ -209,7 +209,7 @@ export async function PUT(request: NextRequest) {
   const { id, name, namaPanggilan, noHp, email, roleId, teamType, secondaryRoles, aktif, password, shiftStart, shiftEnd, isLeadActive } = body;
 
   const updateData: any = { name, namaPanggilan, noHp, email, aktif };
-  if (roleId) updateData.roleId = roleId;
+  if (roleId) updateData.role = { connect: { id: roleId } };
   if (teamType !== undefined) {
     updateData.teamType = Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []);
   }

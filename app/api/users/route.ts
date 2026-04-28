@@ -171,30 +171,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(results, { status: 201 });
   }
 
-  // Single create
-  const { name, namaPanggilan, noHp, email, password, roleId, teamType, secondaryRoles, shiftStart, shiftEnd, isLeadActive } = body;
-  if (!name || !email || !password || !roleId) {
-    return NextResponse.json({ error: "Semua field diperlukan" }, { status: 400 });
+  try {
+    // Single create
+    const { name, namaPanggilan, noHp, email, password, roleId, teamType, secondaryRoles, shiftStart, shiftEnd, isLeadActive } = body;
+    if (!name || !email || !password || !roleId) {
+      return NextResponse.json({ error: "Semua field diperlukan" }, { status: 400 });
+    }
+    const exists = await prisma.user.findUnique({ where: { email } });
+    if (exists) return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 });
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const user = await prisma.user.create({
+      data: { 
+        name, namaPanggilan, noHp, email, password: hashedPassword,
+        role: { connect: { id: roleId } },
+        teamType: Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []),
+        secondaryRoles: Array.isArray(secondaryRoles) ? secondaryRoles : [],
+        shiftStart: shiftStart || "08:00",
+        shiftEnd: shiftEnd || "16:00",
+        isLeadActive: isLeadActive ?? true
+      },
+      include: { role: true }
+    });
+
+    await recordLog((session.user as any).id, "Tambah User", name, `Role: ${user.role?.name}`);
+
+    return NextResponse.json(user, { status: 201 });
+  } catch (error: any) {
+    console.error("USER_POST_ERROR:", error);
+    return NextResponse.json({ error: "Gagal menambah user", details: error.message }, { status: 500 });
   }
-  const exists = await prisma.user.findUnique({ where: { email } });
-  if (exists) return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 });
-
-  const hashedPassword = await bcrypt.hash(password, 12);
-  const user = await prisma.user.create({
-    data: { 
-      name, namaPanggilan, noHp, email, password: hashedPassword, roleId, 
-      teamType: Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []),
-      secondaryRoles: Array.isArray(secondaryRoles) ? secondaryRoles : [],
-      shiftStart: shiftStart || "08:00",
-      shiftEnd: shiftEnd || "16:00",
-      isLeadActive: isLeadActive ?? true
-    },
-    include: { role: true }
-  });
-
-  await recordLog((session.user as any).id, "Tambah User", name, `Role: ${user.role?.name}`);
-
-  return NextResponse.json(user, { status: 201 });
 }
 
 export async function PUT(request: NextRequest) {
@@ -205,33 +211,38 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { id, name, namaPanggilan, noHp, email, roleId, teamType, secondaryRoles, aktif, password, shiftStart, shiftEnd, isLeadActive } = body;
+  try {
+    const body = await request.json();
+    const { id, name, namaPanggilan, noHp, email, roleId, teamType, secondaryRoles, aktif, password, shiftStart, shiftEnd, isLeadActive } = body;
 
-  const updateData: any = { name, namaPanggilan, noHp, email, aktif };
-  if (roleId) updateData.role = { connect: { id: roleId } };
-  if (teamType !== undefined) {
-    updateData.teamType = Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []);
+    const updateData: any = { name, namaPanggilan, noHp, email, aktif };
+    if (roleId) updateData.role = { connect: { id: roleId } };
+    if (teamType !== undefined) {
+      updateData.teamType = Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []);
+    }
+    if (secondaryRoles !== undefined) {
+      updateData.secondaryRoles = Array.isArray(secondaryRoles) ? secondaryRoles : [];
+    }
+    if (shiftStart !== undefined) updateData.shiftStart = shiftStart;
+    if (shiftEnd !== undefined) updateData.shiftEnd = shiftEnd;
+    if (isLeadActive !== undefined) updateData.isLeadActive = isLeadActive;
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 12);
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      include: { role: true }
+    });
+
+    await recordLog((session.user as any).id, "Edit User", user.name, `Role: ${user.role?.name}`);
+
+    return NextResponse.json(user);
+  } catch (error: any) {
+    console.error("USER_PUT_ERROR:", error);
+    return NextResponse.json({ error: "Gagal edit user", details: error.message }, { status: 500 });
   }
-  if (secondaryRoles !== undefined) {
-    updateData.secondaryRoles = Array.isArray(secondaryRoles) ? secondaryRoles : [];
-  }
-  if (shiftStart !== undefined) updateData.shiftStart = shiftStart;
-  if (shiftEnd !== undefined) updateData.shiftEnd = shiftEnd;
-  if (isLeadActive !== undefined) updateData.isLeadActive = isLeadActive;
-  if (password) {
-    updateData.password = await bcrypt.hash(password, 12);
-  }
-
-  const user = await prisma.user.update({
-    where: { id },
-    data: updateData,
-    include: { role: true }
-  });
-
-  await recordLog((session.user as any).id, "Edit User", user.name, `Role: ${user.role?.name}`);
-
-  return NextResponse.json(user);
 }
 
 export async function DELETE(request: NextRequest) {

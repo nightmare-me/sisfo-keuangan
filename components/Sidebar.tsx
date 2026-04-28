@@ -97,9 +97,17 @@ export default function Sidebar() {
 
   // Bangun nav items dinamis berdasarkan semua role yang dimiliki
   const dynamicSpvItems: NavItem[] = [];
-  if (allRoles.includes("spv_cs"))         dynamicSpvItems.push({ href: "/spv-cs",         label: "Dashboard SPV CS",         icon: <BarChart2 size={16} /> });
-  if (allRoles.includes("spv_adv"))        dynamicSpvItems.push({ href: "/spv-adv",        label: "Dashboard SPV ADV",        icon: <BarChart2 size={16} /> });
-  if (allRoles.includes("spv_multimedia")) dynamicSpvItems.push({ href: "/spv-multimedia", label: "Dashboard SPV Multimedia",  icon: <Video size={16} /> });
+  const isAdmin = role?.toUpperCase() === "ADMIN";
+
+  if (isAdmin || allRoles.includes("spv_cs")) {
+    dynamicSpvItems.push({ href: "/spv-cs", label: "Dashboard SPV CS", icon: <BarChart2 size={16} /> });
+  }
+  if (isAdmin || allRoles.includes("spv_adv")) {
+    dynamicSpvItems.push({ href: "/spv-adv", label: "Dashboard SPV ADV", icon: <BarChart2 size={16} /> });
+  }
+  if (isAdmin || allRoles.includes("spv_multimedia")) {
+    dynamicSpvItems.push({ href: "/spv-multimedia", label: "Dashboard SPV Multimedia", icon: <Video size={16} /> });
+  }
 
   // Tambahkan akses menu ADV jika user punya secondary role advertiser
   const hasAdvAccess  = allRoles.includes("advertiser");

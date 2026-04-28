@@ -755,7 +755,6 @@ export default function UsersPage() {
                     );
                   })()}
                 </div>
-                </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-secondary" onClick={() => { setShowModal(false); setEditUser(null); }}>Batal</button>
                   <button id="btn-simpan-user" type="submit" className="btn btn-primary" disabled={saving}>{saving ? "Menyimpan..." : "👤 Simpan"}</button>

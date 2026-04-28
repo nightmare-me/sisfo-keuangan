@@ -71,10 +71,11 @@ export async function GET(request: NextRequest) {
     const dateFilter = { gte: startDate, lte: endDate };
 
     // 1. AGREGASI PEMASUKAN UTAMA (SANGAT CEPAT)
+    let totalAds = 0;
+    
     const [
       pemasukanAgg,
       pengeluaranAgg,
-      adsAgg,
       refundsAgg
     ] = await Promise.all([
       prisma.pemasukan.aggregate({
@@ -87,10 +88,6 @@ export async function GET(request: NextRequest) {
         _sum: { jumlah: true },
         _count: true
       }),
-      prisma.marketingAd.aggregate({
-        where: { tanggal: dateFilter },
-        _sum: { spent: true }
-      }),
       prisma.refund.aggregate({
         where: { 
           status: "APPROVED",
@@ -99,6 +96,18 @@ export async function GET(request: NextRequest) {
         _sum: { jumlah: true }
       })
     ]);
+
+    // Ambil data Ads secara terpisah agar jika tabelnya belum ada tidak merusak seluruh laporan
+    try {
+      const adsAgg = await prisma.marketingAd.aggregate({
+        where: { tanggal: dateFilter },
+        _sum: { spent: true }
+      });
+      totalAds = adsAgg._sum.spent ?? 0;
+    } catch (e) {
+      console.warn("MarketingAd table might not exist yet:", e);
+      totalAds = 0;
+    }
 
     // 2. GROUP BY UNTUK TABEL & GRAFIK (Efisien)
     const [
@@ -155,7 +164,6 @@ export async function GET(request: NextRequest) {
     const totalRefund = (refundsAgg._sum.jumlah || 0);
     const totalPemasukanNet = totalPemasukan - totalRefund;
     const totalPengeluaran = (pengeluaranAgg._sum.jumlah || 0);
-    const totalAds = adsAgg._sum.spent ?? 0;
     const labaBersih = totalPemasukanNet - totalPengeluaran - totalAds;
 
     // Hitung source breakdown

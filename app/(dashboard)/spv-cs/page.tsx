@@ -173,19 +173,16 @@ export default function SPVCSPage() {
                   background: "var(--surface-container-low)", 
                   fontWeight: 900, 
                   borderTop: "2px solid var(--ghost-border)",
-                  fontSize: 14
                 }}>
                   <td style={{ padding: "16px 24px" }}>TOTAL TIM</td>
-                  <td style={{ textAlign: "right" }}>{totalLeads}</td>
-                  <td style={{ textAlign: "right", color: "var(--success)" }}>{totalClosing}</td>
-                  <td style={{ textAlign: "right" }}>
-                     <span style={{ color: "var(--on-surface)", padding: "4px 10px", borderRadius: 20, background: "white", border: "1px solid var(--ghost-border)" }}>
-                        {cr}%
-                     </span>
+                  <td style={{ textAlign: "right", padding: "16px 24px" }}>{totalLeads}</td>
+                  <td style={{ textAlign: "right", color: "var(--success)", padding: "16px 24px" }}>{totalClosing}</td>
+                  <td style={{ textAlign: "right", padding: "16px 24px" }}>
+                     <span style={{ color: "var(--danger)", fontWeight: 800 }}>{cr}%</span>
                   </td>
-                  <td style={{ textAlign: "right", color: "var(--primary)" }}>{formatCurrency(totalOmset)}</td>
-                  <td style={{ textAlign: "right", color: "var(--success)" }}>{formatCurrency(stats.reduce((a, b) => a + (b.totalFee ?? 0), 0))}</td>
-                  <td></td>
+                  <td style={{ textAlign: "right", color: "var(--primary)", padding: "16px 24px" }}>{formatCurrency(totalOmset)}</td>
+                  <td style={{ textAlign: "right", color: "var(--success)", padding: "16px 24px" }}>{formatCurrency(stats.reduce((a, b) => a + (b.totalFee ?? 0), 0))}</td>
+                  <td style={{ padding: "16px 24px" }}></td>
                 </tr>
               </tfoot>
             )}

@@ -173,18 +173,17 @@ export default function SPVADVPage() {
                   background: "var(--surface-container-low)", 
                   fontWeight: 900, 
                   borderTop: "2px solid var(--ghost-border)",
-                  fontSize: 14
                 }}>
                   <td colSpan={2} style={{ padding: "16px 24px" }}>TOTAL TIM</td>
-                  <td style={{ textAlign: "right", color: "var(--danger)" }}>{formatCurrency(totalSpent)}</td>
-                  <td style={{ textAlign: "right", color: "var(--success)" }}>{totalLeads}</td>
-                  <td style={{ textAlign: "right" }}>
-                    <span style={{ color: "var(--on-surface)", padding: "4px 10px", borderRadius: 20, background: "white", border: "1px solid var(--ghost-border)" }}>
+                  <td style={{ textAlign: "right", color: "var(--danger)", padding: "16px 24px" }}>{formatCurrency(totalSpent)}</td>
+                  <td style={{ textAlign: "right", color: "var(--success)", padding: "16px 24px" }}>{totalLeads}</td>
+                  <td style={{ textAlign: "right", padding: "16px 24px" }}>
+                    <span style={{ color: "var(--on-surface)", fontWeight: 800 }}>
                       {formatCurrency(avgCPL)}
                     </span>
                   </td>
-                  <td style={{ textAlign: "right", color: "var(--primary)" }}>{formatCurrency(totalFee)}</td>
-                  <td></td>
+                  <td style={{ textAlign: "right", color: "var(--primary)", padding: "16px 24px" }}>{formatCurrency(totalFee)}</td>
+                  <td style={{ padding: "16px 24px" }}></td>
                 </tr>
               </tfoot>
             )}

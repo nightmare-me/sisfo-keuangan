@@ -2,11 +2,17 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Precision TOEFL P/L & Smart Expense Deduction (v4.85) 🚀 (TERBARU!)
-*   **Precision TOEFL Profit Sharing**: Penyesuaian total rumus perhitungan laba bersih TOEFL sesuai standar P/L profesional (Pic 1 Alignment).
-*   **Smart Expense Tagging**: Sistem kini otomatis mendeteksi dan memotong pengeluaran khusus (Gaji Staf TOEFL, Operasional TOEFL, dll) dari Laba Kotor proyek sebelum dilakukan pembagian hasil 50/50.
-*   **Automated Expense Deductions**: Cukup gunakan kata kunci "TOEFL" pada kategori pengeluaran, dan mesin payroll akan otomatis melakukan kalkulasi beban proyek secara *real-time*.
-*   **Dynamic Role-Based Sharing**: Integrasi penuh antara struktur organisasi (CEO, COO, Finance, dll) dengan matriks pembagian laba yang bisa diatur mandiri via menu Settings.
+## 📢 Fitur Baru: Multi-Role Architecture & SPV Intelligence (v5.0) 🚀 (TERBARU!)
+*   **True Multi-Role System**: Implementasi arsitektur role ganda. Seorang user kini bisa memiliki satu Role Utama (misal: SPV Multimedia) sekaligus Role Tambahan (misal: Talent Live atau Advertiser) tanpa perlu berganti akun.
+*   **Supervisor Dashboards (Three Pillars)**:
+    *   **SPV CS Dashboard**: Pantauan *real-time* seluruh leads, closing, conversion rate, dan omset dari tiap anggota tim CS di bawahnya.
+    *   **SPV ADV Dashboard**: Monitoring efisiensi iklan (Spent, Leads, CPL) dari seluruh advertiser tim marketing.
+    *   **SPV Multimedia Dashboard**: Pelacakan performa Talent Live (Durasi Live, Leads yang didapat, hingga Omset yang dihasilkan).
+*   **Admin Omni-Portal**: Akses "Dewa" untuk Admin agar dapat melihat seluruh Dashboard Supervisor dalam satu kategori menu terpusat.
+*   **Refined Reporting UI**: Desain ulang tabel laporan dengan sistem *Badge Pills* yang rapi dan *Summary Footer* yang presisi untuk audit cepat performa tim.
+*   **Live Talent Tracking**: Modul input jam kerja khusus untuk Talent Live yang terintegrasi langsung dengan database penggajian.
+
+## 📢 Fitur Sebelumnya: Precision TOEFL P/L & Smart Expense Deduction (v4.85) 🚀
 
 ## 📢 Fitur Sebelumnya: Premium Teacher & Student Experience (v4.80) 🚀
 
@@ -89,4 +95,4 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 
 ---
 *Created with ❤️ by Antigravity (Powered by Google Deepmind) for Speaking Partner Premium Operations.*
-*Sistem v4.6 Aktif - Performa & Stabilitas Big Data Terjamin. Selamat melayani siswa, Pak Muis! ☕*
+*Sistem v5.0 Aktif - Arsitektur Multi-Role & SPV Dashboards Online. Selamat beristirahat, Pak Muis! ☕*

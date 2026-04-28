@@ -2,14 +2,13 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Premium Teacher & Student Experience (v4.80) 🚀 (TERBARU!)
-*   **Modernized Teacher Portal**: Perombakan total antarmuka portal pengajar dengan desain *Glassmorphism* dan *KPI-driven* Dashboard.
-*   **Payroll Transparency Dashboard**: Pengajar kini dapat memantau estimasi **Take Home Pay** (Gaji Pokok + Tunjangan + Fee Sesi) secara *real-time* langsung dari Dashboard mereka.
-*   **Dynamic Learning Progress**: Visualisasi progress pembelajaran menggunakan *Progress Bar* otomatis untuk setiap kelas aktif guna memantau ketercapaian modul.
-*   **New Student Experience**: Dashboard siswa kini dinamis; menampilkan rata-rata nilai (GPA) dan tingkat kehadiran yang dihitung otomatis dari input absensi pengajar.
-*   **Full Grade Transparency**: Portal siswa kini dilengkapi halaman rincian nilai per sesi, memungkinkan siswa melihat feedback tutor dan rincian skor di setiap pertemuan.
-*   **Teacher-Student Material Sync**: Pengajar dapat mengunggah link materi/modul yang secara otomatis terdistribusi ke sidebar materi pada portal siswa terkait.
-*   **Refactored RBAC (Roles & Access)**: Pemisahan izin akses administratif (Data Pengajar) dan operasional (Kelas Saya) untuk menjaga kerahasiaan data sekaligus kemudahan navigasi.
+## 📢 Fitur Baru: Precision TOEFL P/L & Smart Expense Deduction (v4.85) 🚀 (TERBARU!)
+*   **Precision TOEFL Profit Sharing**: Penyesuaian total rumus perhitungan laba bersih TOEFL sesuai standar P/L profesional (Pic 1 Alignment).
+*   **Smart Expense Tagging**: Sistem kini otomatis mendeteksi dan memotong pengeluaran khusus (Gaji Staf TOEFL, Operasional TOEFL, dll) dari Laba Kotor proyek sebelum dilakukan pembagian hasil 50/50.
+*   **Automated Expense Deductions**: Cukup gunakan kata kunci "TOEFL" pada kategori pengeluaran, dan mesin payroll akan otomatis melakukan kalkulasi beban proyek secara *real-time*.
+*   **Dynamic Role-Based Sharing**: Integrasi penuh antara struktur organisasi (CEO, COO, Finance, dll) dengan matriks pembagian laba yang bisa diatur mandiri via menu Settings.
+
+## 📢 Fitur Sebelumnya: Premium Teacher & Student Experience (v4.80) 🚀
 
 ---
 

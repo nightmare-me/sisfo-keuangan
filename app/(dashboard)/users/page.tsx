@@ -78,7 +78,7 @@ export default function UsersPage() {
       limit: String(limit),
       search,
       status: filterStatus,
-      role: filterRole
+      role: filterRole.toLowerCase() // Kirim lowercase agar cocok dengan slug di DB
     });
 
     Promise.all([
@@ -88,18 +88,23 @@ export default function UsersPage() {
       setData(Array.isArray(usersData.data) ? usersData.data : []);
       setTotal(usersData.total || 0);
       setTotalPages(usersData.totalPages || 1);
-      setRoles(Array.isArray(rolesData) ? rolesData : []);
+      // Inject count dari API untuk akurasi (bukan dari paginated data)
+      const rolesWithCount = Array.isArray(rolesData) ? rolesData.map((r: any) => ({
+        ...r,
+        count: usersData.roleCounts?.[r.slug] ?? null
+      })) : [];
+      setRoles(rolesWithCount);
       setLoading(false);
     });
   }
 
   useEffect(() => { fetchData(); }, [page, limit, filterRole, filterStatus]);
 
-  // Debounced search
+  // Debounced search — reset ke halaman 1 dulu
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPage(1);
-      fetchData();
+      if (page !== 1) setPage(1);
+      else fetchData();
     }, 500);
     return () => clearTimeout(timer);
   }, [search]);
@@ -107,7 +112,7 @@ export default function UsersPage() {
   const summary = roles.map(r => ({ 
     role: r.slug.toUpperCase(), 
     name: r.name,
-    count: data.filter(u => u.roleId === r.id && u.aktif).length 
+    count: r.count ?? data.filter(u => u.roleId === r.id && u.aktif).length 
   }));
 
   function openEdit(user: any) {
@@ -649,6 +654,7 @@ export default function UsersPage() {
                                   { val: "ADV_REGULAR", label: "Adv Regular" },
                                   { val: "ADV_PART_TIME", label: "Adv Part Time" },
                                   { val: "ADV_PROJECT", label: "Adv Project" },
+                                  { val: "ADV_TOEFL", label: "Adv TOEFL" },
                                 ].map(t => (
                                   <label key={t.val} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
                                     <input 

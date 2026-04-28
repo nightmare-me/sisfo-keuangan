@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const [users, total] = await Promise.all([
+    const [users, total, roles] = await Promise.all([
       prisma.user.findMany({
         where,
         include: { role: true, karyawanProfile: true },
@@ -58,7 +58,11 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
       }),
-      prisma.user.count({ where })
+      prisma.user.count({ where }),
+      // Hitung jumlah user per role untuk KPI card (tidak terpengaruh filter & pagination)
+      prisma.role.findMany({
+        include: { _count: { select: { users: { where: { aktif: true } } } } }
+      })
     ]);
     
     const formattedUsers = users.map((u: any) => ({
@@ -67,11 +71,16 @@ export async function GET(request: NextRequest) {
       roleName: u.role?.name || "No Role"
     }));
 
+    // Buat map { slug: count } untuk dikirim ke frontend
+    const roleCounts: Record<string, number> = {};
+    roles.forEach((r: any) => { roleCounts[r.slug] = r._count.users; });
+
     return NextResponse.json({
       data: formattedUsers,
       total,
       page,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
+      roleCounts
     });
   } catch (error: any) {
     console.error("USERS_GET_ERROR:", error);

@@ -127,7 +127,11 @@ export async function GET(request: NextRequest) {
       const profile = emp.karyawanProfile!;
       const posisi = profile.posisi || "";
       const roleSlug = emp.role?.slug?.toLowerCase();
+      // Gabungkan semua role (primary + secondary) untuk logika fee
+      const allRoles: string[] = [roleSlug, ...(emp.secondaryRoles || []).map((r: string) => r.toLowerCase())].filter(Boolean);
       let totalFee = 0;
+      let feeCS = 0;
+      let feeAdv = 0;
       let totalBonus = 0;
       let extraGaji = 0;
 
@@ -135,47 +139,49 @@ export async function GET(request: NextRequest) {
       const totalJam = emp.liveSessions.reduce((s: number, l: any) => s + l.durasi, 0);
       extraGaji += calculateGajiLive(totalJam, config);
 
-      // B. Hitung Fee CS (Jika Role CS)
-      if (roleSlug === "cs") {
-        emp.pemasukan.forEach((p: any) => {
-          // Tentukan kategori fee berdasarkan konteks pendaftaran/program
-          let feeCategory = "CS_REGULAR";
-          const progName = p.program?.nama?.toLowerCase() || "";
-          
-          if (p.isRO) feeCategory = "CS_RO";
-          else if (progName.includes("toefl") || progName.includes("ielts") || progName.includes("elite") || progName.includes("master")) feeCategory = "CS_TOEFL";
-          else if (progName.includes("live")) feeCategory = "CS_LIVE";
-          else if (progName.includes("affiliate")) feeCategory = "CS_AFFILIATE";
+      // B. Hitung Fee CS (Jika punya role cs — primary ATAU secondary)
+      if (allRoles.includes("cs") || allRoles.includes("spv_cs")) {
+        // SPV CS tidak input closing sendiri, skip fee CS untuk spv_cs pure
+        if (allRoles.includes("cs")) {
+          emp.pemasukan.forEach((p: any) => {
+            let feeCategory = "CS_REGULAR";
+            const progName = p.program?.nama?.toLowerCase() || "";
+            if (p.isRO) feeCategory = "CS_RO";
+            else if (progName.includes("toefl") || progName.includes("ielts") || progName.includes("elite") || progName.includes("master")) feeCategory = "CS_TOEFL";
+            else if (progName.includes("live")) feeCategory = "CS_LIVE";
+            else if (progName.includes("affiliate")) feeCategory = "CS_AFFILIATE";
 
-          // Extract product type from keterangan if exists
-          const ket = p.keterangan || "";
-          const typeMatch = ket.match(/\[TYPE:(.*?)\]/);
-          const extractedType = typeMatch ? typeMatch[1] : (p.program?.kategoriFee || "");
+            const ket = p.keterangan || "";
+            const typeMatch = ket.match(/\[TYPE:(.*?)\]/);
+            const extractedType = typeMatch ? typeMatch[1] : (p.program?.kategoriFee || "");
 
-          totalFee += calculateCSFee(
-            feeCategory as any,
-            extractedType,
-            p.hargaFinal,
-            p.isRO,
-            0,
-            p.program || undefined,
-            config
-          );
-        });
+            feeCS += calculateCSFee(
+              feeCategory as any,
+              extractedType,
+              p.hargaFinal,
+              p.isRO,
+              0,
+              p.program || undefined,
+              config
+            );
+          });
+        }
       }
 
-      // C. Hitung Fee Advertiser (Berdasarkan RATA-RATA CPL Periode Ini)
-      if (roleSlug === "advertiser" || posisi.toUpperCase().includes("ADV")) {
+      // C. Hitung Fee Advertiser (Jika punya role advertiser/spv_adv — primary ATAU secondary)
+      if (allRoles.includes("advertiser") || allRoles.includes("spv_adv") || posisi.toUpperCase().includes("ADV")) {
         const totalSpent = emp.marketingAds.reduce((s: number, p: any) => s + p.spent, 0);
         const totalLeads = emp.marketingAds.reduce((s: number, p: any) => s + p.leads, 0);
         
         if (totalLeads > 0) {
           const avgCPL = totalSpent / totalLeads;
-          // Gunakan teamType pertama sebagai kategori (atau fallback ke REGULAR)
-          const advCat = (Array.isArray(emp.teamType) ? emp.teamType[0] : emp.teamType) || 'ADV_REGULAR';
-          totalFee = calculateAdvFee(advCat as AdvCategory, avgCPL, totalLeads);
+          const advCat = (Array.isArray(emp.teamType) ? emp.teamType.find((t: string) => t.startsWith("ADV_")) : emp.teamType) || 'ADV_REGULAR';
+          feeAdv = calculateAdvFee(advCat as AdvCategory, avgCPL, totalLeads);
         }
       }
+
+      // Gabungkan semua fee
+      totalFee = feeCS + feeAdv;
 
       // D. Bonus Omset Talent
       const omsetTalent = emp.pemasukanTalent.reduce((s: number, p: any) => s + p.hargaFinal, 0);
@@ -197,9 +203,12 @@ export async function GET(request: NextRequest) {
         id: emp.id,
         name: emp.name,
         posisi,
+        roles: allRoles, // Kirim semua role ke frontend untuk tampilan
         gapok: profile.gajiPokok,
         tunjangan: profile.tunjangan,
         fee: totalFee,
+        feeCS,
+        feeAdv,
         bonus: totalBonus,
         gajiLive: extraGaji,
         total: subtotal,

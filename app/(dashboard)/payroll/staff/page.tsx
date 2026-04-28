@@ -182,13 +182,31 @@ export default function StaffPayrollPage() {
                 <tr key={item.id}>
                   <td>
                     <div style={{ fontWeight: 800 }}>{item.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.id.slice(-6)}</div>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                      {(item.roles || [item.posisi]).map((r: string) => (
+                        <span key={r} style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
+                          background: r === 'cs' ? 'rgba(59,130,246,0.1)' : r === 'advertiser' ? 'rgba(139,92,246,0.1)' : r.includes('spv') ? 'rgba(234,88,12,0.1)' : 'var(--surface-container)',
+                          color: r === 'cs' ? '#3b82f6' : r === 'advertiser' ? '#8b5cf6' : r.includes('spv') ? '#ea580c' : 'var(--text-muted)'
+                        }}>{r.toUpperCase()}</span>
+                      ))}
+                    </div>
                   </td>
                   <td>
                     <span className="badge badge-muted" style={{ fontSize: 10 }}>{item.posisi || "Staf"}</span>
                   </td>
                   <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(item.gapok + item.tunjangan)}</td>
-                  <td style={{ textAlign: 'right', color: 'var(--info)' }}>{formatCurrency(item.fee)}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    {/* Tampilkan breakdown fee CS+ADV jika user merangkap */}
+                    {(item.feeCS > 0 && item.feeAdv > 0) ? (
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{formatCurrency(item.fee)}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>CS: {formatCurrency(item.feeCS)}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>ADV: {formatCurrency(item.feeAdv)}</div>
+                      </div>
+                    ) : (
+                      <span style={{ color: 'var(--info)', fontWeight: 700 }}>{formatCurrency(item.fee)}</span>
+                    )}
+                  </td>
                   <td style={{ textAlign: 'right', color: 'var(--success)' }}>
                     <div style={{ fontWeight: 700 }}>{formatCurrency(item.bonus)}</div>
                   </td>
@@ -301,10 +319,30 @@ export default function StaffPayrollPage() {
 
                    <div className="card" style={{ background: 'rgba(59,130,246,0.05)' }}>
                       <div style={{ fontSize: 12, color: 'var(--info)', marginBottom: 12 }}>KINERJA & VARIABEL</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                         <span>Fee (Sales/Ads)</span>
-                         <span style={{ fontWeight: 700 }}>{formatCurrency(showDetail.fee)}</span>
-                      </div>
+                      {(showDetail.feeCS > 0) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                             <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>CS</span>
+                             Fee Closing
+                           </span>
+                           <span style={{ fontWeight: 700, color: '#3b82f6' }}>{formatCurrency(showDetail.feeCS)}</span>
+                        </div>
+                      )}
+                      {(showDetail.feeAdv > 0) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                             <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 6px', borderRadius: 4, background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>ADV</span>
+                             Fee Iklan
+                           </span>
+                           <span style={{ fontWeight: 700, color: '#8b5cf6' }}>{formatCurrency(showDetail.feeAdv)}</span>
+                        </div>
+                      )}
+                      {(!showDetail.feeCS && !showDetail.feeAdv) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                           <span>Fee (Sales/Ads)</span>
+                           <span style={{ fontWeight: 700 }}>{formatCurrency(showDetail.fee)}</span>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                          <span>Gaji Live ({showDetail.details.jamLive} jam)</span>
                          <span style={{ fontWeight: 700 }}>{formatCurrency(showDetail.gajiLive)}</span>

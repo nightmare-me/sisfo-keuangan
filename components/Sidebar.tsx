@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { getInitials, hasPermission } from "@/lib/utils";
+import { getAllRoles, hasRole, ROLE_CONFIG } from "@/lib/roles";
 import { 
   Menu,
   LayoutDashboard, 
@@ -28,7 +29,9 @@ import {
   Contact,
   ShieldCheck,
   DollarSign,
-  ChevronDown
+  ChevronDown,
+  Video,
+  BarChart2
 } from "lucide-react";
 
 interface NavItem {
@@ -90,11 +93,42 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const role = (session?.user as any)?.role;
   const name = session?.user?.name ?? "User";
-  
-  // Track expanded groups
+  const allRoles = getAllRoles(session);
+
+  // Bangun nav items dinamis berdasarkan semua role yang dimiliki
+  const dynamicSpvItems: NavItem[] = [];
+  if (allRoles.includes("spv_cs"))         dynamicSpvItems.push({ href: "/spv-cs",         label: "Dashboard SPV CS",         icon: <BarChart2 size={16} /> });
+  if (allRoles.includes("spv_adv"))        dynamicSpvItems.push({ href: "/spv-adv",        label: "Dashboard SPV ADV",        icon: <BarChart2 size={16} /> });
+  if (allRoles.includes("spv_multimedia")) dynamicSpvItems.push({ href: "/spv-multimedia", label: "Dashboard SPV Multimedia",  icon: <Video size={16} /> });
+
+  // Tambahkan akses menu ADV jika user punya secondary role advertiser
+  const hasAdvAccess  = allRoles.includes("advertiser");
+  const hasTalentAccess = allRoles.includes("talent") || allRoles.includes("spv_multimedia");
+
+  // Merge nav items: tambah dynamic items ke group yang sesuai
+  const mergedNavItems: NavGroup[] = [
+    ...navItems.map(g => {
+      if (g.group === "KEUANGAN") {
+        const extraItems: NavItem[] = [];
+        if (hasAdvAccess && !g.items.find(i => i.href === "/ads")) {
+          extraItems.push({ href: "/ads", label: "Manajemen Iklan", icon: <Megaphone size={16} />, permission: "ads_spent:view" });
+        }
+        return { ...g, items: [...g.items, ...extraItems] };
+      }
+      if (g.group === "OPERASIONAL") {
+        const extraItems: NavItem[] = [];
+        if (hasTalentAccess && !g.items.find(i => i.href === "/staff/live")) {
+          extraItems.push({ href: "/staff/live", label: "Input Jam Live", icon: <Clock size={16} />, permission: "live_tracking:view" });
+        }
+        return { ...g, items: [...g.items, ...extraItems] };
+      }
+      return g;
+    }),
+    ...(dynamicSpvItems.length > 0 ? [{ group: "SUPERVISOR", items: dynamicSpvItems }] : []),
+  ];
+
   const [expandedGroups, setExpandedGroups] = useState<string[]>(() => {
-    // Default open: the group that contains the active path
-    const activeGroup = navItems.find(g => 
+    const activeGroup = mergedNavItems.find(g => 
       g.items.some(i => pathname === i.href || pathname.startsWith(i.href + "/"))
     );
     return activeGroup ? [activeGroup.group] : ["UTAMA"];
@@ -147,7 +181,7 @@ export default function Sidebar() {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((group) => {
+          {mergedNavItems.map((group) => {
             const filteredItems = group.items.filter((item) => {
               if (item.permission) {
                 return hasPermission(session, item.permission);
@@ -211,32 +245,40 @@ export default function Sidebar() {
           })}
         </nav>
 
-      <div className="sidebar-footer">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Link href="/profile" className="user-info" style={{ flex: 1, textDecoration: 'none' }}>
-            <div className="user-avatar">
-              {getInitials(name)}
-            </div>
-            <div className="user-details" style={{ flex: 1, minWidth: 0 }}>
-              <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", fontSize: 13 }}>
-                {name}
-              </strong>
-              <span className={`badge ${getRoleBadgeClass(role)}`} style={{ marginTop: 4, textTransform: 'uppercase' }}>
-                {role}
-              </span>
-            </div>
-          </Link>
-          <button 
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="btn btn-secondary btn-icon" 
-            style={{ width: 42, height: 42, borderRadius: 12, padding: 0 }}
-            title="Keluar dari Sistem"
-          >
-            <LogOut size={18} />
-          </button>
+        <div className="sidebar-footer">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Link href="/profile" className="user-info" style={{ flex: 1, textDecoration: 'none' }}>
+              <div className="user-avatar">
+                {getInitials(name)}
+              </div>
+              <div className="user-details" style={{ flex: 1, minWidth: 0 }}>
+                <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", fontSize: 13 }}>
+                  {name}
+                </strong>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                  <span className={`badge ${getRoleBadgeClass(role?.toLowerCase())}`} style={{ textTransform: 'uppercase', fontSize: 9 }}>
+                    {role}
+                  </span>
+                  {/* Badge role tambahan */}
+                  {((session?.user as any)?.secondaryRoles || []).map((sr: string) => (
+                    <span key={sr} style={{ fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--primary-bg)', color: 'var(--primary)' }}>
+                      +{sr.replace('spv_', 'SPV ').toUpperCase()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </Link>
+            <button 
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="btn btn-secondary btn-icon" 
+              style={{ width: 42, height: 42, borderRadius: 12, padding: 0 }}
+              title="Keluar dari Sistem"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
-      </div>
-    </aside>
-    </>
+      </aside>
+      </>
   );
 }

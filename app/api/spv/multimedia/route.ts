@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       };
     }
     talentMap[id].totalSesi++;
-    talentMap[id].totalJam += session.durasiJam ?? 0;
+    talentMap[id].totalJam += session.durasi ?? 0;
   }
 
   // Tambahkan data leads & omset dari pemasukan (talentId)

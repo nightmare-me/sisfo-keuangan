@@ -75,7 +75,6 @@ export async function GET(request: NextRequest) {
       pemasukanAgg,
       pengeluaranAgg,
       adsAgg,
-      perfAgg,
       refundsAgg
     ] = await Promise.all([
       prisma.pemasukan.aggregate({
@@ -88,24 +87,14 @@ export async function GET(request: NextRequest) {
         _sum: { jumlah: true },
         _count: true
       }),
-      prisma.spentAds.aggregate({
-        where: { 
-          tanggal: dateFilter,
-          OR: [
-            { keterangan: { equals: null } },
-            { keterangan: { not: { contains: "[Sync Otomatis]" } } }
-          ]
-        },
-        _sum: { jumlah: true }
-      }),
-      prisma.adPerformance.aggregate({
-        where: { date: dateFilter },
+      prisma.marketingAd.aggregate({
+        where: { tanggal: dateFilter },
         _sum: { spent: true }
       }),
       prisma.refund.aggregate({
         where: { 
           status: "APPROVED",
-          pemasukan: { tanggal: dateFilter } // Hanya refund dari pemasukan periode ini
+          pemasukan: { tanggal: dateFilter }
         },
         _sum: { jumlah: true }
       })
@@ -166,7 +155,7 @@ export async function GET(request: NextRequest) {
     const totalRefund = (refundsAgg._sum.jumlah || 0);
     const totalPemasukanNet = totalPemasukan - totalRefund;
     const totalPengeluaran = (pengeluaranAgg._sum.jumlah || 0);
-    const totalAds = (adsAgg._sum.jumlah || 0) + (perfAgg._sum.spent || 0);
+    const totalAds = adsAgg._sum.spent ?? 0;
     const labaBersih = totalPemasukanNet - totalPengeluaran - totalAds;
 
     // Hitung source breakdown

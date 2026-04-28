@@ -48,6 +48,32 @@ export default async function SiswaDashboard() {
   const kelasAktif = siswa.pendaftaran.filter(p => p.aktif);
   const riwayatKelas = siswa.pendaftaran.filter(p => !p.aktif);
 
+  // --- LOGIKA PERHITUNGAN STATS ---
+  let totalHadir = 0;
+  let totalSesi = 0;
+  let totalPoints = 0;
+  let gradedSesi = 0;
+
+  siswa.pendaftaran.forEach(p => {
+    p.kelas.sesiKelas.forEach(s => {
+      const abs = s.absensi[0]; // Karena sudah difilter where siswaId
+      if (abs) {
+        totalSesi++;
+        if (abs.status === "HADIR") totalHadir++;
+        
+        if (abs.nilaiHuruf) {
+          const points: Record<string, number> = { "A": 4, "B": 3, "C": 2, "D": 1, "E": 0 };
+          totalPoints += points[abs.nilaiHuruf] ?? 0;
+          gradedSesi++;
+        }
+      }
+    });
+  });
+
+  const attendanceRate = totalSesi > 0 ? Math.round((totalHadir / totalSesi) * 100) : 0;
+  const avgGpa = gradedSesi > 0 ? (totalPoints / gradedSesi) : 0;
+  const gpaLabel = avgGpa >= 3.5 ? "A" : avgGpa >= 3 ? "B" : avgGpa >= 2 ? "C" : avgGpa >= 1 ? "D" : gradedSesi > 0 ? "E" : "—";
+
   return (
     <div className="page-container">
       {/* Header Section */}
@@ -87,7 +113,7 @@ export default async function SiswaDashboard() {
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={14} /> {p.kelas.hari}, {p.kelas.jam}</span>
                         </div>
                       </div>
-                      <Link href={`/siswa/kelas/${p.kelas.id}`} className="btn btn-secondary">
+                      <Link href={`/siswa/kelas/${p.id}`} className="btn btn-secondary">
                         Detail Kelas
                       </Link>
                     </div>
@@ -148,7 +174,7 @@ export default async function SiswaDashboard() {
                   </div>
                   <span style={{ fontSize: 14 }}>Rata-rata Nilai</span>
                 </div>
-                <span style={{ fontWeight: 800, fontSize: 18 }}>A-</span>
+                <span style={{ fontWeight: 800, fontSize: 18 }}>{gpaLabel}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -157,7 +183,7 @@ export default async function SiswaDashboard() {
                   </div>
                   <span style={{ fontSize: 14 }}>Kehadiran</span>
                 </div>
-                <span style={{ fontWeight: 800, fontSize: 18 }}>95%</span>
+                <span style={{ fontWeight: 800, fontSize: 18 }}>{attendanceRate}%</span>
               </div>
             </div>
           </div>

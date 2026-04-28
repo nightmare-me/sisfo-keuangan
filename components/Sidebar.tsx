@@ -60,7 +60,7 @@ const navItems: NavGroup[] = [
   ]},
   { group: "AKADEMIK", items: [
     { href: "/siswa", label: "Siswa", icon: <Users size={16} />, permission: "siswa:view" },
-    { href: "/akademik/pengajar", label: "Data Pengajar", icon: <GraduationCap size={16} />, permission: "pengajar:view" },
+    { href: "/akademik/pengajar", label: "Data Pengajar", icon: <GraduationCap size={16} />, permission: "pengajar:manage" },
     { href: "/kelas", label: "Manajemen Kelas", icon: <BookOpen size={16} />, permission: "kelas:view" },
     { href: "/program", label: "Produk / Program", icon: <Target size={16} />, permission: "program:view" },
     { href: "/gaji", label: "Payroll Pengajar", icon: <Wallet size={16} />, permission: "payroll_tutor:view" },

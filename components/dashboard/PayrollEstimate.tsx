@@ -19,7 +19,21 @@ export default function PayrollEstimate() {
   }, []);
 
   if (loading) return <div className="skeleton" style={{ height: 160, borderRadius: 24 }} />;
-  if (!data || !Array.isArray(data.items) || data.items.length === 0) return null;
+  
+  // Jika tidak ada data sama sekali, tampilkan placeholder yang tetap cantik
+  if (!data || !Array.isArray(data.items) || data.items.length === 0) {
+    return (
+      <div className="card glass" style={{ 
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
+        border: '1px solid var(--border-default)',
+        padding: '24px', textAlign: 'center'
+      }}>
+        <Wallet size={32} style={{ color: 'var(--brand-primary-light)', marginBottom: 12, opacity: 0.5 }} />
+        <div style={{ fontWeight: 700, fontSize: 16 }}>Estimasi Payroll Belum Tersedia</div>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>Data gaji atau honor Anda bulan ini belum tercatat di sistem.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="card glass" style={{ 

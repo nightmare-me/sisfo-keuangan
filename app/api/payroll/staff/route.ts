@@ -10,8 +10,10 @@ import {
   calculateBonusMultimediaEksternal,
   calculateSharingTOEFL,
   calculateBonusGrossProfit,
-  calculateGajiLive
+  calculateGajiLive,
+  AdvCategory
 } from "@/lib/payroll";
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.refund.findMany({ where: { status: "APPROVED", createdAt: { gte: dayStart, lte: dayEnd } } }),
       prisma.pengeluaran.findMany({ where: { tanggal: { gte: dayStart, lte: dayEnd } } }),
-      prisma.spentAds.aggregate({ where: { tanggal: { gte: dayStart, lte: dayEnd } }, _sum: { jumlah: true } })
+      prisma.marketingAd.aggregate({ where: { tanggal: { gte: dayStart, lte: dayEnd } }, _sum: { spent: true } })
     ]);
 
     const totalRefund = approvedRefunds.reduce((s: number, r: any) => s + r.jumlah, 0);
@@ -79,15 +81,15 @@ export async function GET(request: NextRequest) {
       );
     });
 
-    const toeflAdsSpent = adsAll._sum.jumlah || 0;
+    const toeflAdsSpent = adsAll._sum.spent ?? 0;
 
     const toeflTeam = await prisma.user.findMany({ 
       where: { teamType: { has: "ADV_TOEFL" } }, 
-      include: { adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } } } 
+      include: { marketingAds: { where: { tanggal: { gte: dayStart, lte: dayEnd } } } } 
     });
     
     toeflTeam.forEach((adv: any) => {
-       adv.adPerformances.forEach((perf: any) => {
+       adv.marketingAds.forEach((perf: any) => {
          toeflFeeAdv += calculateAdvFee("ADV_TOEFL" as any, perf.cpl, perf.leads);
        });
     });
@@ -102,7 +104,7 @@ export async function GET(request: NextRequest) {
         include: { 
           role: true,
           karyawanProfile: true,
-          adPerformances: { where: { date: { gte: dayStart, lte: dayEnd } } },
+          marketingAds: { where: { tanggal: { gte: dayStart, lte: dayEnd } } },
           liveSessions: { where: { tanggal: { gte: dayStart, lte: dayEnd } } },
           pemasukan: { where: { tanggal: { gte: dayStart, lte: dayEnd } }, include: { program: true } },
           pemasukanTalent: { where: { tanggal: { gte: dayStart, lte: dayEnd } } }
@@ -157,8 +159,8 @@ export async function GET(request: NextRequest) {
 
       // C. Hitung Fee Advertiser (Berdasarkan RATA-RATA CPL Periode Ini)
       if (roleSlug === "advertiser" || posisi.toUpperCase().includes("ADV")) {
-        const totalSpent = emp.adPerformances.reduce((s: number, p: any) => s + p.spent, 0);
-        const totalLeads = emp.adPerformances.reduce((s: number, p: any) => s + p.leads, 0);
+        const totalSpent = emp.marketingAds.reduce((s: number, p: any) => s + p.spent, 0);
+        const totalLeads = emp.marketingAds.reduce((s: number, p: any) => s + p.leads, 0);
         
         if (totalLeads > 0) {
           const avgCPL = totalSpent / totalLeads;

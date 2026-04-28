@@ -2,14 +2,16 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Student Portal & Smart Ads Fee (v4.70) 🚀 (TERBARU!)
-*   **Automated Student Portal**: Setiap Lead yang dikonversi menjadi siswa kini otomatis memiliki akun login. Menggunakan **Nomor Siswa** sebagai ID Login dan **Nomor WhatsApp** sebagai password default.
-*   **WhatsApp Portal Access**: Tombol "Kirim Akses" di CRM memudahkan CS mengirim detail login siswa (Link Portal, ID, & Password) dengan sekali klik via WhatsApp.
-*   **Average CPL Payroll Logic**: Revisi mesin penggajian advertiser; bonus kini dihitung berdasarkan **Rata-Rata CPL sebulan** (Total Spent / Total Leads) untuk keadilan performa yang lebih akurat.
-*   **Advertiser Tiering Separation**: Pemisahan ambang batas (threshold) CPL antara kategori `ADV_PROJECT` (Rp 5.000) dan `ADV_TOEFL` (Rp 15.000) sesuai kebijakan operasional terbaru.
-*   **Ads UI Enhancements**: Penambahan kolom **Est. Fee Adv** di tabel iklan untuk simulasi bonus harian, serta perbaikan visual pada filter platform dan kartu ringkasan (Summary Cards).
-*   **Advanced CRM Bulk Import**: Format import CSV CRM kini mendukung 9+ kolom lengkap termasuk Status, CS, Nominal, Tanggal Closing, hingga Keterangan tambahan.
-*   **Smart KPI Accuracy**: Perbaikan logika double-counting pada dashboard dan sinkronisasi otomatis "Tanggal Join Siswa" dengan tanggal transaksi pertama (Retroactive Sync).
+## 📢 Fitur Baru: Premium Teacher & Student Experience (v4.80) 🚀 (TERBARU!)
+*   **Modernized Teacher Portal**: Perombakan total antarmuka portal pengajar dengan desain *Glassmorphism* dan *KPI-driven* Dashboard.
+*   **Payroll Transparency Dashboard**: Pengajar kini dapat memantau estimasi **Take Home Pay** (Gaji Pokok + Tunjangan + Fee Sesi) secara *real-time* langsung dari Dashboard mereka.
+*   **Dynamic Learning Progress**: Visualisasi progress pembelajaran menggunakan *Progress Bar* otomatis untuk setiap kelas aktif guna memantau ketercapaian modul.
+*   **New Student Experience**: Dashboard siswa kini dinamis; menampilkan rata-rata nilai (GPA) dan tingkat kehadiran yang dihitung otomatis dari input absensi pengajar.
+*   **Full Grade Transparency**: Portal siswa kini dilengkapi halaman rincian nilai per sesi, memungkinkan siswa melihat feedback tutor dan rincian skor di setiap pertemuan.
+*   **Teacher-Student Material Sync**: Pengajar dapat mengunggah link materi/modul yang secara otomatis terdistribusi ke sidebar materi pada portal siswa terkait.
+*   **Refactored RBAC (Roles & Access)**: Pemisahan izin akses administratif (Data Pengajar) dan operasional (Kelas Saya) untuk menjaga kerahasiaan data sekaligus kemudahan navigasi.
+
+---
 
 ---
 

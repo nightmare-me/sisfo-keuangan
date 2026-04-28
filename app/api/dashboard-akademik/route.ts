@@ -86,18 +86,44 @@ export async function GET(request: NextRequest) {
     }
 
     // 1. KPI UTAMA (Cepat)
+    const isPengajar = (session?.user as any)?.roleSlug === "pengajar";
+    const pengajarId = isPengajar ? (session?.user as any)?.id : undefined;
+
     const [muridBariIni, muridKemarin, kelasAktif, siswaAktif, pengajarAktif] = await Promise.all([
-      prisma.siswa.count({ where: { createdAt: { gte: startDate, lte: endDate } } }),
-      prisma.siswa.count({ where: { createdAt: { gte: yesterdayStart, lte: yesterdayEnd } } }),
-      prisma.kelas.count({ where: { status: "AKTIF" } }),
-      prisma.siswa.count({ where: { status: "AKTIF" } }),
+      prisma.siswa.count({ 
+        where: { 
+          createdAt: { gte: startDate, lte: endDate },
+          ...(isPengajar ? { pendaftaran: { some: { kelas: { pengajarId } } } } : {})
+        } 
+      }),
+      prisma.siswa.count({ 
+        where: { 
+          createdAt: { gte: yesterdayStart, lte: yesterdayEnd },
+          ...(isPengajar ? { pendaftaran: { some: { kelas: { pengajarId } } } } : {})
+        } 
+      }),
+      prisma.kelas.count({ 
+        where: { 
+          status: "AKTIF",
+          ...(isPengajar ? { pengajarId } : {})
+        } 
+      }),
+      prisma.siswa.count({ 
+        where: { 
+          status: "AKTIF",
+          ...(isPengajar ? { pendaftaran: { some: { kelas: { pengajarId } } } } : {})
+        } 
+      }),
       prisma.user.count({ where: { role: { slug: "pengajar" }, aktif: true } })
     ]);
 
-    // 2. TREND 30 HARI (Efisien: 1 Query, bukan 30)
+    // 2. TREND 30 HARI
     const trendStart = subDays(now, 29);
     const trendRaw = await prisma.siswa.findMany({
-      where: { createdAt: { gte: startOfDay(trendStart) } },
+      where: { 
+        createdAt: { gte: startOfDay(trendStart) },
+        ...(isPengajar ? { pendaftaran: { some: { kelas: { pengajarId } } } } : {})
+      },
       select: { createdAt: true }
     });
 
@@ -114,16 +140,19 @@ export async function GET(request: NextRequest) {
       date, murid: count
     })).sort((a,b) => a.date.localeCompare(b.date));
 
-    // 3. SISWA PER PROGRAM (Efisien)
+    // 3. SISWA PER PROGRAM
     const pendaftaranPerProgram = await prisma.pendaftaran.groupBy({
       by: ["kelasId"],
-      where: { aktif: true },
+      where: { 
+        aktif: true,
+        ...(isPengajar ? { kelas: { pengajarId } } : {})
+      },
       _count: { siswaId: true },
     });
 
-    const kelasIds = pendaftaranPerProgram.map((p: any) => p.kelasId).filter(Boolean);
+    const targetKelasIds = pendaftaranPerProgram.map((p: any) => p.kelasId).filter(Boolean);
     const kelasList = await prisma.kelas.findMany({
-      where: { id: { in: kelasIds } },
+      where: { id: { in: targetKelasIds } },
       include: { program: { select: { id: true, nama: true, tipe: true } } },
     });
 
@@ -141,11 +170,17 @@ export async function GET(request: NextRequest) {
 
     // 4. MURID TERKINI
     const muridTerkini = await prisma.siswa.findMany({
+      where: {
+        ...(isPengajar ? { pendaftaran: { some: { kelas: { pengajarId } } } } : {})
+      },
       take: 10,
       orderBy: { createdAt: "desc" },
       include: {
         pendaftaran: {
-          where: { aktif: true },
+          where: { 
+            aktif: true,
+            ...(isPengajar ? { kelas: { pengajarId } } : {})
+          },
           include: { kelas: { include: { program: { select: { nama: true } } } } },
           take: 1,
           orderBy: { tanggalDaftar: "desc" },

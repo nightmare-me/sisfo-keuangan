@@ -82,8 +82,6 @@ export async function GET(request: NextRequest) {
       pengeluaranAggLalu,
       adsAggIni,
       adsAggLalu,
-      perfAggIni,
-      perfAggLalu,
       refundAggIni,
       siswaAktifCount
     ] = await Promise.all([
@@ -91,10 +89,8 @@ export async function GET(request: NextRequest) {
       prisma.pemasukan.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { hargaFinal: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
-      prisma.spentAds.aggregate({ where: { tanggal: { gte: startDate, lte: endDate }, OR: [{ keterangan: null }, { NOT: { keterangan: { contains: "[Sync Otomatis]" } } }] }, _sum: { jumlah: true } }),
-      prisma.spentAds.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate }, OR: [{ keterangan: null }, { NOT: { keterangan: { contains: "[Sync Otomatis]" } } }] }, _sum: { jumlah: true } }),
-      prisma.adPerformance.aggregate({ where: { date: { gte: startDate, lte: endDate } }, _sum: { spent: true } }),
-      prisma.adPerformance.aggregate({ where: { date: { gte: prevStartDate, lte: prevEndDate } }, _sum: { spent: true } }),
+      prisma.marketingAd.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { spent: true } }),
+      prisma.marketingAd.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { spent: true } }),
       prisma.refund.aggregate({ where: { status: "APPROVED", pemasukan: { tanggal: { gte: startDate, lte: endDate } } }, _sum: { jumlah: true } }),
       prisma.siswa.count({ where: { status: "AKTIF" } })
     ]);
@@ -102,12 +98,12 @@ export async function GET(request: NextRequest) {
     const totalPemasukanIni = (pemasukanAggIni._sum.hargaFinal || 0) - (refundAggIni._sum.jumlah || 0);
     const totalPemasukanLalu = (pemasukanAggLalu._sum.hargaFinal || 0);
     const totalExIni = pengeluaranAggIni._sum.jumlah || 0;
-    const totalAdsIni = (adsAggIni._sum.jumlah || 0) + (perfAggIni._sum.spent || 0);
+    const totalAdsIni = adsAggIni._sum.spent ?? 0;
     const labaIni = totalPemasukanIni - totalExIni - totalAdsIni;
 
     // 2. TREND DATA (Efisien: 4 Query untuk 30 hari, bukan 120)
     const trendStart = subDays(now, 29);
-    const [trendIncomes, trendExes, trendAdsSpent, trendAdsPerf] = await Promise.all([
+    const [trendIncomes, trendExes, trendAdsSpent] = await Promise.all([
       prisma.pemasukan.findMany({ 
         where: { tanggal: { gte: startOfDay(trendStart) } }, 
         select: { tanggal: true, hargaFinal: true, id: true } 
@@ -117,17 +113,9 @@ export async function GET(request: NextRequest) {
         where: { tanggal: { gte: startOfDay(trendStart) } }, 
         _sum: { jumlah: true } 
       }),
-      prisma.spentAds.groupBy({ 
+      prisma.marketingAd.groupBy({ 
         by: ['tanggal'], 
-        where: { 
-          tanggal: { gte: startOfDay(trendStart) },
-          OR: [{ keterangan: null }, { NOT: { keterangan: { contains: "[Sync Otomatis]" } } }]
-        }, 
-        _sum: { jumlah: true } 
-      }),
-      prisma.adPerformance.groupBy({ 
-        by: ['date'], 
-        where: { date: { gte: startOfDay(trendStart) } }, 
+        where: { tanggal: { gte: startOfDay(trendStart) } }, 
         _sum: { spent: true } 
       })
     ]);
@@ -149,10 +137,6 @@ export async function GET(request: NextRequest) {
     });
     trendAdsSpent.forEach(a => {
       const d = format(new Date(a.tanggal), "yyyy-MM-dd");
-      if (trendMap[d]) trendMap[d].ads += a._sum.jumlah || 0;
-    });
-    trendAdsPerf.forEach(a => {
-      const d = format(new Date(a.date), "yyyy-MM-dd");
       if (trendMap[d]) trendMap[d].ads += a._sum.spent || 0;
     });
 
@@ -207,7 +191,7 @@ export async function GET(request: NextRequest) {
         pengeluaranHariIni: totalExIni, 
         pengeluaranKemarin: (pengeluaranAggLalu._sum.jumlah || 0),
         adsHariIni: totalAdsIni, 
-        adsKemarin: (adsAggLalu._sum.jumlah || 0) + (perfAggLalu._sum.spent || 0), 
+        adsKemarin: adsAggLalu._sum.spent ?? 0, 
         labaHariIni: labaIni, 
         siswAktif: siswaAktifCount,
         retentionRate: 0 // Will be calculated differently later if needed

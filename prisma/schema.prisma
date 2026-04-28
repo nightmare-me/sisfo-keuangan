@@ -21,24 +21,24 @@ model User {
   shiftEnd        String?          @default("16:00")
   isLeadActive    Boolean          @default(true)
   roleId          String?
-  adPerformances  AdPerformance[]
-  auditLogs       AuditLog[]
-  gajiPengajar    GajiPengajar[]
-  gajiStaf        GajiStaf[]
-  karyawanProfile KaryawanProfile?
-  kelasAjar       Kelas[]          @relation("PengajarKelas")
-  leads           Lead[]           @relation("CSLeads")
-  leadsAsTalent   Lead[]           @relation("TalentLeads")
-  liveSessions    LiveSession[]
-  pemasukan       Pemasukan[]      @relation("CSPemasukan")
-  pemasukanTalent Pemasukan[]      @relation("TalentPemasukan")
-  pengeluaran     Pengeluaran[]
-  refundsAsCS     Refund[]         @relation("CSRefund")
-  refundsAsFin    Refund[]         @relation("FinanceRefund")
-  spentAds        SpentAds[]
-  role            Role?            @relation(fields: [roleId], references: [id])
-  subRoleId       String?
-  subRole         SubRole?         @relation(fields: [subRoleId], references: [id])
+  auditLogs          AuditLog[]
+  gajiPengajar       GajiPengajar[]
+  gajiStaf           GajiStaf[]
+  karyawanProfile    KaryawanProfile?
+  kelasAjar          Kelas[]          @relation("PengajarKelas")
+  leads              Lead[]           @relation("CSLeads")
+  leadsAsTalent      Lead[]           @relation("TalentLeads")
+  liveSessions       LiveSession[]
+  pemasukan          Pemasukan[]      @relation("CSPemasukan")
+  pemasukanTalent    Pemasukan[]      @relation("TalentPemasukan")
+  pengeluaran        Pengeluaran[]
+  refundsAsCS        Refund[]         @relation("CSRefund")
+  refundsAsFin       Refund[]         @relation("FinanceRefund")
+  marketingAds       MarketingAd[]    @relation("AdvMarketingAds")
+  marketingAdsKredit MarketingAd[]    @relation("KreditMarketingAds")
+  role               Role?            @relation(fields: [roleId], references: [id])
+  subRoleId          String?
+  subRole            SubRole?         @relation(fields: [subRoleId], references: [id])
 }
 
 model KaryawanProfile {
@@ -221,17 +221,26 @@ model Pengeluaran {
   arsipNota   ArsipNota[]
 }
 
-model SpentAds {
+model MarketingAd {
   id         String      @id @default(cuid())
   tanggal    DateTime    @default(now())
-  platform   PlatformAds
-  jumlah     Float
+  platform   PlatformAds @default(META)
+  spent      Float       @default(0)
+  leads      Int         @default(0)
+  cpl        Float       @default(0)
+  fee        Float       @default(0)
   keterangan String?
-  dibuatOleh String?
+  advId      String?     // Advertiser (user yang bertanggung jawab)
+  dibuatOleh String?     // User yang menginput
   createdAt  DateTime    @default(now())
-  user       User?       @relation(fields: [dibuatOleh], references: [id])
-}
+  updatedAt  DateTime    @updatedAt
+  adv        User?       @relation("AdvMarketingAds", fields: [advId], references: [id])
+  creator    User?       @relation("KreditMarketingAds", fields: [dibuatOleh], references: [id])
 
+  @@index([tanggal])
+  @@index([platform])
+  @@index([advId])
+}
 model Invoice {
   id          String      @id @default(cuid())
   noInvoice   String      @unique
@@ -419,21 +428,7 @@ model WaTemplate {
   updatedAt DateTime @updatedAt
 }
 
-model AdPerformance {
-  id        String      @id @default(cuid())
-  date      DateTime    @default(now())
-  advId     String
-  spent     Float
-  leads     Int
-  cpl       Float
-  cpa       Float?
-  fee       Float
-  updatedAt DateTime    @updatedAt
-  platform  PlatformAds @default(META)
-  adv       User        @relation(fields: [advId], references: [id])
 
-  @@index([advId])
-}
 
 model Role {
   id          String       @id @default(cuid())

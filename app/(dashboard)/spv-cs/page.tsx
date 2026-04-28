@@ -134,8 +134,6 @@ export default function SPVCSPage() {
                         </div>
                         <div>
                           <div style={{ fontWeight: 700 }}>{cs.name}</div>
-                        <div>
-                          <div style={{ fontWeight: 700 }}>{cs.name}</div>
                           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
                             {(cs.teamTypes || ["REGULAR"]).map((t: string) => (
                               <span key={t} style={{ 

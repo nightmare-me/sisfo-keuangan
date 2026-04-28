@@ -14,6 +14,7 @@ import {
   History
 } from "lucide-react";
 import { formatDate, SUPER_ROLES } from "@/lib/utils";
+import { getAllRoles } from "@/lib/roles";
 import { startOfDay, addDays, subDays } from "date-fns";
 
 export default function StaffLivePage() {
@@ -33,7 +34,9 @@ export default function StaffLivePage() {
   });
 
   const role = (session?.user as any)?.role?.toUpperCase();
-  const isAdmin = SUPER_ROLES.includes(role);
+  const allRoles = getAllRoles(session);
+  // Admin, SPV Multimedia, dan user dengan role talent bisa input
+  const canInput = SUPER_ROLES.includes(role) || allRoles.includes("spv_multimedia") || allRoles.includes("talent");
 
   useEffect(() => {
     fetch("/api/users")
@@ -249,7 +252,7 @@ export default function StaffLivePage() {
             <button 
               type="submit" 
               className="btn btn-primary" 
-              disabled={saving || !isAdmin}
+              disabled={saving || !canInput}
               style={{ 
                 height: 54, 
                 borderRadius: 16, 
@@ -262,7 +265,7 @@ export default function StaffLivePage() {
               {saving ? "Menyimpan..." : "Simpan Aktivitas"}
             </button>
             
-            {!isAdmin && (
+            {!canInput && (
               <div style={{ 
                 padding: 12, 
                 background: 'rgba(var(--danger-rgb), 0.1)', 
@@ -274,7 +277,7 @@ export default function StaffLivePage() {
                 alignItems: 'center', 
                 gap: 8 
               }}>
-                <Clock size={14} /> Hanya Admin yang dapat menginput jam live harian.
+                <Clock size={14} /> Hanya Admin / SPV Multimedia yang dapat menginput jam live harian.
               </div>
             )}
           </form>

@@ -56,7 +56,8 @@ export default function UsersPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({ 
-    name: "", namaPanggilan: "", noHp: "", email: "", password: "", roleId: "", teamType: [] as string[], aktif: true,
+    name: "", namaPanggilan: "", noHp: "", email: "", password: "", roleId: "", 
+    teamType: [] as string[], secondaryRoles: [] as string[], aktif: true,
     shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
   });
 
@@ -125,6 +126,7 @@ export default function UsersPage() {
       password: "", 
       roleId: user.roleId, 
       teamType: Array.isArray(user.teamType) ? user.teamType : (user.teamType ? [user.teamType] : []), 
+      secondaryRoles: Array.isArray(user.secondaryRoles) ? user.secondaryRoles : [],
       aktif: user.aktif,
       shiftStart: user.shiftStart || "08:00",
       shiftEnd: user.shiftEnd || "16:00",
@@ -137,7 +139,9 @@ export default function UsersPage() {
   function openAdd() {
     setEditUser(null);
     setForm({ 
-      name: "", namaPanggilan: "", noHp: "", email: "", password: "", roleId: roles.find(r => r.slug === 'cs')?.id || "", teamType: [], aktif: true,
+      name: "", namaPanggilan: "", noHp: "", email: "", password: "", 
+      roleId: roles.find(r => r.slug === 'cs')?.id || "", 
+      teamType: [], secondaryRoles: [], aktif: true,
       shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
     });
     setMode("single");
@@ -686,6 +690,71 @@ export default function UsersPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* ── Secondary Roles Section ── */}
+                  {(() => {
+                    const selectedRole = roles.find(r => r.id === form.roleId);
+                    const slug = selectedRole?.slug || "";
+
+                    // Definisi role tambahan yang bisa digabung berdasarkan role utama
+                    const secondaryOptions: Record<string, { val: string; label: string; desc: string }[]> = {
+                      cs: [
+                        { val: "advertiser", label: "Advertiser", desc: "Bisa input & kelola data iklan sendiri" },
+                        { val: "talent", label: "Talent Live", desc: "Bisa tampil sebagai Talent di Live Session" },
+                      ],
+                      advertiser: [
+                        { val: "cs", label: "Customer Service", desc: "Bisa input closing & kelola leads" },
+                        { val: "spv_adv", label: "SPV Advertiser", desc: "Akses supervisory tim ADV" },
+                      ],
+                      pengajar: [
+                        { val: "talent", label: "Talent Live", desc: "Bisa tampil sebagai Talent di Live Session" },
+                      ],
+                      spv_multimedia: [
+                        { val: "talent", label: "Talent Live", desc: "Bisa tampil sebagai Talent di Live Session" },
+                      ],
+                      spv_adv: [
+                        { val: "advertiser", label: "Advertiser", desc: "Bisa input iklan sendiri (sudah otomatis untuk SPV ADV)" },
+                      ],
+                    };
+
+                    const options = secondaryOptions[slug] || [];
+                    if (options.length === 0) return null;
+
+                    return (
+                      <div style={{ margin: '16px 0', padding: '14px 16px', background: 'rgba(99,102,241,0.06)', border: '1px dashed rgba(99,102,241,0.3)', borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          🔀 ROLE TAMBAHAN (Merangkap Jabatan)
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {options.map(opt => (
+                            <label key={opt.val} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '8px 10px', borderRadius: 8, background: form.secondaryRoles.includes(opt.val) ? 'rgba(99,102,241,0.12)' : 'transparent', border: form.secondaryRoles.includes(opt.val) ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent', transition: 'all 0.15s' }}>
+                              <input
+                                type="checkbox"
+                                checked={form.secondaryRoles.includes(opt.val)}
+                                style={{ marginTop: 2, flexShrink: 0 }}
+                                onChange={e => {
+                                  const updated = e.target.checked
+                                    ? [...form.secondaryRoles, opt.val]
+                                    : form.secondaryRoles.filter(x => x !== opt.val);
+                                  setForm(f => ({ ...f, secondaryRoles: updated }));
+                                }}
+                              />
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-surface)' }}>{opt.label}</div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{opt.desc}</div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                        {form.secondaryRoles.length > 0 && (
+                          <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-muted)', padding: '6px 10px', background: 'rgba(16,185,129,0.08)', borderRadius: 6 }}>
+                            ✅ User ini akan memiliki akses dari: <strong>{[selectedRole?.name, ...form.secondaryRoles.map(r => roles.find(x => x.slug === r)?.name || r)].join(" + ")}</strong>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-secondary" onClick={() => { setShowModal(false); setEditUser(null); }}>Batal</button>

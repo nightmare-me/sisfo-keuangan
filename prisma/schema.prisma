@@ -21,6 +21,7 @@ model User {
   shiftEnd        String?          @default("16:00")
   isLeadActive    Boolean          @default(true)
   roleId          String?
+  secondaryRoles  String[]         @default([])  // Slug role tambahan (misal: "advertiser", "talent")
   auditLogs          AuditLog[]
   gajiPengajar       GajiPengajar[]
   gajiStaf           GajiStaf[]

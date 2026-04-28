@@ -41,6 +41,8 @@ export const authOptions: NextAuthOptions = {
                 role: user.role?.slug.toUpperCase() || "USER",
                 roleSlug: user.role?.slug || "user",
                 permissions: allPermissions,
+                secondaryRoles: user.secondaryRoles || [],
+                teamType: user.teamType || [],
               } as any;
             }
           }
@@ -93,6 +95,12 @@ export const authOptions: NextAuthOptions = {
         if (dbUser.permissions) {
           token.permissions = dbUser.permissions;
         }
+        if (dbUser.secondaryRoles) {
+          token.secondaryRoles = dbUser.secondaryRoles;
+        }
+        if (dbUser.teamType) {
+          token.teamType = dbUser.teamType;
+        }
       }
       
       if (trigger === "update" && session?.permissions) {
@@ -107,6 +115,8 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).role = token.role;
         (session.user as any).roleSlug = token.roleSlug;
         (session.user as any).permissions = token.permissions || [];
+        (session.user as any).secondaryRoles = token.secondaryRoles || [];
+        (session.user as any).teamType = token.teamType || [];
       }
       return session;
     },

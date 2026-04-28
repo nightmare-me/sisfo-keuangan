@@ -134,7 +134,24 @@ export default function SPVCSPage() {
                         </div>
                         <div>
                           <div style={{ fontWeight: 700 }}>{cs.name}</div>
-                          <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{cs.teamTypes?.join(", ") || "CS Regular"}</div>
+                        <div>
+                          <div style={{ fontWeight: 700 }}>{cs.name}</div>
+                          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 4 }}>
+                            {(cs.teamTypes || ["REGULAR"]).map((t: string) => (
+                              <span key={t} style={{ 
+                                fontSize: 9, 
+                                fontWeight: 800, 
+                                padding: '1px 6px', 
+                                borderRadius: 4, 
+                                background: t.includes('LIVE') ? 'rgba(99,102,241,0.1)' : 'rgba(107,114,128,0.1)',
+                                color: t.includes('LIVE') ? 'var(--primary)' : 'var(--text-muted)',
+                                border: t.includes('LIVE') ? '1px solid rgba(99,102,241,0.2)' : '1px solid rgba(107,114,128,0.2)',
+                                textTransform: 'uppercase'
+                              }}>
+                                {t.replace('CS_', '')}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -154,11 +171,20 @@ export default function SPVCSPage() {
             </tbody>
             {!loading && stats.length > 0 && (
               <tfoot>
-                <tr style={{ background: "var(--surface-container-low)", fontWeight: 800 }}>
-                  <td>TOTAL TIM</td>
+                <tr style={{ 
+                  background: "var(--surface-container-low)", 
+                  fontWeight: 900, 
+                  borderTop: "2px solid var(--ghost-border)",
+                  fontSize: 14
+                }}>
+                  <td style={{ padding: "16px 24px" }}>TOTAL TIM</td>
                   <td style={{ textAlign: "right" }}>{totalLeads}</td>
                   <td style={{ textAlign: "right", color: "var(--success)" }}>{totalClosing}</td>
-                  <td style={{ textAlign: "right" }}>{cr}%</td>
+                  <td style={{ textAlign: "right" }}>
+                     <span style={{ color: "var(--on-surface)", padding: "4px 10px", borderRadius: 20, background: "white", border: "1px solid var(--ghost-border)" }}>
+                        {cr}%
+                     </span>
+                  </td>
                   <td style={{ textAlign: "right", color: "var(--primary)" }}>{formatCurrency(totalOmset)}</td>
                   <td style={{ textAlign: "right", color: "var(--success)" }}>{formatCurrency(stats.reduce((a, b) => a + (b.totalFee ?? 0), 0))}</td>
                   <td></td>

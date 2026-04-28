@@ -140,7 +140,24 @@ export default function SPVADVPage() {
                         <div style={{ fontWeight: 700 }}>{adv.name}</div>
                       </div>
                     </td>
-                    <td><span style={{ fontSize: 11, background: "var(--primary-bg)", color: "var(--primary)", padding: "2px 8px", borderRadius: 6, fontWeight: 700 }}>{adv.teamTypes?.join(", ") || "ADV"}</span></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                        {(adv.teamTypes || ["ADV"]).map((t: string) => (
+                          <span key={t} style={{ 
+                            fontSize: 9, 
+                            fontWeight: 800, 
+                            padding: '1px 6px', 
+                            borderRadius: 4, 
+                            background: 'rgba(99,102,241,0.1)', 
+                            color: 'var(--primary)', 
+                            border: '1px solid rgba(99,102,241,0.2)',
+                            textTransform: 'uppercase' 
+                          }}>
+                            {t.replace('ADV_', '')}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
                     <td style={{ textAlign: "right", color: "var(--danger)", fontWeight: 600 }}>{formatCurrency(adv.totalSpent)}</td>
                     <td style={{ textAlign: "right", fontWeight: 600, color: "var(--success)" }}>{adv.totalLeads}</td>
                     <td style={{ textAlign: "right", fontWeight: 700 }}>{formatCurrency(cpl)}</td>
@@ -152,11 +169,20 @@ export default function SPVADVPage() {
             </tbody>
             {!loading && stats.length > 0 && (
               <tfoot>
-                <tr style={{ background: "var(--surface-container-low)", fontWeight: 800 }}>
-                  <td colSpan={2}>TOTAL TIM</td>
+                <tr style={{ 
+                  background: "var(--surface-container-low)", 
+                  fontWeight: 900, 
+                  borderTop: "2px solid var(--ghost-border)",
+                  fontSize: 14
+                }}>
+                  <td colSpan={2} style={{ padding: "16px 24px" }}>TOTAL TIM</td>
                   <td style={{ textAlign: "right", color: "var(--danger)" }}>{formatCurrency(totalSpent)}</td>
                   <td style={{ textAlign: "right", color: "var(--success)" }}>{totalLeads}</td>
-                  <td style={{ textAlign: "right" }}>{formatCurrency(avgCPL)}</td>
+                  <td style={{ textAlign: "right" }}>
+                    <span style={{ color: "var(--on-surface)", padding: "4px 10px", borderRadius: 20, background: "white", border: "1px solid var(--ghost-border)" }}>
+                      {formatCurrency(avgCPL)}
+                    </span>
+                  </td>
                   <td style={{ textAlign: "right", color: "var(--primary)" }}>{formatCurrency(totalFee)}</td>
                   <td></td>
                 </tr>

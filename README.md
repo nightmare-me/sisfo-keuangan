@@ -2,15 +2,16 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Multi-Role Architecture & SPV Intelligence (v5.0) 🚀 (TERBARU!)
+## 📢 Fitur Baru: Multi-Role Architecture, SPV Intelligence & Smart Import (v5.1) 🚀 (TERBARU!)
+*   **Expanded Role Ecosystem**: Penambahan role `CEO`, `COO`, dan `Multimedia` ke dalam ekosistem bawaan sistem, memastikan fleksibilitas akses dari level *C-Suite* hingga operasional kreatif.
 *   **True Multi-Role System**: Implementasi arsitektur role ganda. Seorang user kini bisa memiliki satu Role Utama (misal: SPV Multimedia) sekaligus Role Tambahan (misal: Talent Live atau Advertiser) tanpa perlu berganti akun.
 *   **Supervisor Dashboards (Three Pillars)**:
     *   **SPV CS Dashboard**: Pantauan *real-time* seluruh leads, closing, conversion rate, dan omset dari tiap anggota tim CS di bawahnya.
     *   **SPV ADV Dashboard**: Monitoring efisiensi iklan (Spent, Leads, CPL) dari seluruh advertiser tim marketing.
     *   **SPV Multimedia Dashboard**: Pelacakan performa Talent Live (Durasi Live, Leads yang didapat, hingga Omset yang dihasilkan).
 *   **Admin Omni-Portal**: Akses "Dewa" untuk Admin agar dapat melihat seluruh Dashboard Supervisor dalam satu kategori menu terpusat.
-*   **Refined Reporting UI**: Desain ulang tabel laporan dengan sistem *Badge Pills* yang rapi dan *Summary Footer* yang presisi untuk audit cepat performa tim.
-*   **Live Talent Tracking**: Modul input jam kerja khusus untuk Talent Live yang terintegrasi langsung dengan database penggajian.
+*   **Fuzzy CSV Header Detection (Karyawan)**: Peningkatan algoritma pembacaan Excel/CSV untuk mentoleransi *header* kolom yang digabung tanpa spasi (seperti `rekeningnomor`, `rekeningnama`) sehingga proses sinkronisasi bank karyawan menjadi 100% *foolproof*.
+*   **Refined Reporting UI & Live Tracking**: Desain ulang tabel laporan dengan sistem *Badge Pills*, serta modul input jam kerja khusus untuk Talent Live yang terintegrasi langsung dengan database penggajian.
 
 ## 📢 Fitur Sebelumnya: Precision TOEFL P/L & Smart Expense Deduction (v4.85) 🚀
 

@@ -14,13 +14,19 @@ const prisma = new PrismaClient({
 });
 
 async function ensureRoles() {
+  const allRoles = [
+    "admin", "finance", "cs", "advertiser", "pengajar", 
+    "akademik", "talent", "spv_cs", "spv_adv", "spv_multimedia", "siswa",
+    "ceo", "coo", "multimedia"
+  ];
+  
   const roles = await Promise.all(
-    ["admin", "cs", "pengajar", "finance"].map((slug) =>
+    allRoles.map((slug) =>
       prisma.role.upsert({
         where: { slug },
         update: {},
         create: {
-          name: slug.toUpperCase(),
+          name: slug.toUpperCase().replace(/_/g, ' '),
           slug,
           description: `Auto-generated role for ${slug}`,
         },
@@ -28,7 +34,31 @@ async function ensureRoles() {
     )
   );
 
-  return Object.fromEntries(roles.map((role) => [role.slug, role])) as Record<string, { id: string }>;
+  const roleMap = Object.fromEntries(roles.map((role) => [role.slug, role])) as Record<string, { id: string }>;
+
+  // Seed SubRoles
+  const subRoles = [
+    { name: "Assistant CEO", roleId: roleMap.ceo?.id },
+    { name: "Assistant COO", roleId: roleMap.coo?.id },
+    { name: "Staff AKADEMIK", roleId: roleMap.akademik?.id },
+    { name: "Staff FINANCE", roleId: roleMap.finance?.id }
+  ];
+
+  for (const sr of subRoles) {
+    if (!sr.roleId) continue;
+    const existing = await prisma.subRole.findFirst({ where: { name: sr.name, roleId: sr.roleId } });
+    if (!existing) {
+      await prisma.subRole.create({
+        data: {
+          name: sr.name,
+          roleId: sr.roleId,
+          description: `Auto-generated subrole ${sr.name}`,
+        }
+      });
+    }
+  }
+
+  return roleMap;
 }
 
 async function main() {

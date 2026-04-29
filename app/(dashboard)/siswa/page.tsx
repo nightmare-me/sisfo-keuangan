@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { hasPermission, formatDate } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { 
   Users, 
   Plus, 
@@ -57,6 +58,7 @@ export default function SiswaPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -118,20 +120,35 @@ export default function SiswaPage() {
   }
 
   async function handleDelete(s: any) {
-    if (!confirm(`Hapus siswa "${s.nama}"?\n\nData tidak bisa dikembalikan.`)) return;
-    await fetch(`/api/siswa?id=${s.id}`, { method: "DELETE" });
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Hapus Siswa?",
+      message: `Apakah Anda yakin ingin menghapus data siswa "${s.nama}" secara permanen? Data pendaftaran dan riwayat terkait lainnya mungkin akan terdampak.`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        await fetch(`/api/siswa?id=${s.id}`, { method: "DELETE" });
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleDeleteAll() {
     if ((session?.user as any)?.role !== "ADMIN") return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data SISWA, PENDAFTARAN, dan PEMBAYARAN TERKAIT akan dihapus permanen.\n\nTindakan ini tidak bisa dibatalkan.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/siswa?all=true", { method: "DELETE" });
-      if (res.ok) fetchData();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SEMUA SISWA?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh data SISWA, PENDAFTARAN, dan PEMBAYARAN TERKAIT akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/siswa?all=true", { method: "DELETE" });
+        if (res.ok) fetchData();
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function updateStatus(id: string, status: string) {
@@ -141,23 +158,36 @@ export default function SiswaPage() {
 
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Hapus ${selectedIds.length} siswa terpilih secara permanen?`)) return;
     
-    setLoading(true);
-    const res = await fetch("/api/siswa", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds })
+    setConfirmModal({
+      show: true,
+      title: "Hapus Masal Siswa?",
+      message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} siswa terpilih secara permanen?`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/siswa", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: selectedIds })
+        });
+        
+        if (res.ok) {
+          setSelectedIds([]);
+          fetchData();
+          setConfirmModal(prev => ({ ...prev, show: false }));
+        } else {
+          setLoading(false);
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "Beberapa data gagal dihapus. Silakan periksa koneksi atau hak akses Anda.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+      }
     });
-    
-    if (res.ok) {
-      alert("Siswa terpilih berhasil dihapus.");
-      setSelectedIds([]);
-      fetchData();
-    } else {
-      alert("Gagal menghapus beberapa data.");
-      setLoading(false);
-    }
   }
 
   function toggleSelect(id: string) {
@@ -186,10 +216,22 @@ export default function SiswaPage() {
     if (res.ok) {
       setShowRefundModal(false);
       setRefundForm({ jumlah: "", alasan: "", rekeningTujuan: "" });
-      alert("✅ Pengajuan refund berhasil dikirim ke Finance.");
+      setConfirmModal({
+        show: true,
+        title: "Pengajuan Terkirim",
+        message: "✅ Pengajuan refund berhasil dikirim ke Finance.",
+        type: "info",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
       fetchData();
     } else {
-      alert("❌ Gagal mengajukan refund.");
+      setConfirmModal({
+        show: true,
+        title: "Gagal Mengajukan",
+        message: "❌ Gagal mengajukan refund. Periksa kembali saldo atau data transaksi.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     }
     setSubmittingRefund(false);
   }
@@ -337,12 +379,12 @@ export default function SiswaPage() {
                   <td className="text-center">
                     <div style={{ display:"flex", gap:8, justifyContent:'center' }}>
                       {canEdit && (
-                        <button className="btn btn-secondary btn-icon" onClick={() => openEdit(s)} title="Edit Profil">
-                          <Edit3 size={16} />
+                        <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => openEdit(s)} title="Edit Profil">
+                          <Edit3 size={20} />
                         </button>
                       )}
                       {canRefund && (
-                        <button className="btn btn-secondary btn-icon" onClick={() => { 
+                        <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => { 
                           setSelectedForRefund(s); 
                           const firstPay = s.pemasukan?.[0];
                           setRefundForm({ 
@@ -353,13 +395,13 @@ export default function SiswaPage() {
                             invoiceId: firstPay?.invoice?.id || ""
                           });
                           setShowRefundModal(true); 
-                        }} style={{ color:"var(--warning)" }} title="Ajukan Refund">
-                           <Wallet size={16} />
+                        }} style={{ width: 42, height: 42, borderRadius: 12, color:"var(--warning)" }} title="Ajukan Refund">
+                           <Wallet size={20} />
                         </button>
                       )}
                       {canDelete && (
-                        <button className="btn btn-secondary btn-icon" onClick={() => handleDelete(s)} style={{ color:"var(--danger)" }} title="Hapus Siswa">
-                           <Trash2 size={16} />
+                        <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => handleDelete(s)} style={{ width: 42, height: 42, borderRadius: 12, color:"var(--danger)" }} title="Hapus Siswa">
+                           <Trash2 size={20} />
                         </button>
                       )}
                     </div>
@@ -614,28 +656,45 @@ export default function SiswaPage() {
                           return obj;
                         });
 
-                        if (confirm(`Impor ${jsonData.length} data siswa baru?`)) {
-                          setImporting(true);
-                          try {
-                            const res = await fetch("/api/siswa/import", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(jsonData)
-                            });
-                            if (res.ok) {
-                              alert("Berhasil mengimpor data siswa!");
-                              setShowImportModal(false);
-                              fetchData();
-                            } else {
-                              const err = await res.json();
-                              alert("Gagal impor: " + err.error);
+                        setConfirmModal({
+                          show: true,
+                          title: "Impor Siswa?",
+                          message: `Impor ${jsonData.length} data siswa baru dari file CSV ke sistem?`,
+                          type: "info",
+                          onConfirm: async () => {
+                            setShowImportModal(false);
+                            setImporting(true);
+                            try {
+                              const res = await fetch("/api/siswa/import", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(jsonData)
+                              });
+                              if (res.ok) {
+                                setConfirmModal({
+                                  show: true,
+                                  title: "Import Berhasil",
+                                  message: "Berhasil mengimpor data siswa ke sistem!",
+                                  type: "success" as any,
+                                  onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                });
+                                fetchData();
+                              } else {
+                                const err = await res.json();
+                                setConfirmModal({
+                                  show: true,
+                                  title: "Import Gagal",
+                                  message: "Gagal impor: " + err.error,
+                                  type: "danger",
+                                  onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                });
+                              }
+                            } finally {
+                              setImporting(false);
+                              setConfirmModal(prev => ({ ...prev, show: false }));
                             }
-                          } catch (err) {
-                            alert("Terjadi kesalahan saat mengunggah.");
-                          } finally {
-                            setImporting(false);
                           }
-                        }
+                        });
                       };
                       reader.readAsText(file);
                     }} />
@@ -650,6 +709,15 @@ export default function SiswaPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

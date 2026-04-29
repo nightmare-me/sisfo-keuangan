@@ -18,6 +18,7 @@ import {
   Trash2
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function InvoicePage() {
   const { data: session } = useSession();
@@ -28,6 +29,7 @@ export default function InvoicePage() {
   const [search, setSearch] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [printing, setPrinting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -189,13 +191,27 @@ export default function InvoicePage() {
 
   async function handleDeleteAll() {
     if (!isAdmin) return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data INVOICE akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/invoice?all=true", { method: "DELETE" });
-      if (res.ok) fetchData();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SEMUA INVOICE?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh data E-INVOICE akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/invoice?all=true", { method: "DELETE" });
+        if (res.ok) fetchData();
+        else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "❌ Terjadi kesalahan server saat mencoba menghapus data invoice.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   return (
@@ -449,6 +465,15 @@ export default function InvoicePage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading || printing}
+      />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   Users,
   Clock
 } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function FinancialSettingsPage() {
   const { data: session } = useSession();
@@ -21,6 +22,7 @@ export default function FinancialSettingsPage() {
   const [configs, setConfigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   async function fetchData() {
     setLoading(true);
@@ -48,13 +50,24 @@ export default function FinancialSettingsPage() {
         body: JSON.stringify({ id, value })
       });
       if (res.ok) {
-        // Show success briefly or just refresh
         fetchData();
       } else {
-        alert("Gagal menyimpan pengaturan");
+        setConfirmModal({
+          show: true,
+          title: "Gagal Simpan",
+          message: "❌ Gagal menyimpan pengaturan ke server.",
+          type: "danger",
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
       }
     } catch (e) {
-      alert("Terjadi kesalahan koneksi");
+      setConfirmModal({
+        show: true,
+        title: "Error Koneksi",
+        message: "⚠️ Terjadi kesalahan koneksi saat menyimpan data.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     } finally {
       setSavingId(null);
     }
@@ -64,7 +77,16 @@ export default function FinancialSettingsPage() {
   const [newItem, setNewItem] = useState({ label: "", value: 0, description: "" });
 
   async function handleCreate(category: string) {
-    if (!newItem.label) return alert("Label harus diisi");
+    if (!newItem.label) {
+      setConfirmModal({
+        show: true,
+        title: "Label Kosong",
+        message: "⚠️ Silakan isi label posisi terlebih dahulu.",
+        type: "warning",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
+      return;
+    }
     
     // Generate key based on category and label
     const prefix = category === "BONUS" ? "BONUS_GROSS_" : (category === "SHARING_DETAIL" ? "RATE_SHARING_" : "VAR_");
@@ -87,7 +109,13 @@ export default function FinancialSettingsPage() {
         fetchData();
       }
     } catch (e) {
-      alert("Gagal menambah data");
+      setConfirmModal({
+        show: true,
+        title: "Gagal Tambah",
+        message: "❌ Gagal menambahkan data baru ke database.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     }
   }
 
@@ -124,11 +152,17 @@ export default function FinancialSettingsPage() {
               onBlur={(e) => {
                 const val = parseInt(e.target.value);
                 const item = configs.find(c => c.key === "PAYROLL_CUTOFF_DAY");
-                if (item) {
-                   handleSave(item.id, val);
-                } else {
-                   alert("Gunakan tombol + untuk inisialisasi jika config belum ada.");
-                }
+                 if (item) {
+                    handleSave(item.id, val);
+                 } else {
+                    setConfirmModal({
+                      show: true,
+                      title: "Config Belum Ada",
+                      message: "⚠️ Gunakan tombol + untuk inisialisasi jika config belum ada di database.",
+                      type: "warning",
+                      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                    });
+                 }
               }}
             />
           </div>
@@ -326,6 +360,15 @@ export default function FinancialSettingsPage() {
           </div>
         </div>
       </div>
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={savingId !== null}
+      />
     </div>
   );
 }

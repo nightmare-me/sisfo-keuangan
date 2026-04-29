@@ -19,6 +19,7 @@ import {
   Share2,
   RefreshCw
 } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 const PERIOD_OPTIONS = [
   { value:"today", label:"Hari Ini" },
@@ -43,6 +44,7 @@ export default function LaporanPage() {
   const [to, setTo] = useState("");
   const [exporting, setExporting] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -227,10 +229,18 @@ export default function LaporanPage() {
               <button 
                 className="btn btn-sm btn-ghost" 
                 onClick={async () => {
-                  if(confirm("Jalankan pembersihan duplikat program?")) {
-                    await fetch('/api/admin/cleanup-programs', { method: 'POST' });
-                    fetchData();
-                  }
+                  setConfirmModal({
+                    show: true,
+                    title: "Bersihkan Duplikat?",
+                    message: "Apakah Anda yakin ingin menjalankan pembersihan data program yang duplikat? Tindakan ini akan merapikan data produk di database.",
+                    type: "warning",
+                    onConfirm: async () => {
+                      setLoading(true);
+                      await fetch('/api/admin/cleanup-programs', { method: 'POST' });
+                      fetchData();
+                      setConfirmModal(prev => ({ ...prev, show: false }));
+                    }
+                  });
                 }}
                 title="Bersihkan duplikat data program"
               >
@@ -398,6 +408,15 @@ export default function LaporanPage() {
           </>
         )}
       </div>
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

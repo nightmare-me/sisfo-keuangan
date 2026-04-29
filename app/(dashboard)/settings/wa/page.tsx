@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle, Save, Plus, Trash2, Smartphone } from "lucide-react";
-
+import { MessageCircle, Save, Plus, Trash2, Smartphone, X } from "lucide-react";
 import { useSession } from "next-auth/react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function WATemplateSettings() {
   const { data: session } = useSession();
@@ -13,6 +13,9 @@ export default function WATemplateSettings() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/settings/wa-templates")
@@ -45,6 +48,17 @@ export default function WATemplateSettings() {
     setTemplates([...templates, newItem]);
   }
 
+  async function confirmDelete() {
+    if (!deletingId) return;
+    setSavingId(deletingId); // use as loading indicator
+    const res = await fetch(`/api/settings/wa-templates?id=${deletingId}`, { method: "DELETE" });
+    if (res.ok) {
+      setTemplates(templates.filter(t => t.id !== deletingId));
+      setShowConfirm(false);
+    }
+    setSavingId(null);
+  }
+
   return (
     <div className="page-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', paddingBottom: 0 }}>
       {/* Header Ala Dashboard */}
@@ -57,8 +71,8 @@ export default function WATemplateSettings() {
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>WhatsApp Templates</h1>
           <p className="body-lg" style={{ margin: 0 }}>Kelola pesan otomatis untuk mempermudah CS berinteraksi dengan Lead</p>
         </div>
-        <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)' }} onClick={handleAdd}>
-           <Plus size={18} /> Tambah Template
+        <button className="btn btn-primary" style={{ borderRadius: 'var(--radius-full)', height: 54, padding: "0 32px" }} onClick={handleAdd}>
+           <Plus size={20} /> Tambah Template
         </button>
       </div>
 
@@ -67,7 +81,7 @@ export default function WATemplateSettings() {
           {loading ? (
             [1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 180, borderRadius: 20 }} />)
           ) : templates.map((template, idx) => (
-            <div key={template.id} className="card" style={{ padding: 32, margin: 0 }}>
+            <div key={template.id} className="card" style={{ padding: 32, margin: 0, position: 'relative' }}>
               <div style={{ display: 'flex', gap: 32 }}>
                  <div style={{ flex: 1 }}>
                     <div className="form-group" style={{ marginBottom: 16 }}>
@@ -105,11 +119,19 @@ export default function WATemplateSettings() {
                  <div style={{ width: 140, display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <button 
                       className="btn btn-primary" 
-                      style={{ width: '100%', borderRadius: 12 }}
+                      style={{ width: '100%', height: 50, borderRadius: 14 }}
                       onClick={() => handleUpdate(template.id, template.label, template.text)}
                       disabled={savingId === template.id}
                     >
-                      <Save size={16} /> {savingId === template.id ? "..." : "Simpan"}
+                      <Save size={20} /> {savingId === template.id ? "..." : "Simpan"}
+                    </button>
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ width: '100%', height: 50, borderRadius: 14, color: 'var(--danger)' }}
+                      onClick={() => { setDeletingId(template.id); setShowConfirm(true); }}
+                      title="Hapus Template"
+                    >
+                      <Trash2 size={20} /> Hapus
                     </button>
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface)', borderRadius: 12, border: '1px dashed var(--ghost-border)' }}>
                        <Smartphone size={32} color="var(--ghost-border)" />
@@ -120,6 +142,15 @@ export default function WATemplateSettings() {
           ))}
         </div>
       </div>
+
+      <ConfirmModal 
+        show={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={confirmDelete}
+        loading={savingId === deletingId}
+        title="Hapus Template WA?"
+        message="Pesan template ini akan dihapus permanen. CS tidak akan bisa menggunakan template ini lagi."
+      />
     </div>
   );
 }

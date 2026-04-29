@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { formatDate, hasPermission } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { 
   BookOpen, 
   Plus, 
@@ -69,6 +70,7 @@ export default function KelasPage() {
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [addingSiswa, setAddingSiswa] = useState(false);
   const [searchSiswa, setSearchSiswa] = useState("");
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const isFull = selectedKelas && (pendaftaranList.length >= selectedKelas.kapasitas);
 
@@ -150,8 +152,14 @@ export default function KelasPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        alert("⚠️ " + (err.error || "Gagal menyimpan kelas."));
         setSaving(false);
+        setConfirmModal({
+          show: true,
+          title: "Gagal Menyimpan",
+          message: "⚠️ " + (err.error || "Gagal menyimpan kelas."),
+          type: "danger",
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
         return; // Modal tetap terbuka
       }
 
@@ -159,7 +167,13 @@ export default function KelasPage() {
       setShowModal(false); setEditKelas(null);
       fetchData();
     } catch (err: any) {
-      alert("⚠️ Koneksi bermasalah: " + err.message);
+      setConfirmModal({
+        show: true,
+        title: "Koneksi Bermasalah",
+        message: "⚠️ Koneksi bermasalah: " + err.message,
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     } finally {
       setSaving(false);
     }
@@ -174,23 +188,47 @@ export default function KelasPage() {
 
   // ── Hapus kelas ──
   async function handleDeleteKelas(kelas: any) {
-    if (!confirm(`Hapus kelas "${kelas.namaKelas}"?\n\nSemua data pendaftaran akan hilang.`)) return;
-    await fetch(`/api/kelas?id=${kelas.id}`, { method: "DELETE" });
-    if (selectedKelas?.id === kelas.id) setSelectedKelas(null);
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Hapus Kelas?",
+      message: `Apakah Anda yakin ingin menghapus kelas "${kelas.namaKelas}"? Seluruh data pendaftaran dan absensi terkait akan hilang secara permanen.`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        await fetch(`/api/kelas?id=${kelas.id}`, { method: "DELETE" });
+        if (selectedKelas?.id === kelas.id) setSelectedKelas(null);
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleDeleteAll() {
     if ((session?.user as any)?.role !== "ADMIN") return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data KELAS, PENDAFTARAN, dan ABSENSI akan dihapus permanen.\n\nTindakan ini tidak bisa dibatalkan.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/kelas?all=true", { method: "DELETE" });
-      if (res.ok) {
-        fetchData();
-        setSelectedKelas(null);
-      } else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SEMUA DATA KELAS?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh data KELAS, PENDAFTARAN, dan ABSENSI akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/kelas?all=true", { method: "DELETE" });
+        if (res.ok) {
+          fetchData();
+          setSelectedKelas(null);
+        } else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "❌ Terjadi kesalahan server saat mencoba menghapus data.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   // ── Daftarkan siswa (Batch) ──
@@ -204,8 +242,23 @@ export default function KelasPage() {
     });
     const result = await res.json();
     setAddingSiswa(false);
-    if (!res.ok) { alert("Gagal: " + result.error); return; }
-    alert(result.message);
+    if (!res.ok) {
+      setConfirmModal({
+        show: true,
+        title: "Gagal Mendaftarkan",
+        message: "❌ Gagal: " + result.error,
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
+      return;
+    }
+    setConfirmModal({
+      show: true,
+      title: "Pendaftaran Berhasil",
+      message: "✅ " + result.message,
+      type: "success" as any,
+      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+    });
     setSelectedSiswaIds([]); setShowTambahSiswa(false); setSearchSiswa("");
     await loadDetail(selectedKelas);
     fetchData();
@@ -213,10 +266,19 @@ export default function KelasPage() {
 
   // ── Keluarkan siswa ──
   async function handleKeluarkanSiswa(pendaftaran: any) {
-    if (!confirm(`Keluarkan "${pendaftaran.siswa.nama}" dari kelas ini?`)) return;
-    await fetch(`/api/pendaftaran?id=${pendaftaran.id}`, { method: "DELETE" });
-    await loadDetail(selectedKelas);
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Keluarkan Siswa?",
+      message: `Apakah Anda yakin ingin mengeluarkan "${pendaftaran.siswa.nama}" dari kelas ini?`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoadingDetail(true);
+        await fetch(`/api/pendaftaran?id=${pendaftaran.id}`, { method: "DELETE" });
+        await loadDetail(selectedKelas);
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   // ── Siswa yang belum di kelas ini (Smart Plotting) ──
@@ -418,7 +480,9 @@ export default function KelasPage() {
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 {canEdit && (
                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button className="btn btn-secondary btn-icon" onClick={() => openEdit(selectedKelas)} title="Edit Kelas"><Edit2 size={16} /></button>
+                    <div style={{ display: 'flex', gap: 10 }}>
+                       <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => openEdit(selectedKelas)} title="Edit Kelas"><Edit2 size={20} /></button>
+                       <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }} onClick={() => handleDeleteKelas(selectedKelas)} title="Hapus Kelas"><Trash2 size={20} /></button>
                       <select
                         className="form-control"
                         style={{ fontSize: 12, padding: "8px 16px", borderRadius: 100, border: '1px solid var(--ghost-border)' }}
@@ -427,6 +491,7 @@ export default function KelasPage() {
                       >
                         {STATUS_KELAS.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
+                     </div>
                    </div>
                 )}
                 <button onClick={() => setSelectedKelas(null)} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%' }}><X size={18} /></button>
@@ -640,11 +705,14 @@ export default function KelasPage() {
                         <td style={{ fontSize: 11, color: "var(--text-muted)" }}>{formatDate(p.tanggalDaftar)}</td>
                         {canEdit && (
                           <td>
-                            <button
-                              onClick={() => handleKeluarkanSiswa(p)}
-                              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}
-                              title="Keluarkan dari kelas"
-                            >✕ Keluar</button>
+                             <button
+                               onClick={() => handleKeluarkanSiswa(p)}
+                               className="btn btn-secondary btn-icon"
+                               style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }}
+                               title="Keluarkan dari kelas"
+                             >
+                               <X size={20} />
+                             </button>
                           </td>
                         )}
                       </tr>
@@ -758,6 +826,15 @@ export default function KelasPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading || loadingDetail}
+      />
     </div>
   );
 }

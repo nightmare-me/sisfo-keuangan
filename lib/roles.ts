@@ -46,10 +46,10 @@ export const ROLE_CONFIG: Record<string, { label: string; color: string; canAcce
   advertiser:      { label: "Advertiser",      color: "#8b5cf6", canAccess: ["dashboard", "ads_spent", "ads_performance"] },
   pengajar:        { label: "Pengajar",        color: "#10b981", canAccess: ["dashboard", "kelas", "siswa"] },
   akademik:        { label: "Akademik",        color: "#06b6d4", canAccess: ["dashboard", "kelas", "siswa", "pengajar", "program"] },
-  talent:          { label: "Talent",          color: "#f97316", canAccess: ["dashboard", "live_tracking"] },
-  multimedia:      { label: "Multimedia",      color: "#f59e0b", canAccess: ["dashboard", "live_tracking"] },
+  talent:          { label: "Talent",          color: "#f97316", canAccess: ["dashboard", "live_tracking", "multimedia:view"] },
+  multimedia:      { label: "Multimedia",      color: "#f59e0b", canAccess: ["dashboard", "live_tracking", "multimedia:view"] },
   spv_cs:          { label: "SPV CS",          color: "#2563eb", canAccess: ["dashboard", "crm", "report"] },
   spv_adv:         { label: "SPV ADV",         color: "#7c3aed", canAccess: ["dashboard", "ads_spent", "ads_performance", "report"] },
-  spv_multimedia:  { label: "SPV Multimedia",  color: "#ea580c", canAccess: ["dashboard", "live_tracking", "report"] },
+  spv_multimedia:  { label: "SPV Multimedia",  color: "#ea580c", canAccess: ["dashboard", "live_tracking", "report", "multimedia:view"] },
   siswa:           { label: "Siswa",           color: "#64748b", canAccess: ["siswa:dashboard"] },
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency, formatDate, hasPermission } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useSession } from "next-auth/react";
 import { 
   Banknote, 
@@ -44,6 +45,7 @@ export default function GajiPage() {
   const [filterTahun, setFilterTahun] = useState(String(new Date().getFullYear()));
   const [form, setForm] = useState({ pengajarId:"", kelasId:"", bulan:String(new Date().getMonth()+1), tahun:String(new Date().getFullYear()), jumlahSesi:"0", tarifPerSesi:"", totalGaji:"", metodeBayar:"TRANSFER", keterangan:"" });
   const [tarifForm, setTarifForm] = useState({ tipeKelas:"REGULAR", tarif:"", keterangan:"" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -95,20 +97,44 @@ export default function GajiPage() {
   }
 
   async function handleBayar(id: string) {
-    if (!confirm("Tandai gaji ini sebagai LUNAS?")) return;
-    await fetch("/api/gaji",{ method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id, statusBayar:"LUNAS", tanggalBayar: new Date().toISOString() }) });
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Konfirmasi Pembayaran?",
+      message: "Apakah Anda yakin ingin menandai gaji ini sebagai LUNAS? Data ini akan tercatat di laporan keuangan.",
+      type: "success",
+      onConfirm: async () => {
+        setLoading(true);
+        await fetch("/api/gaji",{ method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ id, statusBayar:"LUNAS", tanggalBayar: new Date().toISOString() }) });
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleDeleteAll() {
     if (role !== "ADMIN") return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh riwayat data PAYROLL PENGAJAR akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/gaji?all=true", { method: "DELETE" });
-      if (res.ok) fetchData();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS HISTORI GAJI?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh riwayat data PAYROLL PENGAJAR akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/gaji?all=true", { method: "DELETE" });
+        if (res.ok) fetchData();
+        else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "❌ Terjadi kesalahan server saat mencoba menghapus data.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleTarifSubmit(e: React.FormEvent) {
@@ -120,7 +146,16 @@ export default function GajiPage() {
   }
 
   async function calculateSessions() {
-    if (!form.pengajarId) return alert("Pilih pengajar terlebih dahulu");
+    if (!form.pengajarId) {
+      setConfirmModal({
+        show: true,
+        title: "Pengajar Belum Dipilih",
+        message: "⚠️ Silakan pilih nama pengajar terlebih dahulu untuk menghitung sesi otomatis.",
+        type: "warning",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
+      return;
+    }
     const p = new URLSearchParams({ pengajarId: form.pengajarId, bulan: form.bulan, tahun: form.tahun });
     const res = await fetch(`/api/gaji/calculate?${p}`);
     const d = await res.json();
@@ -264,12 +299,16 @@ export default function GajiPage() {
                   </td>
                   {canEdit && (
                     <td>
-                      {g.statusBayar!=="LUNAS" && (
-                        <button className="btn btn-success btn-sm" onClick={()=>handleBayar(g.id)}>✓ Bayar</button>
-                      )}
-                      {g.statusBayar==="LUNAS" && g.tanggalBayar && (
-                        <span style={{ fontSize:11, color:"var(--text-muted)" }}>{formatDate(g.tanggalBayar)}</span>
-                      )}
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {g.statusBayar!=="LUNAS" && (
+                          <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--success)' }} onClick={()=>handleBayar(g.id)} title="Bayar Lunas">
+                            <CheckCircle size={20} />
+                          </button>
+                        )}
+                        {g.statusBayar==="LUNAS" && g.tanggalBayar && (
+                          <span style={{ fontSize:11, color:"var(--text-muted)", fontWeight: 600 }}>✓ {formatDate(g.tanggalBayar)}</span>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -461,6 +500,15 @@ export default function GajiPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

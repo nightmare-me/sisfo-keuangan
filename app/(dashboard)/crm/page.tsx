@@ -31,6 +31,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import Papa from "papaparse";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 const COLUMNS = [
   { id: "NEW", title: "Baru Masuk", color: "#6366f1", icon: <UserPlus size={18} /> },
@@ -98,6 +99,15 @@ export default function CRMPage() {
   });
   const [programs, setPrograms] = useState<any[]>([]);
   const [talentList, setTalentList] = useState<any[]>([]);
+
+  // NEW: Confirm Modal States
+  const [confirmModal, setConfirmModal] = useState({
+    show: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    type: "danger" as "danger" | "warning" | "info"
+  });
 
   function fetchData(p = page, l = limit, s = searchTerm, st = activeStatus) {
     setLoading(true);
@@ -228,23 +238,36 @@ export default function CRMPage() {
 
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Hapus ${selectedIds.length} lead terpilih secara permanen?`)) return;
     
-    setLoading(true);
-    const res = await fetch("/api/crm", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds })
+    setConfirmModal({
+      show: true,
+      title: "Hapus Masal Lead?",
+      message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} lead terpilih secara permanen?`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/crm", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: selectedIds })
+        });
+        
+        if (res.ok) {
+          setSelectedIds([]);
+          fetchData();
+          setConfirmModal(prev => ({ ...prev, show: false }));
+        } else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "Gagal menghapus beberapa data. Silakan refresh dan coba lagi.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+          setLoading(false);
+        }
+      }
     });
-    
-    if (res.ok) {
-      alert("Leads terpilih berhasil dihapus.");
-      setSelectedIds([]);
-      fetchData();
-    } else {
-      alert("Gagal menghapus beberapa data.");
-      setLoading(false);
-    }
   }
 
   function toggleSelect(id: string) {
@@ -277,7 +300,13 @@ export default function CRMPage() {
       fetchData();
     } else {
       const errData = await res.json().catch(() => ({}));
-      alert("Gagal menyimpan lead baru: " + (errData.details || errData.error || "Terjadi kesalahan pada server"));
+      setConfirmModal({
+        show: true,
+        title: "Gagal Menyimpan",
+        message: "❌ Gagal menyimpan lead baru: " + (errData.details || errData.error || "Terjadi kesalahan pada server"),
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     }
     setSubmittingLead(false);
   }
@@ -315,10 +344,22 @@ export default function CRMPage() {
         fetchData();
       } else {
         const err = await res.json();
-        alert("❌ Gagal convert: " + (err.details || err.error || "Unknown error"));
+        setConfirmModal({
+          show: true,
+          title: "Convert Gagal",
+          message: "❌ Gagal convert: " + (err.details || err.error || "Unknown error"),
+          type: "danger",
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
       }
     } catch (err: any) {
-      alert("❌ Error: " + err.message);
+      setConfirmModal({
+        show: true,
+        title: "Error System",
+        message: "❌ Error: " + err.message,
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     } finally {
       setConvertingLead(false);
     }
@@ -630,20 +671,29 @@ export default function CRMPage() {
                          )}
 
                          <div style={{ display: 'flex', gap: 4 }}>
-                            <button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0, color: 'var(--primary)', marginRight: 6 }} title="Cetak Invoice" onClick={(e) => { e.stopPropagation(); window.open('/invoice/'+lead.id, '_blank'); }}><FileText size={14} /></button><button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0, marginRight: 6 }} onClick={() => { setSelectedEditLead(lead); setShowEditModal(true); }} title="Edit Lead">
-                               <Edit size={14} />
+                            <button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0, color: 'var(--primary)', marginRight: 6 }} title="Cetak Invoice" onClick={(e) => { e.stopPropagation(); window.open('/invoice/'+lead.id, '_blank'); }}><FileText size={20} /></button>
+                            <button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0, marginRight: 6 }} onClick={() => { setSelectedEditLead(lead); setShowEditModal(true); }} title="Edit Lead">
+                               <Edit size={20} />
                             </button>
                             {canDelete && (
                                <button className="btn btn-secondary btn-icon" style={{ width: 30, height: 30, padding: 0, color: 'var(--danger)' }} onClick={() => {
-                                 if(confirm('Hapus lead ini?')) { 
-                                    setLoading(true);
-                                    fetch("/api/crm", {
-                                      method: "DELETE",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ ids: [lead.id] })
-                                    }).then(() => fetchData());
-                                 }
-                               }}><Trash2 size={14} /></button>
+                                 setConfirmModal({
+                                   show: true,
+                                   title: "Hapus Lead?",
+                                   message: `Hapus data prospect "${lead.nama}" secara permanen?`,
+                                   type: "danger",
+                                   onConfirm: async () => {
+                                     setLoading(true);
+                                     await fetch("/api/crm", {
+                                       method: "DELETE",
+                                       headers: { "Content-Type": "application/json" },
+                                       body: JSON.stringify({ ids: [lead.id] })
+                                     });
+                                     fetchData();
+                                     setConfirmModal(prev => ({ ...prev, show: false }));
+                                   }
+                                 });
+                               }}><Trash2 size={20} /></button>
                             )}
                          </div>
                       </div>
@@ -985,32 +1035,63 @@ export default function CRMPage() {
                           complete: async (results) => {
                             const jsonData = results.data;
                             if (jsonData.length === 0) {
-                              alert("File CSV kosong atau tidak valid.");
+                              setConfirmModal({
+                                show: true,
+                                title: "CSV Tidak Valid",
+                                message: "⚠️ File CSV kosong atau tidak memiliki data yang valid.",
+                                type: "warning",
+                                onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                              });
                               return;
                             }
                             
-                            if (confirm(`Impor ${jsonData.length} data calon siswa?`)) {
-                              setLoading(true);
-                              try {
-                                const res = await fetch("/api/crm/import", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify(jsonData)
-                                });
-                                if (res.ok) {
-                                  alert("Berhasil mengimpor data leads!");
-                                  setShowImportModal(false);
-                                  fetchData();
-                                } else {
-                                  const err = await res.json();
-                                  alert("Gagal impor: " + (err.error || "Cek format file"));
+                            setConfirmModal({
+                              show: true,
+                              title: "Impor Data?",
+                              message: `Impor ${jsonData.length} data calon siswa baru ke sistem?`,
+                              type: "info",
+                              onConfirm: async () => {
+                                setShowImportModal(false);
+                                setLoading(true);
+                                try {
+                                  const res = await fetch("/api/crm/import", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ leads: jsonData })
+                                  });
+                                  if (res.ok) {
+                                    setConfirmModal({
+                                      show: true,
+                                      title: "Import Berhasil",
+                                      message: "✅ Berhasil mengimpor data leads ke sistem!",
+                                      type: "success" as any,
+                                      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                    });
+                                    fetchData();
+                                  } else {
+                                    const err = await res.json();
+                                    setConfirmModal({
+                                      show: true,
+                                      title: "Import Gagal",
+                                      message: "❌ Gagal impor: " + (err.error || "Cek format file"),
+                                      type: "danger",
+                                      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                    });
+                                  }
+                                } catch (err) {
+                                  setConfirmModal({
+                                    show: true,
+                                    title: "Error Upload",
+                                    message: "❌ Terjadi kesalahan saat mengunggah file.",
+                                    type: "danger",
+                                    onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                  });
+                                } finally {
+                                  setLoading(false);
+                                  setConfirmModal(prev => ({ ...prev, show: false }));
                                 }
-                              } catch (err) {
-                                alert("Terjadi kesalahan saat mengunggah.");
-                              } finally {
-                                setLoading(false);
                               }
-                            }
+                            });
                           }
                         });
                       };
@@ -1218,7 +1299,13 @@ export default function CRMPage() {
                           style={{ padding: '0 12px' }}
                           onClick={() => {
                             navigator.clipboard.writeText(fullUrl);
-                            alert(`${link.label} berhasil disalin!`);
+                            setConfirmModal({
+                              show: true,
+                              title: "Link Disalin",
+                              message: `✅ Link ${link.label} berhasil disalin ke clipboard!`,
+                              type: "info",
+                              onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                            });
                           }}
                         >
                           Salin
@@ -1232,6 +1319,15 @@ export default function CRMPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/utils";
 import { History, Shield, User, Activity, Clock, Trash2 } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   function fetchLogs() {
     setLoading(true);
@@ -24,13 +26,27 @@ export default function LogsPage() {
   }, []);
 
   async function handleDeleteAll() {
-    const conf = prompt("⚠️ PERINGATAN: Seluruh catatan audit akan dihapus permanen.\n\nKetik 'HAPUS' untuk konfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/logs?all=true", { method: "DELETE" });
-      if (res.ok) fetchLogs();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SEMUA LOG?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh catatan audit akan dihapus permanen dari sistem. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/logs?all=true", { method: "DELETE" });
+        if (res.ok) fetchLogs();
+        else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "❌ Terjadi kesalahan server saat mencoba menghapus log.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   return (
@@ -110,6 +126,15 @@ export default function LogsPage() {
           </table>
         </div>
       </div>
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

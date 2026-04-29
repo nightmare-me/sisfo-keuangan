@@ -37,6 +37,9 @@ model User {
   refundsAsFin       Refund[]         @relation("FinanceRefund")
   marketingAds       MarketingAd[]    @relation("AdvMarketingAds")
   marketingAdsKredit MarketingAd[]    @relation("KreditMarketingAds")
+  contentsCreated    ContentProduction[] @relation("ContentCreator")
+  contentsFilmed     ContentProduction[] @relation("ContentVideographer")
+  contentsEdited     ContentProduction[] @relation("ContentEditor")
   role               Role?            @relation(fields: [roleId], references: [id])
   subRoleId          String?
   subRole            SubRole?         @relation(fields: [subRoleId], references: [id])
@@ -568,3 +571,71 @@ model FinancialConfig {
   category    String   @default("GENERAL")
   updatedAt   DateTime @updatedAt
 } 
+
+model SocialMetric {
+  id          String         @id @default(cuid())
+  tanggal     DateTime       @default(now())
+  platform    PlatformSocial @default(TIKTOK)
+  followers   Int            @default(0) // Tambahan: Tracking pengikut
+  views       Int            @default(0)
+  likes       Int            @default(0)
+  shares      Int            @default(0)
+  comments    Int            @default(0)
+  saved       Int            @default(0)
+  engagement  Float          @default(0)
+  keterangan  String?
+  dibuatOleh  String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([tanggal])
+  @@index([platform])
+}
+
+model ContentProduction {
+  id           String        @id @default(cuid())
+  judul        String
+  status       ContentStatus @default(IDEATION)
+  platform     PlatformSocial @default(TIKTOK)
+  deadline     DateTime?
+  creatorId    String?       
+  videogId     String?       
+  editorId     String?       
+  urlReferensi String?
+  urlHasil     String?       
+  urlPosted    String?       
+  keterangan   String?
+  
+  // Metrik Per Konten
+  views        Int           @default(0)
+  likes        Int           @default(0)
+  shares       Int           @default(0)
+  comments     Int           @default(0)
+  saved        Int           @default(0)
+  isViral      Boolean       @default(false) // Tambahan: Tandai jika FYP/Viral
+  postedAt     DateTime?     
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  creator      User?         @relation("ContentCreator", fields: [creatorId], references: [id])
+  videographer User?         @relation("ContentVideographer", fields: [videogId], references: [id])
+  editor       User?         @relation("ContentEditor", fields: [editorId], references: [id])
+}
+
+enum ContentStatus {
+  IDEATION
+  SCRIPTING
+  FILMING
+  EDITING
+  REVIEW
+  POSTED
+  CANCELLED
+}
+
+enum PlatformSocial {
+  TIKTOK
+  INSTAGRAM
+  YOUTUBE
+  FACEBOOK
+}

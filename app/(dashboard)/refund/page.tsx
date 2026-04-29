@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Trash2
 } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 const STATUS_BADGE: Record<string, string> = {
   PENDING: "badge-warning",
@@ -31,6 +32,7 @@ export default function RefundPage() {
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [selectedRefund, setSelectedRefund] = useState<any>(null);
   const [processForm, setProcessForm] = useState({ status: "APPROVED", catatan: "" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -71,23 +73,41 @@ export default function RefundPage() {
         fetchRefunds();
       } else {
         const err = await res.json();
-        alert("❌ Gagal memproses refund: " + (err.error || "Terjadi kesalahan"));
+        setConfirmModal({
+          show: true,
+          title: "Gagal Memproses",
+          message: "❌ Gagal memproses refund: " + (err.error || "Terjadi kesalahan"),
+          type: "danger",
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
       }
     } catch (err) {
       console.error("Refund processing error:", err);
-      alert("❌ Terjadi kesalahan koneksi.");
+      setConfirmModal({
+        show: true,
+        title: "Kesalahan Koneksi",
+        message: "❌ Terjadi kesalahan koneksi saat memproses refund.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     }
   }
 
   async function handleDeleteAll() {
     if (role?.toUpperCase() !== "ADMIN") return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh riwayat data REFUND akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/refund?all=true", { method: "DELETE" });
-      if (res.ok) fetchRefunds();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SEMUA REFUND?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh riwayat data REFUND akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/refund?all=true", { method: "DELETE" });
+        if (res.ok) fetchRefunds();
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   return (
@@ -275,6 +295,15 @@ export default function RefundPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

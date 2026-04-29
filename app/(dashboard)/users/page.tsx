@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { 
   Users, 
   UserPlus, 
@@ -54,12 +55,13 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-
   const [form, setForm] = useState({ 
-    name: "", namaPanggilan: "", noHp: "", email: "", password: "", roleId: "", 
-    teamType: [] as string[], secondaryRoles: [] as string[], aktif: true,
+    name: "", namaPanggilan: "", noHp: "", email: "", password: "", 
+    roleId: "", teamType: [] as string[], secondaryRoles: [] as string[], aktif: true,
     shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
   });
+
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const emptyRow = { name: "", email: "", password: "", roleSlug: "cs" };
   const [bulkRows, setBulkRows] = useState([{ ...emptyRow }, { ...emptyRow }, { ...emptyRow }]);
@@ -159,7 +161,14 @@ export default function UsersPage() {
     setSaving(false);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      alert("❌ Gagal menyimpan: " + (err.error ?? `HTTP ${res.status}`));
+      setSaving(false);
+      setConfirmModal({
+        show: true,
+        title: "Gagal Menyimpan",
+        message: "❌ Gagal menyimpan: " + (err.error ?? `HTTP ${res.status}`),
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
       return;
     }
     setShowModal(false); setEditUser(null);
@@ -167,9 +176,18 @@ export default function UsersPage() {
   }
 
   async function handleDeactivate(user: any) {
-    if (!confirm(`${user.aktif ? "Nonaktifkan" : "Aktifkan kembali"} user "${user.name}"?`)) return;
-    await fetch("/api/users", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: user.id, aktif: !user.aktif }) });
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: user.aktif ? "Nonaktifkan User?" : "Aktifkan Kembali?",
+      message: `Apakah Anda yakin ingin ${user.aktif ? "menonaktifkan" : "mengaktifkan kembali"} user "${user.name}"?`,
+      type: user.aktif ? "danger" : "info",
+      onConfirm: async () => {
+        setLoading(true);
+        await fetch("/api/users", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: user.id, aktif: !user.aktif }) });
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   // ── Bulk manual ──────────────────────────────────────────
@@ -182,14 +200,30 @@ export default function UsersPage() {
   async function handleBulkSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
     const valid = bulkRows.filter(r => r.name.trim() && r.email.trim() && r.password.trim());
-    if (valid.length === 0) { alert("Tidak ada baris yang valid. Isi minimal nama, email, dan password."); setSaving(false); return; }
+    if (valid.length === 0) {
+      setSaving(false);
+      setConfirmModal({
+        show: true,
+        title: "Data Tidak Valid",
+        message: "Tidak ada baris yang valid. Isi minimal nama, email, dan password.",
+        type: "warning",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
+      return;
+    }
     const res = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(valid) });
     const result = await res.json();
     setSaving(false); setShowModal(false);
     setBulkRows([{ ...emptyRow }, { ...emptyRow }, { ...emptyRow }]);
     let msg = `✅ Berhasil tambah ${result.success} user.`;
     if (result.failed > 0) msg += `\n\n❌ Gagal (${result.failed}):\n` + result.errors.slice(0, 5).join("\n");
-    alert(msg);
+    setConfirmModal({
+      show: true,
+      title: "Hasil Penambahan Massal",
+      message: msg,
+      type: result.failed > 0 ? "warning" : "info",
+      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+    });
     fetchData();
   }
 
@@ -248,7 +282,18 @@ export default function UsersPage() {
       };
     }).filter(u => u.name && u.email && u.password);
 
-    if (users.length === 0) { setCsvLoading(false); alert("Tidak ada data valid di CSV."); if (fileRef.current) fileRef.current.value = ""; return; }
+    if (users.length === 0) {
+      setCsvLoading(false);
+      setConfirmModal({
+        show: true,
+        title: "CSV Tidak Valid",
+        message: "Tidak ada data valid di file CSV. Pastikan format kolom sudah benar.",
+        type: "warning",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
 
     const res = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(users) });
     const result = await res.json();
@@ -256,7 +301,13 @@ export default function UsersPage() {
     if (fileRef.current) fileRef.current.value = "";
     let msg = `✅ Import selesai: ${result.success} dari ${users.length} user berhasil ditambahkan.`;
     if (result.failed > 0) msg += `\n\n❌ Gagal (${result.failed}):\n` + result.errors.slice(0, 7).join("\n");
-    alert(msg);
+    setConfirmModal({
+      show: true,
+      title: "Hasil Import CSV",
+      message: msg,
+      type: result.failed > 0 ? "warning" : "info",
+      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+    });
     fetchData();
   }
 
@@ -322,10 +373,22 @@ export default function UsersPage() {
         setShowPayrollModal(false);
         fetchData();
       } else {
-        alert("Gagal menyimpan profil payroll");
+        setConfirmModal({
+          show: true,
+          title: "Gagal Menyimpan",
+          message: "Gagal menyimpan profil payroll karyawan.",
+          type: "danger",
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
       }
     } catch (e) {
-      alert("Error saving payroll");
+      setConfirmModal({
+        show: true,
+        title: "Error System",
+        message: "Terjadi kesalahan saat menghubungi server untuk profil payroll.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     } finally {
       setSaving(false);
     }
@@ -460,24 +523,33 @@ export default function UsersPage() {
                   </td>
                   <td style={{ fontSize: 12, color: "var(--text-muted)" }}>{new Date(user.createdAt).toLocaleDateString("id-ID")}</td>
                   <td>
-                    <div style={{ display: "flex", gap: 6 }}>
+                    <div style={{ display: "flex", gap: 10 }}>
                       <button
                         onClick={() => openEdit(user)}
-                        style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "#818cf8", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                        className="btn btn-secondary btn-icon"
+                        style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--primary)' }}
                         title="Edit User"
-                      >✏️</button>
+                      >
+                        <Edit2 size={20} />
+                      </button>
                       {(selfRole === "admin" || selfRole === "finance") && (
                         <button
                           onClick={() => openPayroll(user)}
-                          style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "#10b981", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                          className="btn btn-secondary btn-icon"
+                          style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--success)' }}
                           title="Payroll Profile"
-                        >💳</button>
+                        >
+                          <Wallet size={20} />
+                        </button>
                       )}
                       <button
                         onClick={() => handleDeactivate(user)}
-                        style={{ background: user.aktif ? "rgba(239,68,68,0.1)" : "rgba(10,185,129,0.1)", border: user.aktif ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(10,185,129,0.3)", color: user.aktif ? "#f87171" : "#34d399", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                        className="btn btn-secondary btn-icon"
+                        style={{ width: 42, height: 42, borderRadius: 12, color: user.aktif ? "var(--danger)" : "var(--success)" }}
                         title={user.aktif ? "Nonaktifkan" : "Aktifkan"}
-                      >{user.aktif ? "🚫" : "✅"}</button>
+                      >
+                        {user.aktif ? <XCircle size={20} /> : <CheckCircle size={20} />}
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1033,6 +1105,15 @@ export default function UsersPage() {
         </div>
       )}
 
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

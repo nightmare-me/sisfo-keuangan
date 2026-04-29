@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { formatCurrency, SUPER_ROLES } from "@/lib/utils";
 
 const TIPE_OPTIONS = ["REGULAR", "PRIVATE", "SEMI_PRIVATE", "ONLINE", "LAINNYA"];
@@ -18,6 +19,7 @@ import {
   TrendingUp, 
   Type, 
   CheckCircle, 
+  XCircle,
   Edit3, 
   Trash2,
   Clock,
@@ -53,9 +55,10 @@ export default function ProgramPage() {
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  const [saving, setSaving] = useState(false);
   const [showNonaktif, setShowNonaktif] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -136,37 +139,71 @@ export default function ProgramPage() {
           const errData = await res.json();
           msg = errData.error || msg;
         } catch (e) {}
-        alert("⚠️ Gagal menyimpan: " + msg);
+        setConfirmModal({
+          show: true,
+          title: "Gagal Menyimpan",
+          message: "⚠️ Gagal menyimpan: " + msg,
+          type: "danger",
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
       } else {
         setShowModal(false);
         setEditId(null);
         fetchData();
       }
     } catch (err: any) {
-      alert("⚠️ Koneksi terputus atau server tidak merespon: " + err.message);
+      setConfirmModal({
+        show: true,
+        title: "Koneksi Bermasalah",
+        message: "⚠️ Koneksi terputus atau server tidak merespon: " + err.message,
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(p: any) {
-    if (!confirm(`Nonaktifkan produk "${p.nama}"?\n\nData historis transaksi tetap aman.`)) return;
-    await fetch(`/api/program?id=${p.id}`, { method: "DELETE" });
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Nonaktifkan Program?",
+      message: `Apakah Anda yakin ingin menonaktifkan program "${p.nama}"? Data historis transaksi tetap aman.`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        await fetch(`/api/program?id=${p.id}`, { method: "DELETE" });
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleDeleteAll() {
     if (role !== "ADMIN") return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data PRODUK/PROGRAM akan dihapus PERMANEN.\n\nPenghapusan akan GAGAL jika program masih digunakan di data kelas/invoice.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/program?deleteAll=true", { method: "DELETE" });
-      if (res.ok) fetchData();
-      else {
-        const err = await res.json();
-        alert("Gagal menghapus: " + (err.error ?? "Terjadi kesalahan"));
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SELURUH KATALOG?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh data PRODUK/PROGRAM akan dihapus PERMANEN. Penghapusan akan GAGAL jika program masih digunakan di data kelas/invoice.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/program?deleteAll=true", { method: "DELETE" });
+        if (res.ok) fetchData();
+        else {
+          const err = await res.json();
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "Gagal menghapus: " + (err.error ?? "Terjadi kesalahan"),
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
       }
-    }
+    });
   }
 
   async function handleReaktifkan(p: any) {
@@ -290,24 +327,33 @@ export default function ProgramPage() {
                   </td>
                   {isAdmin && (
                     <td>
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 10 }}>
                         <button
                           onClick={() => openEdit(p)}
-                          style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "#818cf8", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                          className="btn btn-secondary btn-icon"
+                          style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--primary)' }}
                           title="Edit"
-                        >✏️</button>
+                        >
+                          <Edit3 size={20} />
+                        </button>
                         {p.aktif ? (
                           <button
                             onClick={() => handleDelete(p)}
-                            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                            className="btn btn-secondary btn-icon"
+                            style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }}
                             title="Nonaktifkan"
-                          >🚫</button>
+                          >
+                            <XCircle size={20} />
+                          </button>
                         ) : (
                           <button
                             onClick={() => handleReaktifkan(p)}
-                            style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+                            className="btn btn-secondary btn-icon"
+                            style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--success)' }}
                             title="Aktifkan kembali"
-                          >✅</button>
+                          >
+                            <CheckCircle size={20} />
+                          </button>
                         )}
                       </div>
                     </td>
@@ -556,32 +602,55 @@ export default function ProgramPage() {
                           complete: async (results) => {
                             const jsonData = results.data;
                             if (jsonData.length === 0) {
-                              alert("File CSV kosong atau tidak valid.");
+                              setConfirmModal({
+                                show: true,
+                                title: "CSV Kosong",
+                                message: "File CSV kosong atau tidak memiliki data yang valid.",
+                                type: "warning",
+                                onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                              });
                               return;
                             }
                             
-                            if (confirm(`Impor ${jsonData.length} data program kursus?`)) {
-                              setLoading(true);
-                              try {
-                                const res = await fetch("/api/program/import", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify(jsonData)
-                                });
-                                if (res.ok) {
-                                  alert("Berhasil mengimpor katalog program!");
-                                  setShowImportModal(false);
-                                  fetchData();
-                                } else {
-                                  const err = await res.json();
-                                  alert("Gagal impor: " + (err.error || "Cek format file"));
+                            setConfirmModal({
+                              show: true,
+                              title: "Impor Katalog Program?",
+                              message: `Impor ${jsonData.length} data program kursus dari file CSV ke dalam sistem?`,
+                              type: "info",
+                              onConfirm: async () => {
+                                setShowImportModal(false);
+                                setLoading(true);
+                                try {
+                                  const res = await fetch("/api/program/import", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify(jsonData)
+                                  });
+                                  if (res.ok) {
+                                    setConfirmModal({
+                                      show: true,
+                                      title: "Import Berhasil",
+                                      message: "Berhasil mengimpor katalog program ke sistem!",
+                                      type: "success" as any,
+                                      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                    });
+                                    fetchData();
+                                  } else {
+                                    const err = await res.json();
+                                    setConfirmModal({
+                                      show: true,
+                                      title: "Import Gagal",
+                                      message: "Gagal impor: " + (err.error || "Cek format file"),
+                                      type: "danger",
+                                      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                    });
+                                  }
+                                } finally {
+                                  setLoading(false);
+                                  setConfirmModal(prev => ({ ...prev, show: false }));
                                 }
-                              } catch (err) {
-                                alert("Terjadi kesalahan saat mengunggah.");
-                              } finally {
-                                setLoading(false);
                               }
-                            }
+                            });
                           }
                         });
                       };
@@ -598,6 +667,15 @@ export default function ProgramPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

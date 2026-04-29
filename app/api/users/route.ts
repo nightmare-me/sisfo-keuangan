@@ -19,13 +19,21 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const hasUserManage = (session.user as any).permissions?.includes('user:manage');
+    const hasMultimediaView = (session.user as any).permissions?.includes('multimedia:view');
     const isAdmin = (session.user as any).role?.toUpperCase() === 'ADMIN';
 
+    // Jika tidak punya akses manage user, tapi punya akses multimedia, izinkan ambil data tim multimedia
     if (!hasUserManage && !isAdmin) {
-      if (filterRoleSlug) {
+      if (hasMultimediaView || filterRoleSlug) {
+        const targetRole = filterRoleSlug?.toLowerCase() || "multimedia";
         const users = await prisma.user.findMany({
-          where: { role: { slug: filterRoleSlug.toLowerCase() }, aktif: true },
-          include: { role: true, karyawanProfile: true },
+          where: { 
+            aktif: true,
+            role: { 
+              slug: { in: ['multimedia', 'spv_multimedia', 'talent'] } 
+            }
+          },
+          include: { role: true },
           orderBy: { name: "asc" },
         });
         const formatted = users.map((u: any) => ({

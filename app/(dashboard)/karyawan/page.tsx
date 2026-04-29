@@ -21,6 +21,7 @@ import {
   FileSpreadsheet
 } from "lucide-react";
 import { formatCurrency, hasPermission } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 const rowSelectedStyle = {
   background: 'rgba(99, 102, 241, 0.08)',
@@ -66,6 +67,7 @@ export default function KaryawanPage() {
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -119,26 +121,46 @@ export default function KaryawanPage() {
 
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Hapus data profil karyawan untuk ${selectedIds.length} orang terpilih?\n\nAkun user tidak akan terhapus, hanya profil finansial karyawannya saja.`)) return;
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/karyawan", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: selectedIds })
-      });
-      if (res.ok) {
-        setSelectedIds([]);
-        fetchData();
-      } else {
-        alert("Gagal menghapus data");
+    
+    setConfirmModal({
+      show: true,
+      title: "Hapus Profil Karyawan?",
+      message: `Apakah Anda yakin ingin menghapus data profil finansial untuk ${selectedIds.length} orang terpilih? Akun user tidak akan terhapus, hanya profil finansial karyawannya saja.`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          const res = await fetch("/api/karyawan", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: selectedIds })
+          });
+          if (res.ok) {
+            setSelectedIds([]);
+            fetchData();
+          } else {
+            setConfirmModal({
+              show: true,
+              title: "Gagal Menghapus",
+              message: "❌ Gagal menghapus data beberapa karyawan. Silakan coba lagi.",
+              type: "danger",
+              onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+            });
+          }
+        } catch (e) {
+          setConfirmModal({
+            show: true,
+            title: "Error System",
+            message: "❌ Terjadi kesalahan sistem saat mencoba menghapus data.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        } finally {
+          setLoading(false);
+          setConfirmModal(prev => ({ ...prev, show: false }));
+        }
       }
-    } catch (e) {
-      alert("Error deleting data");
-    } finally {
-      setLoading(false);
-    }
+    });
   }
 
   const roles = Array.from(new Set(data.map(u => u.role?.name))).filter(Boolean);
@@ -190,10 +212,22 @@ export default function KaryawanPage() {
         setShowModal(false);
         fetchData();
       } else {
-        alert(result.error || "Gagal menyimpan data karyawan");
+        setConfirmModal({
+          show: true,
+          title: "Gagal Menyimpan",
+          message: "⚠️ " + (result.error || "Gagal menyimpan data karyawan."),
+          type: "danger",
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
       }
     } catch (e: any) {
-      alert("Error: " + (e.message || "Gagal menyimpan data"));
+      setConfirmModal({
+        show: true,
+        title: "Error System",
+        message: "❌ Error: " + (e.message || "Gagal menyimpan data."),
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     } finally {
       setSaving(false);
     }
@@ -209,7 +243,7 @@ export default function KaryawanPage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 48, flexShrink: 0 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--primary)", marginBottom: 8 }}>
-             <Users size={18} />
+             <Users size={20} />
              <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Human Resources & Payroll</span>
           </div>
           <h1 className="headline-lg" style={{ marginBottom: 4, fontSize: '2.5rem' }}>Data Karyawan</h1>
@@ -218,11 +252,11 @@ export default function KaryawanPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
           {selectedIds.length > 0 && (
             <button className="btn btn-secondary" style={{ color: 'var(--danger)', borderColor: 'var(--danger)', borderRadius: 'var(--radius-full)' }} onClick={handleBulkDelete}>
-              <Trash2 size={16} /> Hapus ({selectedIds.length})
+              <Trash2 size={18} /> Hapus ({selectedIds.length})
             </button>
           )}
           <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={() => setShowImportModal(true)}>
-            <FileSpreadsheet size={16} /> Import CSV
+            <FileSpreadsheet size={18} /> Import CSV
           </button>
         </div>
       </div>
@@ -250,16 +284,16 @@ export default function KaryawanPage() {
         {/* Filter & Search */}
         <div className="card" style={{ padding: '16px 20px', marginBottom: 32, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
-            <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <Search size={20} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input type="text" className="form-control" placeholder="Cari nama karyawan..." style={{ paddingLeft: 44 }} value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <Filter size={16} style={{ color: "var(--primary)" }} />
+            <Filter size={20} style={{ color: "var(--primary)" }} />
             <select className="form-control" value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ width: 160 }}>
               <option value="">Semua Bagian</option>
               {roles.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
-            <button className="btn btn-secondary btn-icon" onClick={() => { setSearch(""); setFilterRole(""); fetchData(); }}><RefreshCw size={16} /></button>
+            <button className="btn btn-secondary btn-icon" onClick={() => { setSearch(""); setFilterRole(""); fetchData(); }}><RefreshCw size={20} /></button>
           </div>
         </div>
 
@@ -308,8 +342,8 @@ export default function KaryawanPage() {
                     <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{u.karyawanProfile?.rekeningNomor || "-"}</div>
                   </td>
                   <td>
-                    <button className="btn btn-secondary btn-sm" onClick={() => openEdit(u)} style={{ borderRadius: 8 }}>
-                      <Edit2 size={14} /> Edit
+                    <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => openEdit(u)} title="Edit">
+                      <Edit2 size={20} />
                     </button>
                   </td>
                 </tr>
@@ -641,11 +675,9 @@ export default function KaryawanPage() {
                         const text = event.target?.result as string;
                         const lines = text.split("\n").filter(l => l.trim());
                         const jsonData = lines.slice(1).map(line => {
-                          // Smart Delimiter Detection
                           const commaCount = (line.match(/,/g) || []).length;
                           const semicolonCount = (line.match(/;/g) || []).length;
                           const delimiter = semicolonCount > commaCount ? ";" : ",";
-                          
                           const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
                           const values = line.split(delimiter).map(v => v.trim());
                           const obj: any = {};
@@ -655,33 +687,50 @@ export default function KaryawanPage() {
                           return obj;
                         });
 
-                        if (confirm(`Impor ${jsonData.length} data karyawan?`)) {
-                          setLoading(true);
-                          try {
-                            const res = await fetch("/api/karyawan/import", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(jsonData)
-                            });
-                            if (res.ok) {
-                              const result = await res.json();
-                              let msg = `✅ Import selesai: ${result.successCount} sukses, ${result.failedCount} gagal.`;
-                              if (result.failedCount > 0) {
-                                msg += `\n\n❌ Detail Error:\n` + result.errors.slice(0, 10).join("\n");
-                              }
-                              alert(msg);
-                              setShowImportModal(false);
-                              fetchData();
-                            } else {
-                              const err = await res.json();
-                              alert("Gagal impor: " + (err.error || "Terjadi kesalahan sistem"));
+                        setConfirmModal({
+                          show: true,
+                          title: "Impor Data Karyawan?",
+                          message: `Impor ${jsonData.length} data karyawan dari file CSV ke sistem?`,
+                          type: "info",
+                          onConfirm: async () => {
+                            setShowImportModal(false);
+                            setLoading(true);
+                            try {
+                              const res = await fetch("/api/karyawan/import", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(jsonData)
+                              });
+                              if (res.ok) {
+                                  const result = await res.json();
+                                  let msg = `✅ Import selesai: ${result.successCount} sukses, ${result.failedCount} gagal.`;
+                                  if (result.failedCount > 0) {
+                                    msg += `\n\n❌ Detail Error:\n` + result.errors.slice(0, 10).join("\n");
+                                  }
+                                  setConfirmModal({
+                                    show: true,
+                                    title: "Hasil Import CSV",
+                                    message: msg,
+                                    type: result.failedCount > 0 ? "warning" : "success" as any,
+                                    onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                  });
+                                  fetchData();
+                                } else {
+                                  const err = await res.json();
+                                  setConfirmModal({
+                                    show: true,
+                                    title: "Gagal Impor",
+                                    message: "❌ Gagal impor: " + (err.error || "Terjadi kesalahan sistem"),
+                                    type: "danger",
+                                    onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                  });
+                                }
+                            } finally {
+                              setLoading(false);
+                              setConfirmModal(prev => ({ ...prev, show: false }));
                             }
-                          } catch (err) {
-                            alert("Terjadi kesalahan saat mengunggah.");
-                          } finally {
-                            setLoading(false);
                           }
-                        }
+                        });
                       };
                       reader.readAsText(file);
                     }} />
@@ -696,6 +745,15 @@ export default function KaryawanPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

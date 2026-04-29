@@ -9,6 +9,7 @@ import {
   Printer,
   Table as TableIcon
 } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function ArsipNotaPage() {
   const [data, setData] = useState<any[]>([]);
@@ -18,6 +19,7 @@ export default function ArsipNotaPage() {
   // Print preview state
   const [printingImages, setPrintingImages] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -61,7 +63,13 @@ export default function ArsipNotaPage() {
     });
     
     if (imagesToPrint.length === 0) {
-      alert("Tidak ada nota untuk dicetak pada periode ini.");
+      setConfirmModal({
+        show: true,
+        title: "Nota Tidak Ditemukan",
+        message: "⚠️ Tidak ada file lampiran nota untuk dicetak pada periode ini.",
+        type: "warning",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
       return;
     }
     
@@ -102,7 +110,13 @@ export default function ArsipNotaPage() {
       XLSX.writeFile(wb, `${filename}.xlsx`);
     } catch (e: any) {
       console.error(e);
-      alert(`Gagal mengekspor file excel: ${e.message}`);
+      setConfirmModal({
+        show: true,
+        title: "Ekspor Gagal",
+        message: `❌ Gagal mengekspor file excel: ${e.message}`,
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     } finally {
       setExporting(false);
     }
@@ -275,6 +289,15 @@ export default function ArsipNotaPage() {
           ))}
         </div>
       </div>
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading || exporting}
+      />
     </div>
   );
 }

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { formatCurrency, formatDate, formatDateTime, SUPER_ROLES } from "@/lib/utils";
 import Papa from "papaparse";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Pemasukan {
   id: string;
@@ -61,9 +62,10 @@ export default function PemasukanPage() {
     tanggal: new Date().toISOString().slice(0, 10),
   });
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
   const fileRef = useRef<HTMLInputElement>(null);
 
   const emptyForm = {
@@ -173,9 +175,22 @@ export default function PemasukanPage() {
   }
 
   async function handleDelete(item: Pemasukan) {
-    if (!confirm(`Hapus transaksi ${item.invoice?.noInvoice ?? ""} ?`)) return;
-    const res = await fetch(`/api/pemasukan/${item.id}`, { method: "DELETE" });
-    if (res.ok) fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Hapus Transaksi?",
+      message: `Apakah Anda yakin ingin menghapus transaksi ${item.invoice?.noInvoice || "ini"}?`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch(`/api/pemasukan/${item.id}`, { method: "DELETE" });
+        if (res.ok) {
+          fetchData();
+          setConfirmModal(prev => ({ ...prev, show: false }));
+        } else {
+          setLoading(false);
+        }
+      }
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -198,42 +213,66 @@ export default function PemasukanPage() {
       fetchData();
     } else {
       setSaving(false);
-      alert("Gagal menyimpan data.");
+      setConfirmModal({
+        show: true,
+        title: "Gagal Menyimpan",
+        message: "Terjadi kesalahan saat menyimpan data pemasukan. Silakan coba lagi.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     }
   }
 
 
   async function handleDeleteAll() {
     if (role !== "ADMIN") return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data PEMASUKAN dan INVOICE akan dihapus permanen.\n\nTindakan ini tidak bisa dibatalkan.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/pemasukan?all=true", { method: "DELETE" });
-      if (res.ok) fetchData();
-      else alert("Gagal menghapus.");
-      setLoading(false);
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SEMUA DATA?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh data PEMASUKAN dan INVOICE akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/pemasukan?all=true", { method: "DELETE" });
+        if (res.ok) fetchData();
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Hapus ${selectedIds.length} pemasukan terpilih beserta invoice terkait secara permanen?`)) return;
     
-    setLoading(true);
-    const res = await fetch("/api/pemasukan", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds })
+    setConfirmModal({
+      show: true,
+      title: "Hapus Masal Pemasukan?",
+      message: `Hapus ${selectedIds.length} data pemasukan terpilih beserta invoice terkait secara permanen?`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/pemasukan", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: selectedIds })
+        });
+        
+        if (res.ok) {
+          setSelectedIds([]);
+          fetchData();
+          setConfirmModal(prev => ({ ...prev, show: false }));
+        } else {
+          setLoading(false);
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "Beberapa data gagal dihapus. Silakan periksa koneksi atau hak akses Anda.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+      }
     });
-    
-    if (res.ok) {
-      alert("Pemasukan terpilih berhasil dihapus.");
-      setSelectedIds([]);
-      fetchData();
-    } else {
-      alert("Gagal menghapus beberapa data.");
-      setLoading(false);
-    }
   }
 
   function toggleSelect(id: string) {
@@ -313,7 +352,7 @@ export default function PemasukanPage() {
                  <option value="">Semua Program</option>
                  {filterPrograms.map(p => <option key={p.id} value={p.id}>{p.nama}</option>)}
               </select>
-              <button className="btn btn-secondary btn-sm" onClick={() => { setFilter({ from: "", to: "", csId: "", programId: "", metodeBayar: "" }); setPage(1); }}><RefreshCw size={14} /> Reset</button>
+              <button className="btn btn-secondary btn-sm" style={{ borderRadius: 12, height: 42 }} onClick={() => { setFilter({ from: "", to: "", csId: "", programId: "", metodeBayar: "" }); setPage(1); }}><RefreshCw size={20} /> Reset</button>
            </div>
         </div>
 
@@ -370,9 +409,9 @@ export default function PemasukanPage() {
                      <code style={{ fontSize: 11, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: 4 }}>{item.invoice?.noInvoice || "—"}</code>
                   </td>
                   <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                       <button className="btn btn-secondary btn-icon" onClick={() => openEditModal(item)}><Edit3 size={14} /></button>
-                       {role === "ADMIN" && <button className="btn btn-secondary btn-icon" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(item)}><Trash2 size={14} /></button>}
+                    <div style={{ display: "flex", gap: 8, justifyContent: 'flex-end' }}>
+                       <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => openEditModal(item)}><Edit3 size={20} /></button>
+                       {role === "ADMIN" && <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }} onClick={() => handleDelete(item)}><Trash2 size={20} /></button>}
                     </div>
                   </td>
                 </tr>
@@ -600,40 +639,61 @@ export default function PemasukanPage() {
                           complete: async (results) => {
                             const jsonData = results.data;
                             if (jsonData.length === 0) {
-                              alert("File CSV kosong atau tidak valid.");
+                              setConfirmModal({
+                                show: true,
+                                title: "File Kosong",
+                                message: "File CSV yang Anda pilih tidak memiliki data yang valid.",
+                                type: "warning",
+                                onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                              });
                               return;
                             }
-
-                        if (confirm(`Impor ${jsonData.length} data transaksi?`)) {
-                          setCsvLoading(true);
-                          try {
-                            const res = await fetch("/api/pemasukan/import", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(jsonData)
+                            
+                            setConfirmModal({
+                              show: true,
+                              title: "Impor Transaksi?",
+                              message: `Impor ${jsonData.length} data transaksi dari file CSV ke sistem?`,
+                              type: "info",
+                              onConfirm: async () => {
+                                setShowImportModal(false);
+                                setCsvLoading(true);
+                                try {
+                                  const res = await fetch("/api/pemasukan/import", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify(jsonData)
+                                  });
+                                  if (res.ok) {
+                                    const result = await res.json();
+                                    setConfirmModal({
+                                      show: true,
+                                      title: "Import Berhasil",
+                                      message: result.message || `Berhasil mengimpor ${result.count || 0} data pemasukan!`,
+                                      type: "success" as any,
+                                      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                    });
+                                    fetchData();
+                                  } else {
+                                    const err = await res.json();
+                                    setConfirmModal({
+                                      show: true,
+                                      title: "Import Gagal",
+                                      message: "Gagal impor: " + (err.error || "Cek format file"),
+                                      type: "danger",
+                                      onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                    });
+                                  }
+                                } finally {
+                                  setCsvLoading(false);
+                                  setConfirmModal(prev => ({ ...prev, show: false }));
+                                }
+                              }
                             });
-                            if (res.ok) {
-                              const result = await res.json();
-                              console.log("Import response:", result);
-                              alert(result.message || `Berhasil mengimpor ${result.count || 0} data pemasukan!`);
-                              setShowImportModal(false);
-                              fetchData();
-                            } else {
-                              const err = await res.json();
-                              console.error("Import error:", err);
-                              alert("Gagal impor: " + (err.error || "Cek format file"));
-                            }
-                          } catch (err) {
-                            alert("Terjadi kesalahan saat mengunggah.");
-                          } finally {
-                            setCsvLoading(false);
                           }
-                          }
-                        }
-                      });
-                    };
-                    reader.readAsText(file);
-                  }} />
+                        });
+                      };
+                      reader.readAsText(file);
+                    }} />
                   </label>
                 </div>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Maksimal 2MB .csv | Format UTF-8</p>
@@ -645,6 +705,15 @@ export default function PemasukanPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

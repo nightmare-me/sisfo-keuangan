@@ -18,6 +18,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { formatCurrency, formatDate, SUPER_ROLES } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 export default function StaffPayrollPage() {
   const { data: session } = useSession();
@@ -27,6 +28,7 @@ export default function StaffPayrollPage() {
   const [bulan, setBulan] = useState(new Date().getMonth() + 1);
   const [tahun, setTahun] = useState(new Date().getFullYear());
   const [processing, setProcessing] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
   
   const [showDetail, setShowDetail] = useState<any>(null);
 
@@ -67,43 +69,70 @@ export default function StaffPayrollPage() {
   }, [bulan, tahun]);
 
   async function handlePay(item: any) {
-    if (!confirm(`Konfirmasi pembayaran gaji untuk ${item.name}? Ini akan mencatat pengeluaran otomatis.`)) return;
-    
-    setProcessing(true);
-    const res = await fetch("/api/payroll/staff", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: item.id,
-        bulan,
-        tahun,
-        gapok: item.gapok,
-        tunjangan: item.tunjangan,
-        fee: item.fee,
-        bonus: item.bonus,
-        total: item.total,
-        keterangan: `Payroll Otomatis Bulan ${bulan}/${tahun}`
-      })
-    });
+    setConfirmModal({
+      show: true,
+      title: "Konfirmasi Pembayaran Gaji?",
+      message: `Apakah Anda yakin ingin memproses pembayaran gaji untuk "${item.name}"? Tindakan ini akan mencatat pengeluaran otomatis ke buku kas.`,
+      type: "warning",
+      onConfirm: async () => {
+        setProcessing(true);
+        const res = await fetch("/api/payroll/staff", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: item.id,
+            bulan,
+            tahun,
+            gapok: item.gapok,
+            tunjangan: item.tunjangan,
+            fee: item.fee,
+            bonus: item.bonus,
+            total: item.total,
+            keterangan: `Payroll Otomatis Bulan ${bulan}/${tahun}`
+          })
+        });
 
-    if (res.ok) {
-      alert(`Berhasil memproses payroll untuk ${item.name}`);
-      fetchPayroll();
-    } else {
-      alert("Gagal memproses payroll.");
-    }
-    setProcessing(false);
+        if (res.ok) {
+          fetchPayroll();
+        } else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Memproses",
+            message: "❌ Terjadi kesalahan saat memproses data payroll. Silakan coba lagi.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setProcessing(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleDeleteAll() {
     if (role !== "ADMIN") return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh riwayat data PAYROLL STAF (Histori Pembayaran) akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/payroll/staff?all=true", { method: "DELETE" });
-      if (res.ok) fetchPayroll();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS HISTORI PAYROLL?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh riwayat data PAYROLL STAF (Histori Pembayaran) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/payroll/staff?all=true", { method: "DELETE" });
+        if (res.ok) fetchPayroll();
+        else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "❌ Terjadi kesalahan server saat mencoba menghapus data.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   const BULAN_LIST = [
@@ -218,15 +247,16 @@ export default function StaffPayrollPage() {
                     <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--primary)' }}>{formatCurrency(item.total)}</div>
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                       <button className="btn btn-secondary btn-icon" onClick={() => setShowDetail(item)} title="Detail Breakdown"><Eye size={14} /></button>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                       <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => setShowDetail(item)} title="Detail Breakdown"><Eye size={20} /></button>
                        <button 
-                        className="btn btn-primary btn-sm" 
+                        className="btn btn-primary btn-icon" 
                         onClick={() => handlePay(item)}
                         disabled={processing || !isAdmin}
-                        style={{ padding: '4px 12px' }}
+                        style={{ width: 42, height: 42, borderRadius: 12 }}
+                        title="Approve"
                        >
-                         {processing ? "..." : <CheckCircle size={14} />} Approve
+                         {processing ? "..." : <CheckCircle size={20} />}
                        </button>
                     </div>
                   </td>
@@ -380,6 +410,15 @@ export default function StaffPayrollPage() {
             color: #3b82f6;
         }
       `}</style>
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={processing || loading}
+      />
     </div>
   );
 }

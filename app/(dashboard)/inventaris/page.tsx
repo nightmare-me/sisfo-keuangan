@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useSession } from "next-auth/react";
 import { 
   Plus, 
@@ -42,6 +43,7 @@ export default function InventarisPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
   const [form, setForm] = useState({ nama:"", kategori:"", jumlah:"0", satuan:"pcs", hargaBeli:"", kondisi:"BAIK", tanggalBeli:"", keterangan:"", stokMinimum:"1" });
 
   const [page, setPage] = useState(1);
@@ -101,41 +103,78 @@ export default function InventarisPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Hapus barang inventaris ini?")) return;
-    await fetch(`/api/inventaris?id=${id}`,{ method:"DELETE" });
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Hapus Barang?",
+      message: "Apakah Anda yakin ingin menghapus barang inventaris ini secara permanen?",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        await fetch(`/api/inventaris?id=${id}`,{ method:"DELETE" });
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleDeleteAll() {
     if (!isAdmin) return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data INVENTARIS akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/inventaris?all=true", { method: "DELETE" });
-      if (res.ok) fetchData();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SEMUA INVENTARIS?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh data INVENTARIS akan dihapus permanen dari sistem. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/inventaris?all=true", { method: "DELETE" });
+        if (res.ok) fetchData();
+        else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "❌ Terjadi kesalahan server saat mencoba menghapus data.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Hapus ${selectedIds.length} item inventaris terpilih secara permanen?`)) return;
     
-    setLoading(true);
-    const res = await fetch("/api/inventaris", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds })
+    setConfirmModal({
+      show: true,
+      title: "Hapus Masal Inventaris?",
+      message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} item inventaris terpilih secara permanen?`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/inventaris", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: selectedIds })
+        });
+        
+        if (res.ok) {
+          setSelectedIds([]);
+          fetchData();
+          setConfirmModal(prev => ({ ...prev, show: false }));
+        } else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "❌ Gagal menghapus beberapa data terpilih. Silakan coba lagi.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+          setLoading(false);
+        }
+      }
     });
-    
-    if (res.ok) {
-      alert("Item terpilih berhasil dihapus.");
-      setSelectedIds([]);
-      fetchData();
-    } else {
-      alert("Gagal menghapus beberapa data.");
-      setLoading(false);
-    }
   }
 
   function toggleSelect(id: string) {
@@ -282,12 +321,12 @@ export default function InventarisPage() {
                   <td><span className={`badge ${KONDISI_BADGE[item.kondisi]??""}`}>{item.kondisi.replace("_"," ")}</span></td>
                   <td>{item.hargaBeli ? formatCurrency(item.hargaBeli) : "—"}</td>
                   <td style={{ fontSize:12,color:"var(--text-muted)" }}>{item.tanggalBeli ? formatDate(item.tanggalBeli) : "—"}</td>
-                  <td>
-                    <div style={{ display:"flex",gap:6 }}>
-                      <button className="btn btn-secondary btn-sm" onClick={()=>openEdit(item)}>✏</button>
-                      <button className="btn btn-danger btn-sm" onClick={()=>handleDelete(item.id)}>🗑</button>
-                    </div>
-                  </td>
+                   <td>
+                     <div style={{ display:"flex",gap:10 }}>
+                       <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={()=>openEdit(item)} title="Edit"><Edit2 size={20} /></button>
+                       <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }} onClick={()=>handleDelete(item.id)} title="Hapus"><Trash2 size={20} /></button>
+                     </div>
+                   </td>
                 </tr>
               ))}
             </tbody>
@@ -490,28 +529,45 @@ export default function InventarisPage() {
                           return obj;
                         });
 
-                        if (confirm(`Impor ${jsonData.length} item inventaris?`)) {
-                          setImporting(true);
-                          try {
-                            const res = await fetch("/api/inventaris/import", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(jsonData)
-                            });
-                            if (res.ok) {
-                              alert("Berhasil mengimpor data inventaris!");
-                              setShowImportModal(false);
-                              fetchData();
-                            } else {
-                              const err = await res.json();
-                              alert("Gagal impor: " + err.error);
+                        setConfirmModal({
+                          show: true,
+                          title: "Impor Inventaris?",
+                          message: `Impor ${jsonData.length} item inventaris dari file CSV ke sistem?`,
+                          type: "info",
+                          onConfirm: async () => {
+                            setShowImportModal(false);
+                            setImporting(true);
+                            try {
+                              const res = await fetch("/api/inventaris/import", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(jsonData)
+                              });
+                              if (res.ok) {
+                                setConfirmModal({
+                                  show: true,
+                                  title: "Impor Berhasil",
+                                  message: "✅ Berhasil mengimpor data inventaris ke sistem!",
+                                  type: "success" as any,
+                                  onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                });
+                                fetchData();
+                              } else {
+                                const err = await res.json();
+                                setConfirmModal({
+                                  show: true,
+                                  title: "Impor Gagal",
+                                  message: "❌ Gagal impor: " + (err.error || "Cek format file"),
+                                  type: "danger",
+                                  onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                });
+                              }
+                            } finally {
+                              setImporting(false);
+                              setConfirmModal(prev => ({ ...prev, show: false }));
                             }
-                          } catch (err) {
-                            alert("Terjadi kesalahan saat mengunggah.");
-                          } finally {
-                            setImporting(false);
                           }
-                        }
+                        });
                       };
                       reader.readAsText(file);
                     }} />
@@ -526,6 +582,15 @@ export default function InventarisPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

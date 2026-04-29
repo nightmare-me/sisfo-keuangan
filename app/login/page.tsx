@@ -44,8 +44,17 @@ export default function LoginPage() {
       <div className="login-container">
         
         <div className="login-header">
-          <div className="brand-logo">
-             <GraduationCap size={28} color="var(--on-primary-container)" />
+          <div className="brand-logo" style={{ background: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+             <img 
+               src="/logo_sp.png?v=1" 
+               alt="Speaking Partner Logo" 
+               style={{ 
+                 width: '100%', 
+                 height: '100%', 
+                 objectFit: 'contain',
+                 padding: '4px'
+               }} 
+             />
           </div>
           <div>
             <h1 className="headline-lg">Internal Portal</h1>

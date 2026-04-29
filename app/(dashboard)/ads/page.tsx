@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import Papa from "papaparse";
 import { 
@@ -38,6 +39,7 @@ export default function AdsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState({ from:"", to:"", platform:"" });
   const [form, setForm] = useState({ platform:"META", jumlah:"", keterangan:"", leads:"", tanggal: new Date().toISOString().slice(0,10) });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -79,20 +81,44 @@ export default function AdsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Hapus data iklan ini?")) return;
-    await fetch(`/api/ads?id=${id}`,{ method:"DELETE" });
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Hapus Metrik Iklan?",
+      message: "Apakah Anda yakin ingin menghapus data metrik iklan ini secara permanen?",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        await fetch(`/api/ads?id=${id}`,{ method:"DELETE" });
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleDeleteAll() {
     if (!isAdmin) return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data SPENT ADS (Biaya Iklan) akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/ads?all=true", { method: "DELETE" });
-      if (res.ok) fetchData();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SELURUH DATA IKLAN?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh data SPENT ADS (Biaya Iklan) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/ads?all=true", { method: "DELETE" });
+        if (res.ok) fetchData();
+        else {
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "❌ Terjadi kesalahan saat mencoba menghapus data.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   function downloadCsvTemplate() {
@@ -129,7 +155,13 @@ export default function AdsPage() {
         try {
           const rows = results.data.filter((row: any) => row.tanggal && !row.tanggal.toString().startsWith("#"));
           if (rows.length === 0) {
-            alert("⚠️ File CSV kosong atau tidak memiliki data yang valid.");
+            setConfirmModal({
+              show: true,
+              title: "CSV Tidak Valid",
+              message: "⚠️ File CSV kosong atau tidak memiliki data yang valid. Periksa format kolom Anda.",
+              type: "warning",
+              onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+            });
             setCsvLoading(false);
             if (fileRef.current) fileRef.current.value = "";
             return;
@@ -143,14 +175,32 @@ export default function AdsPage() {
           
           if (!res.ok) {
             const err = await res.json();
-            alert("❌ Gagal import: " + (err.error ?? "Terjadi kesalahan"));
+            setConfirmModal({
+              show: true,
+              title: "Import Gagal",
+              message: "❌ Gagal import: " + (err.error ?? "Terjadi kesalahan"),
+              type: "danger",
+              onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+            });
           } else {
             const result = await res.json();
-            alert(`✅ Berhasil import ${result.success || 0} data ads!`);
+            setConfirmModal({
+              show: true,
+              title: "Import Berhasil",
+              message: `✅ Berhasil import ${result.success || 0} data ads!`,
+              type: "success" as any,
+              onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+            });
             fetchData();
           }
         } catch (error: any) {
-          alert("❌ Terjadi kesalahan saat import.");
+          setConfirmModal({
+            show: true,
+            title: "Error System",
+            message: "❌ Terjadi kesalahan saat mencoba memproses file CSV.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
         }
         setCsvLoading(false);
         if (fileRef.current) fileRef.current.value = "";
@@ -376,11 +426,11 @@ export default function AdsPage() {
                   <td className="text-right" style={{ fontWeight:600, color: "var(--primary)" }}>{item.leads || 0}</td>
                   <td className="text-right" style={{ fontWeight:600, color: "var(--success)" }}>{formatCurrency(item.cpl || 0)}</td>
                   <td className="text-right" style={{ fontWeight:700, color: "#8b5cf6" }}>{formatCurrency(item.fee || 0)}</td>
-                  <td className="text-center">
-                    <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
+                   <td className="text-center">
+                     <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: "var(--danger)" }} onClick={()=>handleDelete(item.id)} title="Hapus">
+                       <Trash2 size={20} />
+                     </button>
+                   </td>
                 </tr>
               ))}
             </tbody>
@@ -492,6 +542,15 @@ export default function AdsPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

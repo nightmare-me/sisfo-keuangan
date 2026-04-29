@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Check, Shield, Save, Plus, Info } from "lucide-react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface Permission {
   id: string;
@@ -26,6 +27,7 @@ export default function RolesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rolePermissions, setRolePermissions] = useState<string[]>([]);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const modules = [
     { name: 'Dashboard', slug: 'dashboard' },
@@ -117,11 +119,23 @@ export default function RolesPage() {
         })
       });
       if (res.ok) {
-        alert("Matriks akses berhasil diperbarui!");
+        setConfirmModal({
+          show: true,
+          title: "Berhasil Update",
+          message: "✅ Matriks akses berhasil diperbarui dan diterapkan ke sistem.",
+          type: "success" as any,
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
         fetchData();
       }
     } catch (error) {
-      alert("Gagal menyimpan perubahan.");
+      setConfirmModal({
+        show: true,
+        title: "Gagal Update",
+        message: "❌ Terjadi kesalahan server saat menyimpan perubahan matriks.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     }
     setSaving(false);
   }
@@ -145,7 +159,13 @@ export default function RolesPage() {
         fetchData();
       }
     } catch (error) {
-      alert("Gagal menambah role");
+      setConfirmModal({
+        show: true,
+        title: "Gagal Tambah Role",
+        message: "❌ Gagal membuat role baru di database.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     }
     setSaving(false);
   }
@@ -312,6 +332,15 @@ export default function RolesPage() {
           )}
         </div>
       </div>
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={saving}
+      />
     </div>
   );
 }

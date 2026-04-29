@@ -19,19 +19,58 @@ async function ensureRoles() {
     "akademik", "talent", "spv_cs", "spv_adv", "spv_multimedia", "siswa",
     "ceo", "coo", "multimedia"
   ];
-  
+
+  const allPermissions = [
+    { name: "View Dashboard", slug: "dashboard:view" },
+    { name: "View CRM", slug: "crm:view" },
+    { name: "View Finance In", slug: "finance_in:view" },
+    { name: "View Finance Out", slug: "finance_out:view" },
+    { name: "View Reports", slug: "report:view" },
+    { name: "View Multimedia", slug: "multimedia:view" },
+    { name: "Track Live", slug: "live_tracking:view" },
+    { name: "Manage Users", slug: "user:view" },
+  ];
+
+  // 1. Create Permissions
+  const permissions = await Promise.all(
+    allPermissions.map(p => 
+      prisma.permission.upsert({
+        where: { slug: p.slug },
+        update: { name: p.name },
+        create: p
+      })
+    )
+  );
+
+  const permMap = Object.fromEntries(permissions.map(p => [p.slug, p.id]));
+
+  // 2. Create Roles and Connect Permissions
   const roles = await Promise.all(
-    allRoles.map((slug) =>
-      prisma.role.upsert({
+    allRoles.map((slug) => {
+      // Tentukan permission default untuk tiap role (untuk seeding)
+      let rolePerms: string[] = [];
+      if (slug === "admin") rolePerms = allPermissions.map(p => p.slug);
+      if (slug === "cs") rolePerms = ["dashboard:view", "crm:view", "finance_in:view"];
+      if (slug === "talent" || slug === "multimedia") rolePerms = ["dashboard:view", "live_tracking:view", "multimedia:view"];
+      if (slug === "spv_multimedia") rolePerms = ["dashboard:view", "live_tracking:view", "multimedia:view", "report:view"];
+
+      return prisma.role.upsert({
         where: { slug },
-        update: {},
+        update: {
+          permissions: {
+            set: rolePerms.map(slug => ({ slug }))
+          }
+        },
         create: {
           name: slug.toUpperCase().replace(/_/g, ' '),
           slug,
           description: `Auto-generated role for ${slug}`,
+          permissions: {
+            connect: rolePerms.map(slug => ({ slug }))
+          }
         },
       })
-    )
+    })
   );
 
   const roleMap = Object.fromEntries(roles.map((role) => [role.slug, role])) as Record<string, { id: string }>;

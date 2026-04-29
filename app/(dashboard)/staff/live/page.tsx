@@ -14,6 +14,7 @@ import {
   History
 } from "lucide-react";
 import { formatDate, SUPER_ROLES } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { getAllRoles } from "@/lib/roles";
 import { startOfDay, addDays, subDays } from "date-fns";
 
@@ -25,6 +26,7 @@ export default function StaffLivePage() {
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   // Form State
   const [form, setForm] = useState({
@@ -89,9 +91,18 @@ export default function StaffLivePage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Hapus catatan jam live ini?")) return;
-    const res = await fetch(`/api/staff/live?id=${id}`, { method: "DELETE" });
-    if (res.ok) fetchSessions();
+    setConfirmModal({
+      show: true,
+      title: "Hapus Catatan Live?",
+      message: "Apakah Anda yakin ingin menghapus catatan jam live ini secara permanen?",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch(`/api/staff/live?id=${id}`, { method: "DELETE" });
+        if (res.ok) fetchSessions();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   return (
@@ -174,8 +185,8 @@ export default function StaffLivePage() {
                   </td>
                   <td style={{ padding: '20px 24px', fontSize: 14, color: 'var(--text-muted)', maxWidth: 300 }}>{s.keterangan || "—"}</td>
                   <td style={{ textAlign: 'right', padding: '20px 24px' }}>
-                    <button className="btn btn-secondary btn-icon" style={{ color: 'var(--danger)', borderRadius: 10 }} onClick={() => handleDelete(s.id)}>
-                      <Trash2 size={16} />
+                    <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }} onClick={() => handleDelete(s.id)}>
+                      <Trash2 size={20} />
                     </button>
                   </td>
                 </tr>
@@ -362,6 +373,15 @@ export default function StaffLivePage() {
         </section>
 
       </div>
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

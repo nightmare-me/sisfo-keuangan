@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { formatCurrency, formatDateTime, hasPermission } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { 
   TrendingDown, 
   Activity, 
@@ -43,9 +44,10 @@ export default function PengeluaranPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [existingNotes, setExistingNotes] = useState<any[]>([]);
+  const [newCat, setNewCat] = useState({ nama: "", color: "#ef4444" });
   const [kategoriList, setKategoriList] = useState<any[]>([]);
   const [showCatModal, setShowCatModal] = useState(false);
-  const [newCat, setNewCat] = useState({ nama: "", color: "#ef4444" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
   const [form, setForm] = useState({
     jumlah: "",
     kategori: "LAINNYA",
@@ -151,7 +153,13 @@ export default function PengeluaranPage() {
     e.preventDefault(); 
     
     if (!editId && selectedFiles.length === 0) {
-      alert("Wajib menyertakan minimal 1 foto nota untuk pengeluaran baru!");
+      setConfirmModal({
+        show: true,
+        title: "Nota Wajib Diisi",
+        message: "Wajib menyertakan minimal 1 foto nota untuk pengeluaran baru!",
+        type: "warning",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
       return;
     }
 
@@ -187,47 +195,81 @@ export default function PengeluaranPage() {
       resetForm();
       fetchData();
     } catch (err: any) {
-      alert(err.message || "Terjadi kesalahan");
+      setConfirmModal({
+        show: true,
+        title: "Gagal Menyimpan",
+        message: err.message || "Terjadi kesalahan saat menyimpan data pengeluaran.",
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
       setSaving(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Hapus data pengeluaran ini?")) return;
-    await fetch(`/api/pengeluaran?id=${id}`, { method:"DELETE" });
-    fetchData();
+    setConfirmModal({
+      show: true,
+      title: "Hapus Pengeluaran?",
+      message: "Apakah Anda yakin ingin menghapus data pengeluaran ini secara permanen?",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        await fetch(`/api/pengeluaran?id=${id}`, { method:"DELETE" });
+        fetchData();
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleDeleteAll() {
     if (!isAdmin) return;
-    const conf = prompt("⚠️ PERINGATAN KERAS: Seluruh data PENGELUARAN akan dihapus permanen.\n\nKetik 'HAPUS' (huruf besar) untuk mengonfirmasi:");
-    if (conf === "HAPUS") {
-      setLoading(true);
-      const res = await fetch("/api/pengeluaran?all=true", { method: "DELETE" });
-      if (res.ok) fetchData();
-      else alert("Gagal menghapus.");
-    }
+    setConfirmModal({
+      show: true,
+      title: "HAPUS SEMUA DATA?",
+      message: "⚠️ PERINGATAN KERAS: Seluruh data PENGELUARAN akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/pengeluaran?all=true", { method: "DELETE" });
+        if (res.ok) fetchData();
+        setLoading(false);
+        setConfirmModal(prev => ({ ...prev, show: false }));
+      }
+    });
   }
 
   async function handleBulkDelete() {
     if (selectedIds.length === 0) return;
-    if (!confirm(`Hapus ${selectedIds.length} pengeluaran terpilih secara permanen?`)) return;
     
-    setLoading(true);
-    const res = await fetch("/api/pengeluaran", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: selectedIds })
+    setConfirmModal({
+      show: true,
+      title: "Hapus Masal Pengeluaran?",
+      message: `Apakah Anda yakin ingin menghapus ${selectedIds.length} pengeluaran terpilih secara permanen?`,
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const res = await fetch("/api/pengeluaran", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: selectedIds })
+        });
+        
+        if (res.ok) {
+          setSelectedIds([]);
+          fetchData();
+          setConfirmModal(prev => ({ ...prev, show: false }));
+        } else {
+          setLoading(false);
+          setConfirmModal({
+            show: true,
+            title: "Gagal Menghapus",
+            message: "Beberapa data gagal dihapus. Silakan periksa koneksi atau hak akses Anda.",
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
+        }
+      }
     });
-    
-    if (res.ok) {
-      alert("Pengeluaran terpilih berhasil dihapus.");
-      setSelectedIds([]);
-      fetchData();
-    } else {
-      alert("Gagal menghapus beberapa data.");
-      setLoading(false);
-    }
   }
 
   function toggleSelect(id: string) {
@@ -403,12 +445,12 @@ export default function PengeluaranPage() {
                   <td style={{ fontSize:14, color:"var(--text-muted)" }}>{item.user?.name??"—"}</td>
                   <td className="text-right" style={{ fontWeight:800, color:"var(--danger)", fontSize: 16 }}>{formatCurrency(item.jumlah)}</td>
                   <td className="text-center">
-                    <div style={{ display: 'flex', gap:6, justifyContent: 'center' }}>
-                      <button className="btn btn-secondary btn-icon" onClick={()=>openEdit(item)} style={{ color:"var(--primary)" }}>
-                        <Edit2 size={16} />
+                    <div style={{ display: 'flex', gap:8, justifyContent: 'center' }}>
+                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={()=>openEdit(item)} style={{ color:"var(--primary)" }}>
+                        <Edit2 size={20} />
                       </button>
-                      <button className="btn btn-secondary btn-icon" onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
-                        <Trash2 size={16} />
+                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
+                        <Trash2 size={20} />
                       </button>
                     </div>
                   </td>
@@ -569,7 +611,7 @@ export default function PengeluaranPage() {
           <div className="modal" style={{ maxWidth: 550 }}>
             <div className="modal-header">
               <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Upload size={20} style={{ color: 'var(--danger)' }} />
+                <Upload size={20} style={{ color: '#facd00' }} />
                 <span>Import Pengeluaran Operasional</span>
               </div>
               <button className="modal-close" onClick={() => setShowImportModal(false)}>✕</button>
@@ -611,9 +653,9 @@ export default function PengeluaranPage() {
               </div>
               
               <div style={{ border: '2px dashed var(--ghost-border)', borderRadius: 12, padding: 32, textAlign: 'center', background: 'var(--surface-container-lowest)' }}>
-                <FileSpreadsheet size={32} style={{ color: 'var(--danger)', marginBottom: 12 }} />
+                <FileSpreadsheet size={32} style={{ color: '#facd00', marginBottom: 12 }} />
                 <div style={{ marginBottom: 16 }}>
-                  <label className="btn btn-primary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', padding: '10px 24px', background: 'var(--danger)' }}>
+                  <label className="btn btn-primary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', padding: '10px 24px', background: '#facd00', color: '#000', fontWeight: 'bold' }}>
                     <Upload size={16} /> {csvLoading ? "Memproses..." : "Pilih File CSV"}
                     <input type="file" accept=".csv" style={{ display: 'none' }} disabled={csvLoading} onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -638,28 +680,45 @@ export default function PengeluaranPage() {
                           return obj;
                         });
 
-                        if (confirm(`Impor ${jsonData.length} data pengeluaran?`)) {
-                          setCsvLoading(true);
-                          try {
-                            const res = await fetch("/api/pengeluaran/import", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(jsonData)
-                            });
-                            if (res.ok) {
-                              alert("Berhasil mengimpor data pengeluaran!");
-                              setShowImportModal(false);
-                              fetchData();
-                            } else {
-                              const err = await res.json();
-                              alert("Gagal impor: " + err.error);
+                        setConfirmModal({
+                          show: true,
+                          title: "Impor Pengeluaran?",
+                          message: `Impor ${jsonData.length} data pengeluaran dari file CSV ke sistem?`,
+                          type: "info",
+                          onConfirm: async () => {
+                            setShowImportModal(false);
+                            setCsvLoading(true);
+                            try {
+                              const res = await fetch("/api/pengeluaran/import", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(jsonData)
+                              });
+                                if (res.ok) {
+                                  setConfirmModal({
+                                    show: true,
+                                    title: "Import Berhasil",
+                                    message: "Berhasil mengimpor data pengeluaran ke sistem!",
+                                    type: "success" as any,
+                                    onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                  });
+                                  fetchData();
+                                } else {
+                                  const err = await res.json();
+                                  setConfirmModal({
+                                    show: true,
+                                    title: "Import Gagal",
+                                    message: "Gagal impor: " + err.error,
+                                    type: "danger",
+                                    onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+                                  });
+                                }
+                            } finally {
+                              setCsvLoading(false);
+                              setConfirmModal(prev => ({ ...prev, show: false }));
                             }
-                          } catch (err) {
-                            alert("Terjadi kesalahan saat mengunggah.");
-                          } finally {
-                            setCsvLoading(false);
                           }
-                        }
+                        });
                       };
                       reader.readAsText(file);
                     }} />
@@ -707,11 +766,18 @@ export default function PengeluaranPage() {
                    <div key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--surface-container-low)', borderRadius: 8 }}>
                      <span style={{ fontSize: 13, fontWeight: 600 }}>{cat.nama}</span>
                      <button className="btn btn-icon" style={{ color: 'var(--danger)', padding: 4 }} onClick={async () => {
-                       if(confirm(`Hapus kategori "${cat.nama}"?`)) {
-                         await fetch(`/api/pengeluaran/kategori?id=${cat.id}`, { method:"DELETE" });
-                         fetchCategories();
-                       }
-                     }}><Trash2 size={14} /></button>
+                        setConfirmModal({
+                          show: true,
+                          title: "Hapus Kategori?",
+                          message: `Hapus kategori "${cat.nama}"? Ini tidak akan menghapus data transaksi yang sudah ada.`,
+                          type: "danger",
+                          onConfirm: async () => {
+                            await fetch(`/api/pengeluaran/kategori?id=${cat.id}`, { method:"DELETE" });
+                            fetchCategories();
+                            setConfirmModal(prev => ({ ...prev, show: false }));
+                          }
+                        });
+                      }}><Trash2 size={20} /></button>
                    </div>
                  ))}
                </div>
@@ -719,6 +785,15 @@ export default function PengeluaranPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

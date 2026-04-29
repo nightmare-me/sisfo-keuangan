@@ -2,7 +2,14 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Multi-Role Architecture, SPV Intelligence & Smart Import (v5.1) 🚀 (TERBARU!)
+## 📢 Fitur Baru: Standardized UX & Custom Branding (v6.0) 🎨 (TERBARU!)
+*   **Universal Custom Modals**: Migrasi total seluruh dialog *native browser* (`alert`, `confirm`, `prompt`) ke komponen `ConfirmModal` yang terstandarisasi. Tidak ada lagi interupsi abu-abu bawaan browser yang membosankan dan memblokir layar.
+*   **High-Fidelity Glassmorphism Dialogs**: Setiap interaksi konfirmasi (hapus data, impor massal, update settings) kini tampil dengan desain *glassmorphism* yang mewah, lengkap dengan animasi halus dan indikator status (`success`, `danger`, `warning`, `info`).
+*   **Custom Company Branding**: Rebranding total identitas visual pada Sidebar Utama dan Halaman Login menggunakan logo resmi perusahaan. Menghilangkan elemen generik dan memberikan kesan sistem yang dibangun khusus (*custom-built*) untuk Speaking Partner.
+*   **Middleware Security Optimization**: Optimasi sistem keamanan (middleware) untuk mendukung pengiriman aset publik (logo) pada halaman publik tanpa mengorbankan integritas data rahasia di area internal.
+*   **Universal Async Handling**: Implementasi *loading state* terpusat pada seluruh aksi konfirmasi massal untuk mencegah *double-submission* dan menjamin kestabilan database saat beban tinggi.
+
+## 📢 Fitur Sebelumnya: Multi-Role Architecture, SPV Intelligence & Smart Import (v5.1) 🚀
 *   **Expanded Role Ecosystem**: Penambahan role `CEO`, `COO`, dan `Multimedia` ke dalam ekosistem bawaan sistem, memastikan fleksibilitas akses dari level *C-Suite* hingga operasional kreatif.
 *   **True Multi-Role System**: Implementasi arsitektur role ganda. Seorang user kini bisa memiliki satu Role Utama (misal: SPV Multimedia) sekaligus Role Tambahan (misal: Talent Live atau Advertiser) tanpa perlu berganti akun.
 *   **Supervisor Dashboards (Three Pillars)**:
@@ -96,4 +103,4 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 
 ---
 *Created with ❤️ by Antigravity (Powered by Google Deepmind) for Speaking Partner Premium Operations.*
-*Sistem v5.0 Aktif - Arsitektur Multi-Role & SPV Dashboards Online. Selamat beristirahat, Pak Muis! ☕*
+*Sistem v6.0 Aktif - Branding Resmi & UX Terstandarisasi Online. Selamat beristirahat, Pak Muis! ☕*

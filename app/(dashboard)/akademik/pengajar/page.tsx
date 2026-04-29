@@ -18,6 +18,7 @@ import {
   Upload
 } from "lucide-react";
 import Papa from "papaparse";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 const emptyForm = {
   name: "",
@@ -38,6 +39,7 @@ export default function PengajarPage() {
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -80,10 +82,22 @@ export default function PengajarPage() {
             body: JSON.stringify(results.data)
           });
           const d = await res.json();
-          alert(d.message || "Import selesai");
+          setConfirmModal({
+            show: true,
+            title: "Import Selesai",
+            message: "✅ " + (d.message || "Data pengajar berhasil diimpor."),
+            type: "success" as any,
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
           fetchData();
         } catch (err: any) {
-          alert("Gagal impor: " + err.message);
+          setConfirmModal({
+            show: true,
+            title: "Gagal Impor",
+            message: "❌ Gagal impor: " + err.message,
+            type: "danger",
+            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+          });
         } finally {
           setSaving(false);
           if (e.target) e.target.value = "";
@@ -107,10 +121,22 @@ export default function PengajarPage() {
         fetchData();
       } else {
         const err = await res.json();
-        alert("⚠️ Gagal: " + err.error);
+        setConfirmModal({
+          show: true,
+          title: "Gagal Menyimpan",
+          message: "⚠️ Gagal: " + err.error,
+          type: "danger",
+          onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+        });
       }
     } catch (e: any) {
-      alert("⚠️ Error: " + e.message);
+      setConfirmModal({
+        show: true,
+        title: "Error System",
+        message: "⚠️ Error: " + e.message,
+        type: "danger",
+        onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+      });
     } finally {
       setSaving(false);
     }
@@ -391,6 +417,15 @@ export default function PengajarPage() {
           </div>
         </div>
       )}
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={saving || loading}
+      />
     </div>
   );
 }

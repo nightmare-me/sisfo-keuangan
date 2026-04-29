@@ -74,6 +74,10 @@ const navItems: NavGroup[] = [
   { group: "OPERASIONAL", items: [
     { href: "/invoice", label: "Invoice", icon: <FileText size={16} />, permission: "invoice:view" },
     { href: "/inventaris", label: "Inventaris", icon: <Package size={16} />, permission: "inventaris:view" },
+  ]},
+  { group: "MULTIMEDIA", items: [
+    { href: "/multimedia/metrics", label: "Metrik Sosmed", icon: <BarChart2 size={16} />, permission: "multimedia:view" },
+    { href: "/multimedia/content", label: "Content Tracker", icon: <Video size={16} />, permission: "multimedia:view" },
     { href: "/staff/live", label: "Input Jam Live", icon: <Clock size={16} />, permission: "live_tracking:view" },
   ]},
   { group: "SISTEM", items: [
@@ -163,8 +167,8 @@ export default function Sidebar() {
     <>
       <div className="mobile-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--primary-container)', color: 'var(--on-primary-container)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <GraduationCap size={18} />
+          <div style={{ width: 32, height: 32, borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/logo_sp.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <strong style={{ fontSize: '1rem', color: 'var(--on-surface)' }}>Speaking Partner</strong>
         </div>
@@ -178,8 +182,8 @@ export default function Sidebar() {
       <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
         <div className="sidebar-brand">
           <div className="sidebar-logo">
-            <div className="sidebar-logo-icon">
-               <GraduationCap size={24} color="white" />
+            <div className="sidebar-logo-icon" style={{ background: 'none', border: 'none', padding: 0 }}>
+               <img src="/logo_sp.png" alt="Logo" style={{ width: 28, height: 28, objectFit: 'contain' }} />
             </div>
             <div className="sidebar-brand-text">
               <strong>Speaking Partner</strong>

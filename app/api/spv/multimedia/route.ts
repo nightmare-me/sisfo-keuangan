@@ -60,8 +60,26 @@ export async function GET(request: NextRequest) {
     talentMap[talentId].totalLeads = leads;
     talentMap[talentId].totalClosing = pemasukan.length;
     talentMap[talentId].totalOmset = pemasukan.reduce((a: number, b: any) => a + b.hargaFinal, 0);
-    talentMap[talentId].totalFee = 0; // Fee talent dihitung di payroll, bukan di sini
+    talentMap[talentId].totalFee = 0; 
   }));
+
+  // AMBIL DATA TAMBAHAN (Metrics & Content)
+  const [socialMetrics, contents, viralContents] = await Promise.all([
+    prisma.socialMetric.findMany({
+      where: { tanggal: dateRange },
+      orderBy: { tanggal: "desc" }
+    }),
+    prisma.contentProduction.findMany({
+      where: { updatedAt: dateRange },
+      include: { creator: true, videographer: true }
+    }),
+    prisma.contentProduction.findMany({
+      where: { isViral: true },
+      include: { creator: true, videographer: true },
+      orderBy: { views: "desc" },
+      take: 5
+    })
+  ]);
 
   const talentStats = Object.values(talentMap);
 
@@ -70,7 +88,19 @@ export async function GET(request: NextRequest) {
     totalJamLive: talentStats.reduce((a, b) => a + b.totalJam, 0),
     totalLeads: talentStats.reduce((a, b) => a + (b.totalLeads || 0), 0),
     totalOmset: talentStats.reduce((a, b) => a + (b.totalOmset || 0), 0),
+    social: {
+      views: socialMetrics.reduce((a, b) => a + b.views, 0),
+      likes: socialMetrics.reduce((a, b) => a + b.likes, 0),
+      engagement: socialMetrics.reduce((a, b) => a + b.engagement, 0),
+      followers: socialMetrics.reduce((a, b) => a + b.followers, 0),
+    },
+    production: {
+      total: contents.length,
+      posted: contents.filter(c => c.status === "POSTED").length,
+      viral: viralContents.length,
+      inProgress: contents.filter(c => !["POSTED", "CANCELLED", "IDEATION"].includes(c.status)).length,
+    }
   };
 
-  return NextResponse.json({ talentStats, summary });
+  return NextResponse.json({ talentStats, summary, socialMetrics, contents, viralContents });
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, Plus, Trash2, Edit3, Save, X, Info } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import toast from "react-hot-toast";
 
 export default function SubRolePage() {
@@ -20,6 +21,7 @@ export default function SubRolePage() {
     permissionIds: [] as string[]
   });
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
 
   useEffect(() => {
     fetchData();
@@ -89,19 +91,29 @@ export default function SubRolePage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus sub-role ini? Tindakan ini tidak dapat dibatalkan.")) return;
-
-    try {
-      const res = await fetch(`/api/admin/sub-roles?id=${id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("Sub-Role berhasil dihapus");
-        fetchData();
-      } else {
-        toast.error("Gagal menghapus sub-role");
+    setConfirmModal({
+      show: true,
+      title: "Hapus Sub-Role?",
+      message: "Apakah Anda yakin ingin menghapus sub-role ini? Tindakan ini tidak dapat dibatalkan dan mungkin berpengaruh pada akses user terkait.",
+      type: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(`/api/admin/sub-roles?id=${id}`, { method: "DELETE" });
+          if (res.ok) {
+            toast.success("Sub-Role berhasil dihapus");
+            fetchData();
+          } else {
+            toast.error("Gagal menghapus sub-role");
+          }
+        } catch (error) {
+          toast.error("Terjadi kesalahan");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, show: false }));
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      toast.error("Terjadi kesalahan");
-    }
+    });
   };
 
   const handleCloseModal = () => {
@@ -163,9 +175,9 @@ export default function SubRolePage() {
                   </td>
                   <td style={{ textAlign: 'center' }}>{sr._count?.users || 0}</td>
                   <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button className="icon-btn" title="Edit" onClick={() => handleEdit(sr)}><Edit3 size={16} /></button>
-                      <button className="icon-btn text-danger" title="Hapus" onClick={() => handleDelete(sr.id)}><Trash2 size={16} /></button>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} title="Edit" onClick={() => handleEdit(sr)}><Edit3 size={20} /></button>
+                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }} title="Hapus" onClick={() => handleDelete(sr.id)}><Trash2 size={20} /></button>
                     </div>
                   </td>
                 </tr>
@@ -296,6 +308,15 @@ export default function SubRolePage() {
           to { opacity: 1; transform: scale(1); }
         }
       `}</style>
+      <ConfirmModal 
+        show={confirmModal.show}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal({ ...confirmModal, show: false })}
+        onConfirm={confirmModal.onConfirm}
+        type={confirmModal.type}
+        loading={loading}
+      />
     </div>
   );
 }

@@ -384,7 +384,7 @@ export default function SiswaPage() {
                         </button>
                       )}
                       {canRefund && (
-                        <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => { 
+                        <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: "var(--warning)" }} onClick={() => { 
                           setSelectedForRefund(s); 
                           const firstPay = s.pemasukan?.[0];
                           setRefundForm({ 
@@ -395,12 +395,12 @@ export default function SiswaPage() {
                             invoiceId: firstPay?.invoice?.id || ""
                           });
                           setShowRefundModal(true); 
-                        }} style={{ width: 42, height: 42, borderRadius: 12, color:"var(--warning)" }} title="Ajukan Refund">
+                        }} title="Ajukan Refund">
                            <Wallet size={20} />
                         </button>
                       )}
                       {canDelete && (
-                        <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => handleDelete(s)} style={{ width: 42, height: 42, borderRadius: 12, color:"var(--danger)" }} title="Hapus Siswa">
+                        <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color:"var(--danger)" }} onClick={() => handleDelete(s)} title="Hapus Siswa">
                            <Trash2 size={20} />
                         </button>
                       )}

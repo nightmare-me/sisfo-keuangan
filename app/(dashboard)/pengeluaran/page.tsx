@@ -446,10 +446,10 @@ export default function PengeluaranPage() {
                   <td className="text-right" style={{ fontWeight:800, color:"var(--danger)", fontSize: 16 }}>{formatCurrency(item.jumlah)}</td>
                   <td className="text-center">
                     <div style={{ display: 'flex', gap:8, justifyContent: 'center' }}>
-                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={()=>openEdit(item)} style={{ color:"var(--primary)" }}>
+                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: "var(--primary)" }} onClick={()=>openEdit(item)}>
                         <Edit2 size={20} />
                       </button>
-                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={()=>handleDelete(item.id)} style={{ color:"var(--danger)" }}>
+                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: "var(--danger)" }} onClick={()=>handleDelete(item.id)}>
                         <Trash2 size={20} />
                       </button>
                     </div>

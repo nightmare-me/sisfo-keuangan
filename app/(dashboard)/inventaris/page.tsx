@@ -43,7 +43,7 @@ export default function InventarisPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importing, setImporting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
   const [form, setForm] = useState({ nama:"", kategori:"", jumlah:"0", satuan:"pcs", hargaBeli:"", kondisi:"BAIK", tanggalBeli:"", keterangan:"", stokMinimum:"1" });
 
   const [page, setPage] = useState(1);

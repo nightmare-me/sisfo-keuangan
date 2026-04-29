@@ -21,7 +21,7 @@ export default function SubRolePage() {
     permissionIds: [] as string[]
   });
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   useEffect(() => {
     fetchData();

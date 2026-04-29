@@ -65,7 +65,7 @@ export default function PemasukanPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [csvLoading, setCsvLoading] = useState(false);
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
   const fileRef = useRef<HTMLInputElement>(null);
 
   const emptyForm = {

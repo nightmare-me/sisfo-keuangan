@@ -70,7 +70,7 @@ export default function KelasPage() {
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [addingSiswa, setAddingSiswa] = useState(false);
   const [searchSiswa, setSearchSiswa] = useState("");
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const isFull = selectedKelas && (pendaftaranList.length >= selectedKelas.kapasitas);
 

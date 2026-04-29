@@ -58,7 +58,7 @@ export default function ProgramPage() {
   const [showNonaktif, setShowNonaktif] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

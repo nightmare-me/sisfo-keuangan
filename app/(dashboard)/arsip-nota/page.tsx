@@ -19,7 +19,7 @@ export default function ArsipNotaPage() {
   // Print preview state
   const [printingImages, setPrintingImages] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

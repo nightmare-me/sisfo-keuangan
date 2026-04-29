@@ -45,7 +45,7 @@ export default function GajiPage() {
   const [filterTahun, setFilterTahun] = useState(String(new Date().getFullYear()));
   const [form, setForm] = useState({ pengajarId:"", kelasId:"", bulan:String(new Date().getMonth()+1), tahun:String(new Date().getFullYear()), jumlahSesi:"0", tarifPerSesi:"", totalGaji:"", metodeBayar:"TRANSFER", keterangan:"" });
   const [tarifForm, setTarifForm] = useState({ tipeKelas:"REGULAR", tarif:"", keterangan:"" });
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

@@ -61,7 +61,7 @@ export default function UsersPage() {
     shiftStart: "08:00", shiftEnd: "16:00", isLeadActive: true
   });
 
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const emptyRow = { name: "", email: "", password: "", roleSlug: "cs" };
   const [bulkRows, setBulkRows] = useState([{ ...emptyRow }, { ...emptyRow }, { ...emptyRow }]);

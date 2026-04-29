@@ -44,7 +44,7 @@ export default function LaporanPage() {
   const [to, setTo] = useState("");
   const [exporting, setExporting] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   useEffect(() => { setMounted(true); }, []);
 

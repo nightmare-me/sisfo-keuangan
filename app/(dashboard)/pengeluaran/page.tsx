@@ -47,7 +47,7 @@ export default function PengeluaranPage() {
   const [newCat, setNewCat] = useState({ nama: "", color: "#ef4444" });
   const [kategoriList, setKategoriList] = useState<any[]>([]);
   const [showCatModal, setShowCatModal] = useState(false);
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
   const [form, setForm] = useState({
     jumlah: "",
     kategori: "LAINNYA",

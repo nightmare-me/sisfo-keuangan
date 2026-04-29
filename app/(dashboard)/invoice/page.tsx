@@ -29,7 +29,7 @@ export default function InvoicePage() {
   const [search, setSearch] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [printing, setPrinting] = useState(false);
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

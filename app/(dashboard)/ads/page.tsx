@@ -39,7 +39,7 @@ export default function AdsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState({ from:"", to:"", platform:"" });
   const [form, setForm] = useState({ platform:"META", jumlah:"", keterangan:"", leads:"", tanggal: new Date().toISOString().slice(0,10) });
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

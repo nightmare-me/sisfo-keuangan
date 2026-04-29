@@ -32,7 +32,7 @@ export default function RefundPage() {
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [selectedRefund, setSelectedRefund] = useState<any>(null);
   const [processForm, setProcessForm] = useState({ status: "APPROVED", catatan: "" });
-  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

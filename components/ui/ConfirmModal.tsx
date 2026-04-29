@@ -1,5 +1,5 @@
 "use client";
-import { Trash2, AlertTriangle, Info, X } from "lucide-react";
+import { Trash2, AlertTriangle, Info, X, CheckCircle } from "lucide-react";
 
 interface ConfirmModalProps {
   show: boolean;
@@ -9,7 +9,7 @@ interface ConfirmModalProps {
   message?: string;
   confirmText?: string;
   cancelText?: string;
-  type?: "danger" | "warning" | "info";
+  type?: "danger" | "warning" | "info" | "success";
   loading?: boolean;
 }
 
@@ -30,6 +30,7 @@ export default function ConfirmModal({
     danger: { bg: "rgba(239, 68, 68, 0.1)", text: "#ef4444", btn: "#ef4444" },
     warning: { bg: "rgba(245, 158, 11, 0.1)", text: "#f59e0b", btn: "#f59e0b" },
     info: { bg: "rgba(59, 130, 246, 0.1)", text: "#3b82f6", btn: "#3b82f6" },
+    success: { bg: "rgba(16, 185, 129, 0.1)", text: "#10b981", btn: "#10b981" },
   };
 
   const activeColor = colors[type];
@@ -46,6 +47,7 @@ export default function ConfirmModal({
           {type === 'danger' && <Trash2 size={36} />}
           {type === 'warning' && <AlertTriangle size={36} />}
           {type === 'info' && <Info size={36} />}
+          {type === 'success' && <CheckCircle size={36} />}
         </div>
 
         <h3 style={{ fontSize: 24, fontWeight: 800, marginBottom: 12, color: "var(--text-primary)" }}>{title}</h3>

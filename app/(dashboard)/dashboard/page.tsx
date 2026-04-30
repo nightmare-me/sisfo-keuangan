@@ -322,7 +322,7 @@ export default function DashboardPage() {
             <div className="card">
               <div className="card-header"><div className="card-title">Performa Keuangan</div></div>
               <div style={{ height: 280 }}>
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                    <LineChart data={(Array.isArray(data?.trendData) ? data.trendData : []).map((d: any) => ({ ...d, date: formatDate(d.date, "dd/MM") }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                       <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -477,7 +477,7 @@ export default function DashboardPage() {
              <div className="card">
                <div className="card-header"><div className="card-title">Tren Murid Baru</div></div>
                <div style={{ height: 280 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
                      <AreaChart data={(akademikData?.trendData || []).map(d => ({ ...d, date: formatDate(d.date, "dd/MM") }))}>
                         <Tooltip content={<PremiumTooltip />} />
                         <Area type="monotone" dataKey="murid" stroke="#818cf8" fill="#818cf8" fillOpacity={0.1} name="Murid Baru" />

@@ -337,8 +337,8 @@ export default function LaporanPage() {
                 <div className="card-header"><div className="card-title">💰 Pemasukan per Program</div></div>
                 {mounted && data.pemasukanPerProgram?.length > 0 ? (
                   <div style={{ height:240 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={data.pemasukanPerProgram}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
+                      <BarChart data={Array.isArray(data.pemasukanPerProgram) ? data.pemasukanPerProgram : []}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                         <XAxis dataKey="nama" tick={{ fill:"#64748b",fontSize:11 }} />
                         <YAxis tickFormatter={v=>`${(v/1000000).toFixed(1)}jt`} tick={{ fill:"#64748b",fontSize:10 }} />
@@ -355,16 +355,16 @@ export default function LaporanPage() {
                 <div className="card-header"><div className="card-title">💸 Breakdown Pengeluaran</div></div>
                 {mounted && pieData.length > 0 ? (
                   <div style={{ height:240, display:"flex", alignItems:"center" }}>
-                    <ResponsiveContainer width="50%" height="100%">
+                    <ResponsiveContainer width="50%" height="100%" minWidth={100} minHeight={100}>
                       <PieChart>
-                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="value">
-                          {pieData.map((entry:any,i:number)=><Cell key={i} fill={entry.color} />)}
+                        <Pie data={Array.isArray(pieData) ? pieData : []} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="value">
+                          {(Array.isArray(pieData) ? pieData : []).map((entry:any,i:number)=><Cell key={i} fill={entry.color} />)}
                         </Pie>
                         <Tooltip formatter={(v:any)=>formatCurrency(v)} />
                       </PieChart>
                     </ResponsiveContainer>
                     <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8 }}>
-                      {pieData.map((p:any,i:number)=>(
+                      {(Array.isArray(pieData) ? pieData : []).map((p:any,i:number)=>(
                         <div key={i} style={{ display:"flex",alignItems:"center",gap:8,fontSize:12 }}>
                           <div style={{ width:10,height:10,borderRadius:"50%",background:p.color,flexShrink:0 }} />
                           <span style={{ color:"var(--text-secondary)" }}>{p.name}</span>
@@ -389,7 +389,7 @@ export default function LaporanPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.pemasukanPerCS.sort((a:any,b:any)=>b.total-a.total).map((cs:any,i:number)=>(
+                      {(Array.isArray(data.pemasukanPerCS) ? data.pemasukanPerCS : []).sort((a:any,b:any)=>b.total-a.total).map((cs:any,i:number)=>(
                         <tr key={cs.csId}>
                           <td style={{ fontWeight:700,color: i===0?"#fbbf24":i===1?"#94a3b8":i===2?"#cd7c2f":"var(--text-muted)" }}>
                             {i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}

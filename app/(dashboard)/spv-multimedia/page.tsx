@@ -87,7 +87,9 @@ export default function SPVMultimediaPage() {
           <div className="kpi-icon" style={{ color: "#ec4899" }}><Eye size={20} /></div>
           <div className="kpi-label">Total Views</div>
           <div className="kpi-value">{(summary.social?.views ?? 0).toLocaleString()}</div>
-          <div className="kpi-sublabel">Semua Platform</div>
+          <div className="kpi-sublabel" style={{ color: (summary.social?.viewsGrowth ?? 0) >= 0 ? "var(--success)" : "var(--danger)" }}>
+            {(summary.social?.viewsGrowth ?? 0) >= 0 ? "▲" : "▼"} {Math.abs(summary.social?.viewsGrowth ?? 0).toLocaleString()} periode ini
+          </div>
         </div>
         <div className="kpi-card" style={{ borderLeft: "4px solid #8b5cf6" }}>
           <div className="kpi-icon" style={{ color: "#8b5cf6" }}><Film size={20} /></div>

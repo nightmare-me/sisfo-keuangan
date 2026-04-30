@@ -89,14 +89,24 @@ export async function GET(request: NextRequest) {
     totalLeads: talentStats.reduce((a, b) => a + (b.totalLeads || 0), 0),
     totalOmset: talentStats.reduce((a, b) => a + (b.totalOmset || 0), 0),
     social: {
-      views: socialMetrics.reduce((a, b) => a + b.views, 0),
-      likes: socialMetrics.reduce((a, b) => a + b.likes, 0),
-      engagement: socialMetrics.reduce((a, b) => a + b.engagement, 0),
-      // Followers = angka snapshot terbaru (bukan dijumlahkan)
-      followers: socialMetrics.length > 0 ? socialMetrics[0].followers : 0,
-      // Growth = selisih antara entry terbaru vs entry terlama di periode ini
+      // Semua metrik adalah snapshot kumulatif → ambil nilai entry TERBARU
+      views:      socialMetrics.length > 0 ? socialMetrics[0].views      : 0,
+      likes:      socialMetrics.length > 0 ? socialMetrics[0].likes      : 0,
+      shares:     socialMetrics.length > 0 ? socialMetrics[0].shares     : 0,
+      saved:      socialMetrics.length > 0 ? socialMetrics[0].saved      : 0,
+      comments:   socialMetrics.length > 0 ? socialMetrics[0].comments   : 0,
+      engagement: socialMetrics.length > 0 ? socialMetrics[0].engagement : 0,
+      followers:  socialMetrics.length > 0 ? socialMetrics[0].followers  : 0,
+
+      // Growth = selisih entry terbaru vs entry terlama dalam periode
       followerGrowth: socialMetrics.length > 1
         ? socialMetrics[0].followers - socialMetrics[socialMetrics.length - 1].followers
+        : 0,
+      viewsGrowth: socialMetrics.length > 1
+        ? socialMetrics[0].views - socialMetrics[socialMetrics.length - 1].views
+        : 0,
+      engagementGrowth: socialMetrics.length > 1
+        ? socialMetrics[0].engagement - socialMetrics[socialMetrics.length - 1].engagement
         : 0,
     },
     production: {

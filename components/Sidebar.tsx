@@ -76,7 +76,7 @@ const navItems: NavGroup[] = [
     { href: "/inventaris", label: "Inventaris", icon: <Package size={16} />, permission: "inventaris:view" },
   ]},
   { group: "MULTIMEDIA", items: [
-    { href: "/multimedia/metrics", label: "Metrik Sosmed", icon: <BarChart2 size={16} />, permission: "multimedia:view" },
+    { href: "/multimedia/metrics", label: "Metrik Sosmed", icon: <BarChart2 size={16} />, permission: "multimedia:metrics" },
     { href: "/multimedia/content", label: "Content Tracker", icon: <Video size={16} />, permission: "multimedia:view" },
     { href: "/staff/live", label: "Input Jam Live", icon: <Clock size={16} />, permission: "live_tracking:view" },
   ]},

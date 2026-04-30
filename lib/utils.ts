@@ -90,7 +90,8 @@ export function hasPermission(session: any, permissionSlug: string): boolean {
 
   if (allRoles.includes("pengajar") && ["dashboard:view", "kelas:view", "siswa:view", "pengajar:view"].includes(permissionSlug)) return true;
   if (allRoles.includes("siswa") && permissionSlug === "siswa:dashboard") return true;
-  if ((allRoles.includes("talent") || allRoles.includes("multimedia")) && ["dashboard:view", "live_tracking:view", "multimedia:view"].includes(permissionSlug)) return true;
+  if (allRoles.includes("talent") && ["dashboard:view", "live_tracking:view", "multimedia:view"].includes(permissionSlug)) return true;
+  if (allRoles.includes("multimedia") && ["dashboard:view", "live_tracking:view", "multimedia:view", "multimedia:metrics"].includes(permissionSlug)) return true;
 
   return userPermissions.includes(permissionSlug);
 }

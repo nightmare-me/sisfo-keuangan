@@ -80,7 +80,7 @@ export async function GET() {
       }
     }
 
-    // 5. Fee Advertiser (Berdasarkan Performa Iklan Bulan Ini)
+    // 5. Fee Advertiser (Berdasarkan Average CPL Bulan Ini)
     const allRoles = user.secondaryRoles || [];
     if (user.role?.slug === "advertiser" || allRoles.includes("advertiser")) {
       const adsBulanIni = await prisma.marketingAd.aggregate({
@@ -88,16 +88,29 @@ export async function GET() {
           advId: userId,
           tanggal: { gte: start, lte: end }
         },
-        _sum: { fee: true },
+        _sum: { spent: true, leads: true },
         _count: true
       });
 
-      const totalFeeAds = adsBulanIni._sum.fee || 0;
-      if (totalFeeAds > 0) {
+      const totalSpent = adsBulanIni._sum.spent || 0;
+      const totalLeads = adsBulanIni._sum.leads || 0;
+      const avgCpl = totalLeads > 0 ? totalSpent / totalLeads : 0;
+
+      // Ambil kategori dari teamType pertama
+      const teamTypeRaw = user.teamType;
+      const firstTeam = Array.isArray(teamTypeRaw) ? teamTypeRaw[0] : (teamTypeRaw as string);
+      
+      const feeTotal = calculateAdvFee(
+        (firstTeam || "ADV_REGULAR") as AdvCategory, 
+        avgCpl, 
+        totalLeads
+      );
+
+      if (feeTotal > 0) {
         items.push({ 
-          label: "Fee Performa Iklan", 
-          amount: totalFeeAds, 
-          count: adsBulanIni._count 
+          label: "Fee Performa Iklan (Avg CPL)", 
+          amount: feeTotal, 
+          count: totalLeads
         });
       }
     }

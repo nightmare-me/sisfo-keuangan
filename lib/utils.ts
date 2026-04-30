@@ -83,5 +83,10 @@ export function hasPermission(session: any, permissionSlug: string): boolean {
   // Superuser bypass: Certain roles have full access automatically
   if (SUPER_ROLES.includes(userRole)) return true;
   
+  // Fallback for roles that might not have DB permissions seeded properly
+  const roleSlug = (session.user as any).roleSlug?.toLowerCase();
+  if (roleSlug === "pengajar" && ["dashboard:view", "kelas:view", "siswa:view", "pengajar:view"].includes(permissionSlug)) return true;
+  if (roleSlug === "siswa" && permissionSlug === "siswa:dashboard") return true;
+
   return userPermissions.includes(permissionSlug);
 }

@@ -355,7 +355,7 @@ export default function KelasPage() {
               </select>
               <select className="form-control" value={filterProgram} onChange={e => setFilterProgram(e.target.value)} style={{ flex: 1, minWidth: 140, padding: '6px 10px' }}>
                 <option value="">Semua Program</option>
-                {programs.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
+                {(Array.isArray(programs) ? programs : []).map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
               </select>
               <button className="btn btn-secondary btn-sm" onClick={() => { setFilterStatus(""); setFilterTipe(""); setFilterBulan(""); setFilterProgram(""); }} style={{ borderRadius: 'var(--radius-full)', flexShrink: 0 }}>
                 <RefreshCw size={14} />
@@ -368,7 +368,7 @@ export default function KelasPage() {
             <div style={{ display: "grid", gridTemplateColumns: selectedKelas ? "1fr" : "repeat(auto-fill,minmax(320px,1fr))", gap: 14 }}>
               {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 160, borderRadius: 16 }} />)}
             </div>
-          ) : data.length === 0 ? (
+          ) : (!Array.isArray(data) || data.length === 0) ? (
             <div className="empty-state">
               <div className="empty-state-icon"><BookOpen size={48} /></div>
               <h3 className="title-lg">Tidak ada kelas ditemukan</h3>
@@ -674,7 +674,7 @@ export default function KelasPage() {
           <div style={{ padding: "0 24px 24px" }}>
             {loadingDetail ? (
               <div style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>Memuat data siswa...</div>
-            ) : pendaftaranList.length === 0 ? (
+            ) : (!Array.isArray(pendaftaranList) || pendaftaranList.length === 0) ? (
               <div style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>👨‍🎓</div>
                 <div>Belum ada siswa di kelas ini</div>
@@ -744,7 +744,7 @@ export default function KelasPage() {
                     <label className="form-label required">Program / Produk</label>
                     <select id="sel-program-kelas" className="form-control" value={form.programId} onChange={e => setForm(f => ({ ...f, programId: e.target.value }))} required>
                       <option value="">Pilih Program</option>
-                      {programs.map((p: any) => <option key={p.id} value={p.id}>{p.nama} ({p.tipe})</option>)}
+                      {(Array.isArray(programs) ? programs : []).map((p: any) => <option key={p.id} value={p.id}>{p.nama} ({p.tipe})</option>)}
                     </select>
                   </div>
                 </div>
@@ -753,7 +753,7 @@ export default function KelasPage() {
                     <label className="form-label">Pengajar</label>
                     <select id="sel-pengajar" className="form-control" value={form.pengajarId} onChange={e => setForm(f => ({ ...f, pengajarId: e.target.value }))}>
                       <option value="">Pilih Pengajar</option>
-                      {pengajarList.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                      {(Array.isArray(pengajarList) ? pengajarList : []).map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">

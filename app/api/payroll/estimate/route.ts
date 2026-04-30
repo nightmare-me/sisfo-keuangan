@@ -137,6 +137,27 @@ export async function GET() {
       }
     }
 
+    // 6. Bonus Talent (Berdasarkan Omset Live Bulan Ini)
+    if (user.role?.slug === "talent" || allRoles.includes("talent")) {
+      const closingBulanIni = await prisma.pemasukan.findMany({
+        where: {
+          talentId: userId,
+          tanggal: { gte: start, lte: end }
+        }
+      });
+
+      const totalOmsetTalent = closingBulanIni.reduce((acc, curr) => acc + curr.hargaFinal, 0);
+      const bonusTalent = calculateBonusTalent(totalOmsetTalent);
+
+      if (bonusTalent > 0) {
+        items.push({ 
+          label: "Bonus Omset Live Talent", 
+          amount: bonusTalent, 
+          count: closingBulanIni.length 
+        });
+      }
+    }
+
     const totalEstimasi = items.reduce((acc, curr) => acc + curr.amount, 0);
 
     return NextResponse.json({

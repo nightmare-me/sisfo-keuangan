@@ -175,8 +175,15 @@ export async function GET(request: NextRequest) {
         
         if (totalLeads > 0) {
           const avgCPL = totalSpent / totalLeads;
-          const advCat = (Array.isArray(emp.teamType) ? emp.teamType.find((t: string) => t.startsWith("ADV_")) : emp.teamType) || 'ADV_REGULAR';
-          feeAdv = calculateAdvFee(advCat as AdvCategory, avgCPL, totalLeads);
+          
+          // Cari kategori ADV_ dari teamType atau default ke ADV_REGULAR
+          const teamTypes = Array.isArray(emp.teamType) ? emp.teamType : [];
+          let advCat = teamTypes.find((t: string) => t.startsWith("ADV_"));
+          
+          // Fallback: Jika tidak ada ADV_ tapi punya role advertiser, asumsikan REGULAR
+          if (!advCat && allRoles.includes("advertiser")) advCat = "ADV_REGULAR";
+          
+          feeAdv = calculateAdvFee((advCat || 'ADV_REGULAR') as AdvCategory, avgCPL, totalLeads);
         }
       }
 

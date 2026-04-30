@@ -80,6 +80,28 @@ export async function GET() {
       }
     }
 
+    // 5. Fee Advertiser (Berdasarkan Performa Iklan Bulan Ini)
+    const allRoles = user.secondaryRoles || [];
+    if (user.role?.slug === "advertiser" || allRoles.includes("advertiser")) {
+      const adsBulanIni = await prisma.marketingAd.aggregate({
+        where: {
+          advId: userId,
+          tanggal: { gte: start, lte: end }
+        },
+        _sum: { fee: true },
+        _count: true
+      });
+
+      const totalFeeAds = adsBulanIni._sum.fee || 0;
+      if (totalFeeAds > 0) {
+        items.push({ 
+          label: "Fee Performa Iklan", 
+          amount: totalFeeAds, 
+          count: adsBulanIni._count 
+        });
+      }
+    }
+
     const totalEstimasi = items.reduce((acc, curr) => acc + curr.amount, 0);
 
     return NextResponse.json({

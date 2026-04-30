@@ -92,7 +92,12 @@ export async function GET(request: NextRequest) {
       views: socialMetrics.reduce((a, b) => a + b.views, 0),
       likes: socialMetrics.reduce((a, b) => a + b.likes, 0),
       engagement: socialMetrics.reduce((a, b) => a + b.engagement, 0),
-      followers: socialMetrics.reduce((a, b) => a + b.followers, 0),
+      // Followers = angka snapshot terbaru (bukan dijumlahkan)
+      followers: socialMetrics.length > 0 ? socialMetrics[0].followers : 0,
+      // Growth = selisih antara entry terbaru vs entry terlama di periode ini
+      followerGrowth: socialMetrics.length > 1
+        ? socialMetrics[0].followers - socialMetrics[socialMetrics.length - 1].followers
+        : 0,
     },
     production: {
       total: contents.length,

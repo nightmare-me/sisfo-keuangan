@@ -37,8 +37,8 @@ export default function StaffLivePage() {
 
   const role = (session?.user as any)?.role?.toUpperCase();
   const allRoles = getAllRoles(session);
-  // Admin, SPV Multimedia, dan user dengan role talent bisa input
-  const canInput = SUPER_ROLES.includes(role) || allRoles.includes("spv_multimedia") || allRoles.includes("talent");
+  // Admin, SPV Multimedia, dan user dengan role multimedia bisa input
+  const canInput = SUPER_ROLES.includes(role) || allRoles.includes("spv_multimedia") || allRoles.includes("multimedia");
 
   useEffect(() => {
     fetch("/api/users")
@@ -185,9 +185,11 @@ export default function StaffLivePage() {
                   </td>
                   <td style={{ padding: '20px 24px', fontSize: 14, color: 'var(--text-muted)', maxWidth: 300 }}>{s.keterangan || "—"}</td>
                   <td style={{ textAlign: 'right', padding: '20px 24px' }}>
-                    <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }} onClick={() => handleDelete(s.id)}>
-                      <Trash2 size={20} />
-                    </button>
+                    {canInput && (
+                      <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: 'var(--danger)' }} onClick={() => handleDelete(s.id)}>
+                        <Trash2 size={20} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -288,7 +290,7 @@ export default function StaffLivePage() {
                 alignItems: 'center', 
                 gap: 8 
               }}>
-                <Clock size={14} /> Hanya Admin / SPV Multimedia yang dapat menginput jam live harian.
+                <Clock size={14} /> Hanya Admin, SPV, atau Tim Multimedia yang dapat menginput jam live harian.
               </div>
             )}
           </form>

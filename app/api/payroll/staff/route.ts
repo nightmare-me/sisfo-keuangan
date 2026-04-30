@@ -200,9 +200,14 @@ export async function GET(request: NextRequest) {
           totalBonus += calculateBonusAkademikRO(totalRO, config);
       }
 
-      // F. Profit Shared Bonuses (CEO, COO, SPV, etc)
-      totalBonus += calculateBonusGrossProfit(grossProfit, posisi, config);
-      totalBonus += calculateSharingTOEFL(toeflProfit, posisi, config);
+      // F. Profit Shared Bonuses (HANYA UNTUK POSISI TERTENTU)
+      const whitelistBonus = ["CEO", "COO", "ASSISTANT CEO", "FINANCE", "SPV"];
+      const isWhitelisted = whitelistBonus.some(w => posisi.toUpperCase().includes(w));
+
+      if (isWhitelisted) {
+        totalBonus += calculateBonusGrossProfit(grossProfit, posisi, config);
+        totalBonus += calculateSharingTOEFL(toeflProfit, posisi, config);
+      }
 
       const subtotal = profile.gajiPokok + profile.tunjangan + totalFee + totalBonus + extraGaji;
 

@@ -182,7 +182,8 @@ export async function GET(request: NextRequest) {
         allRoles.some(r => r.toUpperCase().includes(w))
       );
 
-      if (!isAkademik && matchedKeyword) {
+      // SPV Akademik sekarang boleh masuk sini
+      if (matchedKeyword) {
         // Tentukan "Nama Posisi"
         let targetPos = posisi;
         if (matchedKeyword === "SPV") {
@@ -195,11 +196,15 @@ export async function GET(request: NextRequest) {
         const pSpace = pClean.replace(/_/g, " ");
 
         // 1. BONUS DARI KANTONG GLOBAL (NON-TOEFL)
-        const b1 = calculateBonusGrossProfit(grossProfitGlobal, pClean, config);
-        const b2 = calculateBonusGrossProfit(grossProfitGlobal, pSpace, config);
-        totalBonus += (b1 || b2 || 0);
+        // PROTEKSI: Akademik TIDAK BOLEH dapat ini (agar tidak ikut menanggung rugi global)
+        if (!isAkademik) {
+            const b1 = calculateBonusGrossProfit(grossProfitGlobal, pClean, config);
+            const b2 = calculateBonusGrossProfit(grossProfitGlobal, pSpace, config);
+            totalBonus += (b1 || b2 || 0);
+        }
 
         // 2. SHARING DARI KANTONG TOEFL
+        // SPV Akademik BOLEH dapat ini
         const s1 = calculateSharingTOEFL(toeflProfitNet, pClean, config);
         const s2 = calculateSharingTOEFL(toeflProfitNet, pSpace, config);
         totalBonus += (s1 || s2 || 0);

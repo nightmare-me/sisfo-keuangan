@@ -198,6 +198,8 @@ export function calculateBonusMultimediaEksternal(nettProfit: number): number {
  * Calculate TOEFL Profit Sharing for a user based on their position
  */
 export function calculateSharingTOEFL(toeflProfit: number, posisi: string, config?: PayrollConfig): number {
+  if (toeflProfit <= 0) return 0; // Pastikan tidak negatif
+
   const teamShareRate = config?.SHARING_TOEFL_TEAM_PERCENT || 0.5;
   const teamShare = toeflProfit * teamShareRate; 
   
@@ -212,6 +214,8 @@ export function calculateSharingTOEFL(toeflProfit: number, posisi: string, confi
  * Calculate Revenue-based Bonus (from Gross Profit)
  */
 export function calculateBonusGrossProfit(grossProfit: number, posisi: string, config?: PayrollConfig): number {
+  if (grossProfit <= 0) return 0; // Pastikan tidak negatif
+  
   // DYNAMIC LOOKUP: Cari key BONUS_GROSS_[NAMA_POSISI]
   const dynamicKey = `BONUS_GROSS_${posisi.toUpperCase().replace(/\s+/g, '_')}`;
   const rate = config?.[dynamicKey] || 0;

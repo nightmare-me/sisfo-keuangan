@@ -178,7 +178,7 @@ export default function ContentProductionPage() {
               </tr>
             </thead>
             <tbody>
-              {contents.length === 0 ? (
+              {(!Array.isArray(contents) || contents.length === 0) ? (
                 <tr><td colSpan={5} style={{ textAlign: "center", padding: 80, color: "var(--text-muted)" }}>Belum ada rencana konten</td></tr>
               ) : contents.map(c => (
                 <tr key={c.id} className="table-row-hover">
@@ -348,14 +348,14 @@ export default function ContentProductionPage() {
                   <label className="form-label">Content Creator</label>
                   <select className="form-control" value={form.creatorId} onChange={e => setForm({...form, creatorId: e.target.value})}>
                     <option value="">Pilih Creator</option>
-                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    {(Array.isArray(users) ? users : []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Videographer</label>
                   <select className="form-control" value={form.videogId} onChange={e => setForm({...form, videogId: e.target.value})}>
                     <option value="">Pilih Videographer</option>
-                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    {(Array.isArray(users) ? users : []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
                 </div>
               </div>

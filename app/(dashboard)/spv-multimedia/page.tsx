@@ -162,7 +162,7 @@ export default function SPVMultimediaPage() {
               <tbody>
                 {loading ? (
                   <tr><td colSpan={6} style={{ textAlign: "center", padding: 32 }}>Memuat data...</td></tr>
-                ) : stats.length === 0 ? (
+                ) : (!Array.isArray(stats) || stats.length === 0) ? (
                   <tr><td colSpan={6} style={{ textAlign: "center", padding: 48 }}>Tidak ada data talent</td></tr>
                 ) : stats.map((talent: any) => (
                   <tr key={talent.talentId}>
@@ -210,8 +210,8 @@ export default function SPVMultimediaPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {socialMetrics.length === 0 ? (
-                    <tr><td colSpan={5} style={{ textAlign: "center", padding: 48 }}>Belum ada metrik tercatat</td></tr>
+                  {(!Array.isArray(socialMetrics) || socialMetrics.length === 0) ? (
+                    <tr><td colSpan={6} style={{ textAlign: "center", padding: 48 }}>Belum ada metrik tercatat</td></tr>
                   ) : socialMetrics.map((m: any) => (
                     <tr key={m.id}>
                       <td>
@@ -237,7 +237,7 @@ export default function SPVMultimediaPage() {
              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 20 }}>Platform Breakdown</h3>
              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                {['TIKTOK', 'INSTAGRAM', 'YOUTUBE'].map(plat => {
-                 const platData = socialMetrics.filter(m => m.platform === plat);
+                 const platData = (Array.isArray(socialMetrics) ? socialMetrics : []).filter(m => m.platform === plat);
                  const totalViews = platData.reduce((a,b) => a + b.views, 0);
                  const percentage = summary.social?.views > 0 ? (totalViews / summary.social.views * 100) : 0;
                  return (
@@ -286,7 +286,7 @@ export default function SPVMultimediaPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {contents.length === 0 ? (
+                  {(!Array.isArray(contents) || contents.length === 0) ? (
                     <tr><td colSpan={4} style={{ textAlign: "center", padding: 48 }}>Belum ada antrean konten</td></tr>
                   ) : contents.map((c: any) => (
                     <tr key={c.id}>
@@ -327,7 +327,7 @@ export default function SPVMultimediaPage() {
               <TrendingUp className="text-success" size={18} /> Viral Hall of Fame
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {viralContents.length === 0 ? (
+              {(!Array.isArray(viralContents) || viralContents.length === 0) ? (
                 <div style={{ textAlign: "center", padding: 20, color: "var(--text-muted)", fontSize: 13 }}>Belum ada konten viral tercatat</div>
               ) : viralContents.map(v => (
                 <div key={v.id} style={{ padding: 12, borderRadius: 16, background: "var(--surface-container-low)", border: "1px solid var(--ghost-border)" }}>

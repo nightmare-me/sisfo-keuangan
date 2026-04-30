@@ -93,7 +93,7 @@ export default function SocialMetricsPage() {
   }
 
   // Siapkan data grafik (10 data terakhir)
-  const chartData = [...history]
+  const chartData = (Array.isArray(history) ? [...history] : [])
     .reverse()
     .slice(-10)
     .map(h => ({
@@ -205,7 +205,7 @@ export default function SocialMetricsPage() {
           </h3>
           
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {history.length === 0 ? (
+            {(!Array.isArray(history) || history.length === 0) ? (
               <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>Belum ada data tercatat</div>
             ) : history.map(m => (
               <div key={m.id} style={{ padding: 16, background: "var(--surface-container-low)", borderRadius: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

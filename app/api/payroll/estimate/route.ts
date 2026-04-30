@@ -14,8 +14,29 @@ export async function GET() {
   try {
     const userId = (session?.user as any)?.id;
     const now = new Date();
-    const start = startOfMonth(now);
-    const end = endOfMonth(now);
+    
+    // 0. AMBIL CONFIG KEUANGAN DARI DB
+    const dbConfigs = await prisma.financialConfig.findMany();
+    const config: Record<string, number> = {};
+    dbConfigs.forEach(c => {
+      config[c.key] = c.value;
+    });
+
+    const cutoffDay = config.PAYROLL_CUTOFF_DAY || 25;
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    // Hitung Range Berdasarkan Cutoff (Misal: 25 Maret - 24 April untuk Gaji April)
+    // Jika hari ini >= cutoff, berarti kita melihat periode berjalan (Cutoff Bulan Ini - Cutoff Bulan Depan)
+    // Jika hari ini < cutoff, berarti kita melihat (Cutoff Bulan Lalu - Cutoff Bulan Ini)
+    let start, end;
+    if (now.getDate() >= cutoffDay) {
+      start = new Date(currentYear, currentMonth - 1, cutoffDay, 0, 0, 0);
+      end = new Date(currentYear, currentMonth, cutoffDay - 1, 23, 59, 59);
+    } else {
+      start = new Date(currentYear, currentMonth - 2, cutoffDay, 0, 0, 0);
+      end = new Date(currentYear, currentMonth - 1, cutoffDay - 1, 23, 59, 59);
+    }
 
     // 1. Ambil Profil Karyawan & User Info
     const user = await prisma.user.findUnique({

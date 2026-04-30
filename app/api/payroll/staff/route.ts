@@ -39,69 +39,40 @@ export async function GET(request: NextRequest) {
     const dayStart = new Date(tahun, bulan - 2, cutoffDay, 0, 0, 0);
     const dayEnd = new Date(tahun, bulan - 1, cutoffDay - 1, 23, 59, 59);
 
-    // 3. HITUNG GROSS PROFIT PERUSAHAAN (IDENTIK DENGAN LAPORAN KEUANGAN)
+    // 3. HITUNG GROSS PROFIT TERPISAH (GLOBAL VS TOEFL)
     const [pemasukanAll, pengeluaranAll, refundsAll, adsAll] = await Promise.all([
       prisma.pemasukan.findMany({ where: { tanggal: { gte: dayStart, lte: dayEnd } }, include: { program: true } }),
       prisma.pengeluaran.findMany({ where: { tanggal: { gte: dayStart, lte: dayEnd } } }),
       prisma.refund.findMany({ 
-        where: { 
-          status: "APPROVED",
-          pemasukan: { tanggal: { gte: dayStart, lte: dayEnd } } 
-        } 
+        where: { status: "APPROVED", pemasukan: { tanggal: { gte: dayStart, lte: dayEnd } } },
+        include: { pemasukan: { include: { program: true } } }
       }),
       prisma.marketingAd.findMany({ where: { tanggal: { gte: dayStart, lte: dayEnd } } })
     ]);
 
-    const incomeTotal = pemasukanAll.reduce((sum: number, p: any) => sum + p.hargaFinal, 0);
-    const refundTotal = refundsAll.reduce((sum: number, r: any) => sum + r.jumlah, 0);
-    const outcomeTotal = pengeluaranAll.reduce((sum: number, p: any) => sum + p.jumlah, 0); 
-    const adsTotal = adsAll.reduce((sum: number, a: any) => sum + (a.spent || 0), 0);
-
-    const grossProfit = incomeTotal - refundTotal - outcomeTotal - adsTotal;
-
-    // 2. ANALISIS KHUSUS TOEFL (Sesuai Gambar Flowchart)
-    let toeflRevenue = 0;
-    let toeflFeeCS = 0;
-    let toeflFeeAdv = 0;
+    // A. KATEGORISASI TOEFL
+    const toeflRevenue = pemasukanAll.filter((p: any) => p.program?.isProfitSharing).reduce((s, p) => s + p.hargaFinal, 0);
+    const toeflAdsSpent = adsAll.filter((a: any) => a.kategori?.toUpperCase().includes("TOEFL")).reduce((s, a) => s + (a.spent || 0), 0);
+    const toeflExpenses = pengeluaranAll.filter((e: any) => e.kategori?.toUpperCase().includes("TOEFL")).reduce((s, e) => s + e.jumlah, 0);
+    const toeflRefund = refundsAll.filter((r: any) => r.pemasukan?.program?.isProfitSharing).reduce((s, r) => s + r.jumlah, 0);
     
-    pemasukanAll.filter((p: any) => p.program?.isProfitSharing).forEach((p: any) => {
-      toeflRevenue += p.hargaFinal;
-      
-      const ket = p.keterangan || "";
-      const typeMatch = ket.match(/\[TYPE:(.*?)\]/);
-      const extractedType = typeMatch ? typeMatch[1] : (p.program?.kategoriFee || "");
+    // B. HITUNG PROFIT TOEFL (MURNI)
+    // Sesuai Flowchart: TOEFL Profit = Revenue - (Fee CS + Fee Adv + Ads + Ops)
+    // Note: Fee CS/Adv akan dihitung di dalam loop per karyawan, tapi untuk metrik global kita pakai estimasi atau total real.
+    const toeflProfitNet = toeflRevenue - toeflRefund - toeflAdsSpent - toeflExpenses; 
 
-      toeflFeeCS += calculateCSFee(
-        "CS_TOEFL",
-        extractedType,
-        p.hargaFinal,
-        p.isRO,
-        0,
-        p.program || undefined,
-        config
-      );
-    });
-
-    const toeflAdsSpent = adsAll
-      .filter((a: any) => a.kategori === "TOEFL" || a.kategori?.toUpperCase().includes("TOEFL"))
-      .reduce((s: number, a: any) => s + (a.spent || 0), 0);
-
-    const toeflTeam = await prisma.user.findMany({ 
-      where: { teamType: { has: "ADV_TOEFL" } }, 
-      include: { marketingAds: { where: { tanggal: { gte: dayStart, lte: dayEnd } } } } 
-    });
+    // C. HITUNG GROSS PROFIT GLOBAL (NON-TOEFL)
+    const globalRevenue = pemasukanAll.filter((p: any) => !p.program?.isProfitSharing).reduce((s, p) => s + p.hargaFinal, 0);
+    const globalRefund = refundsAll.filter((r: any) => !r.pemasukan?.program?.isProfitSharing).reduce((s, r) => s + r.jumlah, 0);
+    const globalAds = adsAll.filter((a: any) => !a.kategori?.toUpperCase().includes("TOEFL")).reduce((s, a) => s + (a.spent || 0), 0);
+    const globalExpenses = pengeluaranAll.filter((e: any) => !e.kategori?.toUpperCase().includes("TOEFL")).reduce((s, e) => s + e.jumlah, 0);
     
-    toeflTeam.forEach((adv: any) => {
-       adv.marketingAds.forEach((perf: any) => {
-         toeflFeeAdv += calculateAdvFee("ADV_TOEFL" as any, perf.cpl, perf.leads);
-       });
-    });
+    const grossProfitGlobal = globalRevenue - globalRefund - globalAds - globalExpenses;
 
-    const toeflExpenses = pengeluaranAll
-      .filter((exp: any) => exp.kategori && exp.kategori.toUpperCase().includes("TOEFL"))
-      .reduce((s: number, e: any) => s + e.jumlah, 0);
-
-    const toeflProfit = toeflRevenue - toeflFeeCS - toeflFeeAdv - toeflAdsSpent - toeflExpenses;
+    // Metrik untuk dikirim ke frontend
+    const incomeTotal = globalRevenue + toeflRevenue;
+    const refundTotal = globalRefund + toeflRefund;
+    const grossProfitTotal = grossProfitGlobal + toeflProfitNet;
 
 
     // 3. AMBIL KARYAWAN (Paginated)
@@ -212,8 +183,7 @@ export async function GET(request: NextRequest) {
       );
 
       if (!isAkademik && matchedKeyword) {
-        // Tentukan "Nama Posisi" untuk cari bonus. 
-        // Jika posisi utama bukan SPV tapi dia punya role SPV, gunakan role SPV-nya sebagai kunci
+        // Tentukan "Nama Posisi"
         let targetPos = posisi;
         if (matchedKeyword === "SPV") {
             const spvRole = allRoles.find(r => r.toUpperCase().includes("SPV")) || 
@@ -224,10 +194,15 @@ export async function GET(request: NextRequest) {
         const pClean = targetPos.toUpperCase().trim().replace(/\s+/g, "_").replace(/__/g, "_");
         const pSpace = pClean.replace(/_/g, " ");
 
-        const b1 = calculateBonusGrossProfit(grossProfit, pClean, config);
-        const b2 = calculateBonusGrossProfit(grossProfit, pSpace, config);
-        
+        // 1. BONUS DARI KANTONG GLOBAL (NON-TOEFL)
+        const b1 = calculateBonusGrossProfit(grossProfitGlobal, pClean, config);
+        const b2 = calculateBonusGrossProfit(grossProfitGlobal, pSpace, config);
         totalBonus += (b1 || b2 || 0);
+
+        // 2. SHARING DARI KANTONG TOEFL
+        const s1 = calculateSharingTOEFL(toeflProfitNet, pClean, config);
+        const s2 = calculateSharingTOEFL(toeflProfitNet, pSpace, config);
+        totalBonus += (s1 || s2 || 0);
       }
 
       const subtotal = profile.gajiPokok + profile.tunjangan + totalFee + totalBonus + extraGaji;
@@ -258,8 +233,8 @@ export async function GET(request: NextRequest) {
         page,
         totalPages: Math.ceil(totalEmp / limit),
         metrics: {
-            grossProfit,
-            toeflProfit,
+            grossProfit: grossProfitGlobal,
+            toeflProfit: toeflProfitNet,
             totalPemasukan: incomeTotal,
             totalRefund: refundTotal
         }

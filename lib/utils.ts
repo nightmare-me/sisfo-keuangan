@@ -84,9 +84,13 @@ export function hasPermission(session: any, permissionSlug: string): boolean {
   if (SUPER_ROLES.includes(userRole)) return true;
   
   // Fallback for roles that might not have DB permissions seeded properly
-  const roleSlug = (session.user as any).roleSlug?.toLowerCase();
-  if (roleSlug === "pengajar" && ["dashboard:view", "kelas:view", "siswa:view", "pengajar:view"].includes(permissionSlug)) return true;
-  if (roleSlug === "siswa" && permissionSlug === "siswa:dashboard") return true;
+  const primaryRole = (session.user as any).roleSlug?.toLowerCase() || "";
+  const secondaryRoles = ((session.user as any).secondaryRoles || []).map((r: string) => r.toLowerCase());
+  const allRoles = [primaryRole, ...secondaryRoles];
+
+  if (allRoles.includes("pengajar") && ["dashboard:view", "kelas:view", "siswa:view", "pengajar:view"].includes(permissionSlug)) return true;
+  if (allRoles.includes("siswa") && permissionSlug === "siswa:dashboard") return true;
+  if ((allRoles.includes("talent") || allRoles.includes("multimedia")) && ["dashboard:view", "live_tracking:view", "multimedia:view"].includes(permissionSlug)) return true;
 
   return userPermissions.includes(permissionSlug);
 }

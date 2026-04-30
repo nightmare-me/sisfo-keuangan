@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     if (!session || (session.user as any).role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const body = await request.json();
-    const { nama, deskripsi, tipe, harga, kategoriFee, durasi, feeClosing, feeClosingRO, isProfitSharing } = body;
+    const { nama, deskripsi, tipe, harga, kategoriFee, durasi, feeClosing, feeClosingRO, isProfitSharing, kategoriUsia } = body;
     
     if (!nama || !harga) return NextResponse.json({ error: "Nama dan harga diperlukan" }, { status: 400 });
     
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         nama, 
         deskripsi, 
         tipe: tipe ?? "REGULAR", 
+        kategoriUsia: kategoriUsia ?? "UMUM",
         harga: Number(harga) || 0, 
         kategoriFee,
         feeClosing: Number(feeClosing) || 0,

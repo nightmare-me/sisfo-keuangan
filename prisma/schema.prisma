@@ -108,6 +108,7 @@ model Program {
   nama         String
   deskripsi    String?
   tipe         TipeKelas   @default(REGULAR)
+  kategoriUsia KategoriUsia @default(UMUM)
   harga        Float
   durasiBuilan Int         @default(3)
   aktif        Boolean     @default(true)
@@ -134,6 +135,7 @@ model Siswa {
   lastLogin     DateTime?
   tanggalLahir  DateTime?
   tanggalDaftar DateTime       @default(now())
+  kategoriUsia  KategoriUsia   @default(DEWASA)
   status        StatusSiswa    @default(AKTIF)
   catatan       String?
   createdAt     DateTime       @default(now())
@@ -638,4 +640,10 @@ enum PlatformSocial {
   INSTAGRAM
   YOUTUBE
   FACEBOOK
+}
+
+enum KategoriUsia {
+  KIDS
+  DEWASA
+  UMUM
 }

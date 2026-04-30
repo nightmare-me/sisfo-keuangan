@@ -31,7 +31,7 @@ import {
 
 const STATUS_OPTIONS = ["AKTIF","TIDAK_AKTIF","ALUMNI"];
 const STATUS_BADGE: Record<string,string> = { AKTIF:"badge-success", TIDAK_AKTIF:"badge-danger", ALUMNI:"badge-muted" };
-const emptyForm = { nama:"", telepon:"", email:"", alamat:"", tanggalLahir:"", catatan:"" };
+const emptyForm = { nama:"", telepon:"", email:"", alamat:"", tanggalLahir:"", catatan:"", kategoriUsia: "DEWASA" };
 
 export default function SiswaPage() {
   const { data: session } = useSession();
@@ -103,7 +103,7 @@ export default function SiswaPage() {
   function openAdd() { setEditId(null); setForm({ ...emptyForm }); setShowModal(true); }
   function openEdit(s: any) {
     setEditId(s.id);
-    setForm({ nama: s.nama, telepon: s.telepon??'', email: s.email??'', alamat: s.alamat??'', tanggalLahir: s.tanggalLahir ? s.tanggalLahir.slice(0,10) : '', catatan: s.catatan??'' });
+    setForm({ nama: s.nama, telepon: s.telepon??'', email: s.email??'', alamat: s.alamat??'', tanggalLahir: s.tanggalLahir ? s.tanggalLahir.slice(0,10) : '', catatan: s.catatan??'', kategoriUsia: s.kategoriUsia || "DEWASA" });
     setShowModal(true);
   }
 
@@ -329,6 +329,7 @@ export default function SiswaPage() {
                 </th>
                 <th>No Siswa</th>
                 <th>Nama Lengkap</th>
+                <th>Kategori</th>
                 <th>Telepon</th>
                 <th>Kelas Aktif</th>
                 <th>Tgl Daftar</th>
@@ -354,6 +355,11 @@ export default function SiswaPage() {
                   </td>
                   <td style={{ fontFamily:"monospace", fontSize:12, color:"var(--text-muted)" }}>{s.noSiswa}</td>
                   <td style={{ fontWeight:700, color: 'var(--on-surface)' }}>{s.nama}</td>
+                  <td>
+                    <span className={`badge ${s.kategoriUsia === "KIDS" ? "badge-info" : "badge-secondary"}`}>
+                      {s.kategoriUsia || "DEWASA"}
+                    </span>
+                  </td>
                   <td style={{ fontSize:14 }}>{s.telepon||"—"}</td>
                   <td>
                     {s.pendaftaran?.length>0 ? (
@@ -483,7 +489,7 @@ export default function SiswaPage() {
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
-                <div className="form-grid-2">
+                <div className="form-grid-3">
                   <div className="form-group">
                     <label className="form-label required">Nama Lengkap</label>
                     <input id="inp-nama-siswa" type="text" className="form-control" placeholder="Nama siswa..." value={form.nama} onChange={e=>setForm(f=>({...f,nama:e.target.value}))} required />
@@ -491,6 +497,13 @@ export default function SiswaPage() {
                   <div className="form-group">
                     <label className="form-label">No. Telepon / WhatsApp</label>
                     <input type="tel" className="form-control" placeholder="08xx-xxxx-xxxx" value={form.telepon} onChange={e=>setForm(f=>({...f,telepon:e.target.value}))} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label required">Kategori Usia</label>
+                    <select className="form-control" value={form.kategoriUsia} onChange={e=>setForm(f=>({...f,kategoriUsia:e.target.value}))}>
+                      <option value="DEWASA">DEWASA</option>
+                      <option value="KIDS">KIDS</option>
+                    </select>
                   </div>
                 </div>
                 <div className="form-grid-2">

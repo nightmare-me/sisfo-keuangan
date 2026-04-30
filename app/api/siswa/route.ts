@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { nama, telepon, email, alamat, tanggalLahir, catatan } = body;
+  const { nama, telepon, email, alamat, tanggalLahir, catatan, kategoriUsia } = body;
 
   if (!nama) return NextResponse.json({ error: "Nama siswa diperlukan" }, { status: 400 });
 
@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       alamat: alamat || null,
       tanggalLahir: tanggalLahir ? new Date(tanggalLahir) : null,
       catatan: catatan || null,
+      kategoriUsia: kategoriUsia ?? "DEWASA",
     },
   });
 
@@ -110,7 +111,7 @@ export async function PUT(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, nama, telepon, email, alamat, tanggalLahir, catatan, status } = body;
+  const { id, nama, telepon, email, alamat, tanggalLahir, catatan, status, kategoriUsia } = body;
 
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
@@ -123,6 +124,7 @@ export async function PUT(request: NextRequest) {
       ...(alamat !== undefined && { alamat: alamat || null }),
       ...(catatan !== undefined && { catatan: catatan || null }),
       ...(tanggalLahir !== undefined && { tanggalLahir: tanggalLahir ? new Date(tanggalLahir) : null }),
+      ...(kategoriUsia !== undefined && { kategoriUsia }),
       ...(status !== undefined && { status }),
     },
   });

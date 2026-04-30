@@ -43,7 +43,7 @@ const DURASI_LABEL: Record<string, string> = {
   "3_BULAN": "3 Bulan",   "6_BULAN": "6 Bulan", "LAINNYA": "Lainnya",
 };
 
-const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "", feeClosing: "0", feeClosingRO: "0", isProfitSharing: false };
+const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "", feeClosing: "0", feeClosingRO: "0", isProfitSharing: false, kategoriUsia: "UMUM" };
 
 export default function ProgramPage() {
   const { data: session } = useSession();
@@ -109,7 +109,8 @@ export default function ProgramPage() {
       durasi: p.durasi ?? "",
       feeClosing: String(p.feeClosing || 0),
       feeClosingRO: String(p.feeClosingRO || 0),
-      isProfitSharing: !!p.isProfitSharing
+      isProfitSharing: !!p.isProfitSharing,
+      kategoriUsia: p.kategoriUsia || "UMUM"
     });
     setEditId(p.id);
     setShowModal(true);
@@ -284,6 +285,7 @@ export default function ProgramPage() {
               <tr>
                 <th>Nama Produk</th>
                 <th>Tipe</th>
+                <th>Kategori Usia</th>
                 <th>Harga Normal</th>
                 <th>Fee New</th>
                 <th>Fee RO</th>
@@ -315,6 +317,11 @@ export default function ProgramPage() {
                     </div>
                   </td>
                   <td><span className={`badge ${TIPE_BADGE[p.tipe] ?? "badge-muted"}`}>{p.tipe}</span></td>
+                  <td>
+                    <span className={`badge ${p.kategoriUsia === "KIDS" ? "badge-info" : p.kategoriUsia === "DEWASA" ? "badge-primary" : "badge-secondary"}`}>
+                      {p.kategoriUsia}
+                    </span>
+                  </td>
                   <td style={{ fontWeight: 700, color: "var(--success)" }}>{formatCurrency(p.harga)}</td>
                   <td style={{ color: "var(--primary)", fontWeight: 600 }}>{formatCurrency(p.feeClosing || 0)}</td>
                   <td style={{ color: "var(--warning)", fontWeight: 600 }}>{formatCurrency(p.feeClosingRO || 0)}</td>
@@ -435,7 +442,7 @@ export default function ProgramPage() {
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
-                <div className="form-grid-2">
+                <div className="form-grid-3">
                   <div className="form-group">
                     <label className="form-label required">Nama Produk</label>
                     <input type="text" className="form-control" placeholder="Contoh: Speaking Regular" value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))} required />
@@ -444,6 +451,14 @@ export default function ProgramPage() {
                     <label className="form-label required">Tipe Program</label>
                     <select className="form-control" value={form.tipe} onChange={e => setForm(f => ({ ...f, tipe: e.target.value }))}>
                       {TIPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label required">Kategori Usia</label>
+                    <select className="form-control" value={form.kategoriUsia} onChange={e => setForm(f => ({ ...f, kategoriUsia: e.target.value }))}>
+                      <option value="UMUM">UMUM</option>
+                      <option value="KIDS">KIDS</option>
+                      <option value="DEWASA">DEWASA</option>
                     </select>
                   </div>
                 </div>

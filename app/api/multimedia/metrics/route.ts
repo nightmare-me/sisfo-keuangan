@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
     orderBy: { tanggal: "desc" }
   });
 
-  return NextResponse.json(metrics);
+  const data = metrics.map(m => ({
+    ...m,
+    engagementRate: m.views > 0 ? (m.engagement / m.views) * 100 : 0
+  }));
+
+  return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {

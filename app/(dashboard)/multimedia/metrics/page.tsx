@@ -238,6 +238,7 @@ export default function SocialMetricsPage() {
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: 800, color: "var(--primary)" }}>{(m.followers || 0).toLocaleString()} <span style={{ fontSize: 10, fontWeight: 400 }}>Foll</span></div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{(m.views || 0).toLocaleString()} Views</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--success)" }}>{(m.engagementRate || 0).toFixed(2)}% ER</div>
                 </div>
               </div>
             ))}

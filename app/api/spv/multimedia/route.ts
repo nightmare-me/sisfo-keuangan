@@ -108,6 +108,9 @@ export async function GET(request: NextRequest) {
       engagementGrowth: socialMetrics.length > 1
         ? socialMetrics[0].engagement - socialMetrics[socialMetrics.length - 1].engagement
         : 0,
+      engagementRate: socialMetrics.length > 0 && socialMetrics[0].views > 0
+        ? (socialMetrics[0].engagement / socialMetrics[0].views) * 100
+        : 0,
     },
     production: {
       total: contents.length,

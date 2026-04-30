@@ -105,6 +105,12 @@ export default function SPVMultimediaPage() {
             {(summary.social?.followerGrowth ?? 0) >= 0 ? "▲" : "▼"} {Math.abs(summary.social?.followerGrowth ?? 0).toLocaleString()} periode ini
           </div>
         </div>
+        <div className="kpi-card" style={{ borderLeft: "4px solid #06b6d4" }}>
+          <div className="kpi-icon" style={{ color: "#06b6d4" }}><TrendingUp size={20} /></div>
+          <div className="kpi-label">Engagement Rate</div>
+          <div className="kpi-value">{(summary.social?.engagementRate ?? 0).toFixed(2)}%</div>
+          <div className="kpi-sublabel">Interaction per Views</div>
+        </div>
         <div className="kpi-card" style={{ borderLeft: "4px solid #ef4444" }}>
           <div className="kpi-icon" style={{ color: "#ef4444" }}><TrendingUp size={20} /></div>
           <div className="kpi-label">Konten Viral</div>

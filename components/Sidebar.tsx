@@ -113,29 +113,10 @@ export default function Sidebar() {
     dynamicSpvItems.push({ href: "/spv-multimedia", label: "Dashboard SPV Multimedia", icon: <Video size={16} /> });
   }
 
-  // Tambahkan akses menu ADV jika user punya secondary role advertiser
-  const hasAdvAccess  = allRoles.includes("advertiser");
-  const hasTalentAccess = allRoles.includes("talent") || allRoles.includes("spv_multimedia");
 
   // Merge nav items: tambah dynamic items ke group yang sesuai
   const mergedNavItems: NavGroup[] = [
-    ...navItems.map(g => {
-      if (g.group === "KEUANGAN") {
-        const extraItems: NavItem[] = [];
-        if (hasAdvAccess && !g.items.find(i => i.href === "/ads")) {
-          extraItems.push({ href: "/ads", label: "Manajemen Iklan", icon: <Megaphone size={16} />, permission: "ads_spent:view" });
-        }
-        return { ...g, items: [...g.items, ...extraItems] };
-      }
-      if (g.group === "OPERASIONAL") {
-        const extraItems: NavItem[] = [];
-        if (hasTalentAccess && !g.items.find(i => i.href === "/staff/live")) {
-          extraItems.push({ href: "/staff/live", label: "Input Jam Live", icon: <Clock size={16} />, permission: "live_tracking:view" });
-        }
-        return { ...g, items: [...g.items, ...extraItems] };
-      }
-      return g;
-    }),
+    ...navItems,
     ...(dynamicSpvItems.length > 0 ? [{ group: "SUPERVISOR", items: dynamicSpvItems }] : []),
   ];
 

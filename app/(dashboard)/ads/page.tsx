@@ -27,6 +27,7 @@ const PLATFORM_COLOR: Record<string,string> = {
 };
 
 export default function AdsPage() {
+  const { data: session } = useSession();
   const role = (session?.user as any)?.role?.toUpperCase();
   const isAdmin = role === "ADMIN";
   const allRoles = (session?.user as any)?.secondaryRoles || [];

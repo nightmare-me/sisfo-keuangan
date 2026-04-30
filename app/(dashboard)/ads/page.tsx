@@ -100,8 +100,19 @@ export default function AdsPage() {
       setEditId(null);
       fetchData();
     } else {
-      const err = await res.json();
-      alert("Gagal menyimpan: " + (err.error || "Terjadi kesalahan"));
+      let errorMsg = "Terjadi kesalahan";
+      try {
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const err = await res.json();
+          errorMsg = err.error || errorMsg;
+        } else {
+          errorMsg = await res.text();
+        }
+      } catch (e) {
+        console.error("Error parsing response:", e);
+      }
+      alert("Gagal menyimpan: " + errorMsg);
     }
   }
 

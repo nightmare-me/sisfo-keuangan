@@ -34,8 +34,34 @@ export default function SocialMetricsPage() {
     comments: "",
     saved: "",
     tanggal: new Date().toISOString().slice(0, 10),
-    keterangan: ""
+    keterangan: "",
+    urlProfile: "https://www.tiktok.com/@broikham.english"
   });
+
+  const [syncing, setSyncing] = useState(false);
+
+  async function handleSync() {
+    if (!form.urlProfile) return alert("Masukkan URL Profil dulu");
+    setSyncing(true);
+    try {
+      const res = await fetch(`/api/multimedia/metrics/sync?url=${encodeURIComponent(form.urlProfile)}`);
+      const data = await res.json();
+      if (res.ok) {
+        setForm({
+          ...form,
+          followers: data.followers?.toString() || form.followers,
+          likes: data.likes?.toString() || form.likes,
+        });
+        alert("Data berhasil ditarik!");
+      } else {
+        alert("Gagal tarik data: " + data.error);
+      }
+    } catch (err) {
+      alert("Terjadi kesalahan");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => { fetchHistory(); }, []);
 
@@ -153,6 +179,18 @@ export default function SocialMetricsPage() {
                 <option value="YOUTUBE">YouTube</option>
                 <option value="FACEBOOK">Facebook</option>
               </select>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 20 }}>
+              <label className="form-label" style={{ display: "flex", justifyContent: "space-between" }}>
+                URL Profil 
+                {form.platform === "TIKTOK" && (
+                  <button type="button" onClick={handleSync} disabled={syncing} style={{ fontSize: 11, color: "var(--primary)", background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>
+                    {syncing ? "⏳ Menarik..." : "⚡ Tarik Data Otomatis"}
+                  </button>
+                )}
+              </label>
+              <input type="text" className="form-control" value={form.urlProfile} onChange={e => setForm({...form, urlProfile: e.target.value})} placeholder="https://www.tiktok.com/@username" />
             </div>
 
             <div className="form-group" style={{ marginBottom: 20 }}>

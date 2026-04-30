@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
           const teamTypes = Array.isArray(emp.teamType) ? emp.teamType : [];
           let advCat = teamTypes.find((t: string) => t.startsWith("ADV_"));
           
-          // Fallback: Jika tidak ada ADV_ tapi punya role advertiser, asumsikan REGULAR
+          // Fallback: Jika tidak ada ADV_ di teamType, coba cari di roles
           if (!advCat && allRoles.includes("advertiser")) advCat = "ADV_REGULAR";
           
           feeAdv = calculateAdvFee((advCat || 'ADV_REGULAR') as AdvCategory, avgCPL, totalLeads);

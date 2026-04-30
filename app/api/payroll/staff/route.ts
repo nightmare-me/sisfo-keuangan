@@ -204,21 +204,30 @@ export async function GET(request: NextRequest) {
       // F. Profit Shared Bonuses (HANYA UNTUK POSISI TERTENTU)
       const isAkademik = posisi.toUpperCase().includes("AKADEMIK");
       const whitelistBonus = ["CEO", "COO", "ASSISTANT CEO", "FINANCE", "SPV"];
-      const isWhitelisted = !isAkademik && whitelistBonus.some(w => posisi.toUpperCase().includes(w));
+      
+      // Cari apakah ada salah satu role atau posisi yang masuk whitelist
+      const matchedKeyword = whitelistBonus.find(w => 
+        posisi.toUpperCase().includes(w) || 
+        allRoles.some(r => r.toUpperCase().includes(w))
+      );
 
-      if (isWhitelisted) {
-        // Normalisasi Posisi
-        const pClean = posisi.toUpperCase().trim().replace(/\s+/g, "_").replace(/__/g, "_");
+      if (!isAkademik && matchedKeyword) {
+        // Tentukan "Nama Posisi" untuk cari bonus. 
+        // Jika posisi utama bukan SPV tapi dia punya role SPV, gunakan role SPV-nya sebagai kunci
+        let targetPos = posisi;
+        if (matchedKeyword === "SPV") {
+            const spvRole = allRoles.find(r => r.toUpperCase().includes("SPV")) || 
+                            (posisi.toUpperCase().includes("SPV") ? posisi : "");
+            if (spvRole) targetPos = spvRole;
+        }
+
+        const pClean = targetPos.toUpperCase().trim().replace(/\s+/g, "_").replace(/__/g, "_");
         const pSpace = pClean.replace(/_/g, " ");
 
-        // HANYA AMBIL BONUS GROSS PROFIT (Agar tidak double counting dengan TOEFL)
         const b1 = calculateBonusGrossProfit(grossProfit, pClean, config);
         const b2 = calculateBonusGrossProfit(grossProfit, pSpace, config);
         
         totalBonus += (b1 || b2 || 0);
-
-        // Sharing TOEFL hanya untuk posisi yang MEMANG diatur khusus sharing TOEFL-nya (jika ada)
-        // CEO/Finance sudah tercover di Gross Profit, jadi tidak perlu ditambah sharing TOEFL lagi
       }
 
       const subtotal = profile.gajiPokok + profile.tunjangan + totalFee + totalBonus + extraGaji;

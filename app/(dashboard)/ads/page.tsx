@@ -13,6 +13,7 @@ import {
   Plus, 
   Download, 
   Trash2, 
+  Edit3,
   Megaphone, 
   Filter,
   RefreshCw,
@@ -26,10 +27,15 @@ const PLATFORM_COLOR: Record<string,string> = {
 };
 
 export default function AdsPage() {
-  const { data: session } = useSession();
   const role = (session?.user as any)?.role?.toUpperCase();
   const isAdmin = role === "ADMIN";
+  const allRoles = (session?.user as any)?.secondaryRoles || [];
+  const isAdv = allRoles.includes("advertiser") || role === "ADVERTISER";
+  const isSPVAdv = allRoles.includes("spv_adv") || role === "SPV_ADV";
+  
   const [data, setData] = useState<any[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [summary, setSummary] = useState({ total:0, count:0, leads:0, avgCpl:0 });
   const [byPlatform, setByPlatform] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,11 +79,42 @@ export default function AdsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
-    await fetch("/api/ads",{ method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({...form, jumlah: parseFloat(form.jumlah), leads: parseInt(form.leads || "0")}) });
-    setSaving(false); setShowModal(false);
-    setForm({ platform:"META", jumlah:"", keterangan:"", leads:"", tanggal: new Date().toISOString().slice(0,10) });
-    fetchData();
+    const url = isEditing ? "/api/ads" : "/api/ads";
+    const method = isEditing ? "PUT" : "POST";
+    const payload = isEditing 
+      ? { ...form, id: editId, jumlah: parseFloat(form.jumlah), leads: parseInt(form.leads || "0") }
+      : { ...form, jumlah: parseFloat(form.jumlah), leads: parseInt(form.leads || "0") };
+
+    const res = await fetch(url, { 
+      method, 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload) 
+    });
+
+    setSaving(false);
+    if (res.ok) {
+      setShowModal(false);
+      setForm({ platform: "META", jumlah: "", keterangan: "", leads: "", tanggal: new Date().toISOString().slice(0, 10) });
+      setIsEditing(false);
+      setEditId(null);
+      fetchData();
+    } else {
+      const err = await res.json();
+      alert("Gagal menyimpan: " + (err.error || "Terjadi kesalahan"));
+    }
+  }
+
+  function openEdit(item: any) {
+    setForm({
+      platform: item.platform,
+      jumlah: item.spent.toString(),
+      leads: (item.leads || 0).toString(),
+      keterangan: item.keterangan || "",
+      tanggal: item.tanggal.slice(0, 10)
+    });
+    setEditId(item.id);
+    setIsEditing(true);
+    setShowModal(true);
   }
 
   async function handleDelete(id: string) {
@@ -426,11 +463,28 @@ export default function AdsPage() {
                   <td className="text-right" style={{ fontWeight:600, color: "var(--primary)" }}>{item.leads || 0}</td>
                   <td className="text-right" style={{ fontWeight:600, color: "var(--success)" }}>{formatCurrency(item.cpl || 0)}</td>
                   <td className="text-right" style={{ fontWeight:700, color: "#8b5cf6" }}>{formatCurrency(item.fee || 0)}</td>
-                   <td className="text-center">
-                     <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12, color: "var(--danger)" }} onClick={()=>handleDelete(item.id)} title="Hapus">
-                       <Trash2 size={20} />
-                     </button>
-                   </td>
+                  <td className="text-center">
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                      <button 
+                        className="btn btn-secondary btn-icon" 
+                        style={{ width: 42, height: 42, borderRadius: 12, color: "var(--primary)" }} 
+                        onClick={() => openEdit(item)} 
+                        title="Edit"
+                      >
+                        <Edit3 size={20} />
+                      </button>
+                      {isAdmin && (
+                        <button 
+                          className="btn btn-secondary btn-icon" 
+                          style={{ width: 42, height: 42, borderRadius: 12, color: "var(--danger)" }} 
+                          onClick={() => handleDelete(item.id)} 
+                          title="Hapus"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -502,8 +556,8 @@ export default function AdsPage() {
         <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) setShowModal(false); }}>
           <div className="modal">
             <div className="modal-header">
-              <div className="modal-title">Input Spent Ads</div>
-              <button className="modal-close" onClick={()=>setShowModal(false)}>✕</button>
+              <div className="modal-title">{isEditing ? "Edit Spent Ads" : "Input Spent Ads"}</div>
+              <button className="modal-close" onClick={() => { setShowModal(false); setIsEditing(false); }}>✕</button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">

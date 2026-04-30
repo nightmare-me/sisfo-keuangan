@@ -182,6 +182,43 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(ad, { status: 201 });
 }
 
+export async function PUT(request: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json();
+  const { id, platform, jumlah, keterangan, tanggal, leads: leadsRaw } = body;
+
+  if (!id) return NextResponse.json({ error: "ID diperlukan untuk update" }, { status: 400 });
+
+  const spent = parseFloat(jumlah);
+  const leads = parseInt(leadsRaw || "0") || 0;
+  const cpl = leads > 0 ? spent / leads : 0;
+
+  // Ambil data lama untuk cek teamType (perlu untuk hitung fee)
+  const existing = await prisma.marketingAd.findUnique({ where: { id }, include: { adv: true } });
+  if (!existing) return NextResponse.json({ error: "Data tidak ditemukan" }, { status: 404 });
+
+  const teamTypeRaw = (existing.adv as any)?.teamType;
+  const firstTeam = Array.isArray(teamTypeRaw) ? teamTypeRaw[0] : (teamTypeRaw as string);
+  const fee = calculateAdvFee((firstTeam || "ADV_REGULAR") as AdvCategory, cpl, leads);
+
+  const ad = await prisma.marketingAd.update({
+    where: { id },
+    data: {
+      tanggal: tanggal ? new Date(tanggal) : undefined,
+      platform: VALID_PLATFORMS.includes(platform) ? platform : undefined,
+      spent,
+      leads,
+      cpl,
+      fee,
+      keterangan,
+    },
+  });
+
+  return NextResponse.json(ad);
+}
+
 export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -223,7 +223,7 @@ export default function GajiPage() {
           <div className="card" style={{ marginBottom:16 }}>
             <div className="card-header"><div className="card-title">Tarif Per Sesi Aktif</div></div>
             <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-              {tarif.map((t:any)=>(
+              {(Array.isArray(tarif) ? tarif : []).map((t:any)=>(
                 <div key={t.id} style={{ background:"var(--bg-elevated)", borderRadius:10, padding:"12px 20px", display:"flex", flexDirection:"column", gap:4 }}>
                   <span className={`badge ${TIPE_BADGE[t.tipeKelas]??""}`} style={{ width:"fit-content" }}>{t.tipeKelas}</span>
                   <span style={{ fontSize:18, fontWeight:800, color:"var(--text-primary)" }}>{formatCurrency(t.tarif)}</span>
@@ -392,14 +392,14 @@ export default function GajiPage() {
                     <label className="form-label required">Pengajar</label>
                     <select id="sel-pengajar-gaji" className="form-control" value={form.pengajarId} onChange={e=>setForm(f=>({...f,pengajarId:e.target.value}))} required>
                       <option value="">Pilih Pengajar</option>
-                      {pengajarList.map((u:any)=><option key={u.id} value={u.id}>{u.name}</option>)}
+                      {(Array.isArray(pengajarList) ? pengajarList : []).map((u:any)=><option key={u.id} value={u.id}>{u.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
                     <label className="form-label">Kelas</label>
                     <select className="form-control" value={form.kelasId} onChange={e=>setForm(f=>({...f,kelasId:e.target.value}))}>
                       <option value="">Pilih Kelas (opsional)</option>
-                      {kelasList.map((k:any)=><option key={k.id} value={k.id}>{k.namaKelas} ({k.program?.tipe})</option>)}
+                      {(Array.isArray(kelasList) ? kelasList : []).map((k:any)=><option key={k.id} value={k.id}>{k.namaKelas} ({k.program?.tipe})</option>)}
                     </select>
                   </div>
                 </div>

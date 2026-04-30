@@ -39,25 +39,26 @@ export async function GET(request: NextRequest) {
     const dayStart = new Date(tahun, bulan - 2, cutoffDay, 0, 0, 0);
     const dayEnd = new Date(tahun, bulan - 1, cutoffDay - 1, 23, 59, 59);
 
-    // 1. HITUNG METRIK GLOBAL (Profit) - Tetap untuk seluruh data bulan ini
-    const [pemasukanAll, approvedRefunds, pengeluaranAll, adsAll] = await Promise.all([
-      prisma.pemasukan.findMany({ 
-        where: { tanggal: { gte: dayStart, lte: dayEnd } },
-        include: { program: true }
-      }),
-      prisma.refund.findMany({ where: { status: "APPROVED", createdAt: { gte: dayStart, lte: dayEnd } } }),
+    // 3. HITUNG GROSS PROFIT PERUSAHAAN (IDENTIK DENGAN LAPORAN KEUANGAN)
+    const [pemasukanAll, pengeluaranAll, refundsAll, adsAll] = await Promise.all([
+      prisma.pemasukan.findMany({ where: { tanggal: { gte: dayStart, lte: dayEnd } }, include: { program: true } }),
       prisma.pengeluaran.findMany({ where: { tanggal: { gte: dayStart, lte: dayEnd } } }),
-      prisma.marketingAd.aggregate({ where: { tanggal: { gte: dayStart, lte: dayEnd } }, _sum: { spent: true } })
+      prisma.refund.findMany({ 
+        where: { 
+          status: "APPROVED",
+          pemasukan: { tanggal: { gte: dayStart, lte: dayEnd } } 
+        } 
+      }),
+      prisma.marketingAd.findMany({ where: { tanggal: { gte: dayStart, lte: dayEnd } } })
     ]);
 
-    const totalRefund = approvedRefunds.reduce((s: number, r: any) => s + r.jumlah, 0);
-    const totalPemasukan = pemasukanAll.reduce((s: number, p: any) => s + p.hargaFinal, 0);
-    const grossProfit = totalPemasukan - totalRefund;
+    const incomeTotal = pemasukanAll.reduce((sum: number, p: any) => sum + p.hargaFinal, 0);
+    const refundTotal = refundsAll.reduce((sum: number, r: any) => sum + r.jumlah, 0);
+    const outcomeTotal = pengeluaranAll.reduce((sum: number, p: any) => sum + p.jumlah, 0); 
+    const adsTotal = adsAll.reduce((sum: number, a: any) => sum + (a.spent || 0), 0);
 
-    const opCosts = pengeluaranAll
-        .filter((exp: any) => exp.kategori !== "GAJI_STAF" && exp.kategori !== "GAJI_PENGAJAR")
-        .reduce((s: number, e: any) => s + e.jumlah, 0);
-    
+    const grossProfit = incomeTotal - refundTotal - outcomeTotal - adsTotal;
+
     // 2. ANALISIS KHUSUS TOEFL (Sesuai Gambar Flowchart)
     let toeflRevenue = 0;
     let toeflFeeCS = 0;
@@ -81,7 +82,9 @@ export async function GET(request: NextRequest) {
       );
     });
 
-    const toeflAdsSpent = adsAll._sum.spent ?? 0;
+    const toeflAdsSpent = adsAll
+      .filter((a: any) => a.kategori === "TOEFL" || a.kategori?.toUpperCase().includes("TOEFL"))
+      .reduce((s: number, a: any) => s + (a.spent || 0), 0);
 
     const toeflTeam = await prisma.user.findMany({ 
       where: { teamType: { has: "ADV_TOEFL" } }, 
@@ -94,8 +97,6 @@ export async function GET(request: NextRequest) {
        });
     });
 
-    // IDENTIFIKASI PENGELUARAN KHUSUS TOEFL (Operasional & Gaji Data Support)
-    // Otomatis memotong pengeluaran yang kategorinya mengandung kata "TOEFL"
     const toeflExpenses = pengeluaranAll
       .filter((exp: any) => exp.kategori && exp.kategori.toUpperCase().includes("TOEFL"))
       .reduce((s: number, e: any) => s + e.jumlah, 0);
@@ -250,8 +251,8 @@ export async function GET(request: NextRequest) {
         metrics: {
             grossProfit,
             toeflProfit,
-            totalPemasukan,
-            totalRefund
+            totalPemasukan: incomeTotal,
+            totalRefund: refundTotal
         }
     });
 

@@ -150,7 +150,7 @@ export default function CRMPage() {
     fetchData(page, limit, searchTerm, activeStatus);
   }, [page, limit, activeStatus]);
   useEffect(() => {
-    fetch("/api/public/programs").then(r => r.json()).then(d => setPrograms(Array.isArray(d) ? d : []));
+    fetch("/api/public/programs").then(r => r.ok ? r.json() : []).then(d => setPrograms(Array.isArray(d) ? d : [])).catch(() => setPrograms([]));
     fetch("/api/settings/wa-templates")
       .then(async r => {
         if (!r.ok) return [];

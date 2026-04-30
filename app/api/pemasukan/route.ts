@@ -99,6 +99,14 @@ export async function POST(request: NextRequest) {
   const { siswaId, namaSiswa, programId, csId, talentId, hargaNormal, diskon, hargaFinal: rawHargaFinal, metodeBayar, keterangan, tanggal, isRO } = body;
 
   let finalSiswaId = siswaId || null;
+  let programKategori: string | null = null;
+
+  if (programId) {
+    const prog = await prisma.program.findUnique({ where: { id: programId } });
+    if (prog && prog.kategoriUsia !== "UMUM") {
+      programKategori = prog.kategoriUsia;
+    }
+  }
 
   if (!finalSiswaId && namaSiswa) {
     const existing = await prisma.siswa.findFirst({
@@ -112,10 +120,19 @@ export async function POST(request: NextRequest) {
           noSiswa: generateSiswaNumber(),
           nama: namaSiswa,
           status: "AKTIF",
+          kategoriUsia: (programKategori as any) || "DEWASA",
           createdAt: tanggal ? new Date(tanggal) : new Date()
         }
       });
       finalSiswaId = newSiswa.id;
+    }
+  }
+
+  // Update existing Siswa if they enroll in a specific category program
+  if (finalSiswaId && programKategori) {
+    const existing = await prisma.siswa.findUnique({ where: { id: finalSiswaId } });
+    if (existing && existing.kategoriUsia !== programKategori) {
+      await prisma.siswa.update({ where: { id: finalSiswaId }, data: { kategoriUsia: programKategori as any } });
     }
   }
 

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   // Cek kapasitas kelas
   const kelas = await prisma.kelas.findUnique({
     where: { id: kelasId },
-    include: { _count: { select: { pendaftaran: true } } },
+    include: { program: true, _count: { select: { pendaftaran: true } } },
   });
   if (!kelas) return NextResponse.json({ error: "Kelas tidak ditemukan" }, { status: 404 });
 
@@ -55,6 +55,14 @@ export async function POST(request: NextRequest) {
     // Re-aktifkan jika pernah nonaktif
     const updated = await prisma.pendaftaran.update({ where: { id: existing.id }, data: { aktif: true, tanggalMulai: tanggalMulai ? new Date(tanggalMulai) : null, tanggalSelesai: tanggalSelesai ? new Date(tanggalSelesai) : null } });
     return NextResponse.json(updated, { status: 200 });
+  }
+
+  // Sync KategoriUsia
+  if (kelas.program?.kategoriUsia && kelas.program.kategoriUsia !== "UMUM") {
+    await prisma.siswa.updateMany({
+      where: { id: siswaId, kategoriUsia: { not: kelas.program.kategoriUsia as any } },
+      data: { kategoriUsia: kelas.program.kategoriUsia as any }
+    });
   }
 
   const pendaftaran = await prisma.pendaftaran.create({
@@ -84,7 +92,7 @@ export async function PATCH(request: NextRequest) {
   // Cek kapasitas sisa
   const kelas = await prisma.kelas.findUnique({
     where: { id: kelasId },
-    include: { _count: { select: { pendaftaran: { where: { aktif: true } } } } },
+    include: { program: true, _count: { select: { pendaftaran: { where: { aktif: true } } } } },
   });
   if (!kelas) return NextResponse.json({ error: "Kelas tidak ditemukan" }, { status: 404 });
 
@@ -114,6 +122,14 @@ export async function PATCH(request: NextRequest) {
       } else {
         await prisma.pendaftaran.create({ data: { siswaId, kelasId } });
         successCount++;
+      }
+
+      // Sync KategoriUsia
+      if (kelas.program?.kategoriUsia && kelas.program.kategoriUsia !== "UMUM") {
+        await prisma.siswa.updateMany({
+          where: { id: siswaId, kategoriUsia: { not: kelas.program.kategoriUsia as any } },
+          data: { kategoriUsia: kelas.program.kategoriUsia as any }
+        });
       }
     } catch {
       skipCount++;

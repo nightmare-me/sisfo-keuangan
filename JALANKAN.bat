@@ -9,7 +9,7 @@ echo Memulai server...
 echo.
 
 set PATH=C:\Program Files\nodejs;%PATH%
-set DATABASE_URL=postgresql://postgres:123456@localhost:5432/sisfo_speaking_partner?schema=public
+set DATABASE_URL=postgresql://postgres:123456@localhost:5432/sisfo_keuangan
 
 cd /d "%~dp0"
 start "" "http://localhost:3000"

@@ -212,10 +212,26 @@ export function calculateSharingTOEFL(toeflProfit: number, posisi: string, confi
  * Calculate Revenue-based Bonus (from Gross Profit)
  */
 export function calculateBonusGrossProfit(grossProfit: number, posisi: string, config?: PayrollConfig): number {
-  // DYNAMIC LOOKUP: Cari key BONUS_GROSS_[NAMA_POSISI]
-  const dynamicKey = `BONUS_GROSS_${posisi.toUpperCase().replace(/\s+/g, '_')}`;
-  const rate = config?.[dynamicKey] || 0;
-  
+  if (!config || !posisi) return 0;
+
+  // 1. CARI DENGAN NAMA POSISI BERSIH (SPV_ADV)
+  const cleanPos = posisi.toUpperCase().trim().replace(/\s+/g, '_');
+  let rate = config[`BONUS_GROSS_${cleanPos}`];
+
+  // 2. JIKA TIDAK KETEMU, CARI YANG MENGANDUNG NAMA TERSEBUT (Fuzzy Match)
+  if (rate === undefined || rate === null) {
+    const allKeys = Object.keys(config);
+    const fuzzyKey = allKeys.find(k => k.startsWith("BONUS_GROSS_") && k.includes(cleanPos));
+    if (fuzzyKey) rate = config[fuzzyKey];
+  }
+
+  // 3. JIKA MASIH TIDAK KETEMU, CARI PAKAI SPASI (SPV ADV)
+  if (rate === undefined || rate === null) {
+    const spacePos = cleanPos.replace(/_/g, ' ');
+    rate = config[`BONUS_GROSS_${spacePos}`];
+  }
+
+  if (!rate) return 0;
   return grossProfit * rate;
 }
 

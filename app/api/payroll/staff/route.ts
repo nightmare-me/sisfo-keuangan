@@ -201,20 +201,23 @@ export async function GET(request: NextRequest) {
       }
 
       // F. Profit Shared Bonuses (HANYA UNTUK POSISI TERTENTU)
-      // Exclude Akademik dari sharing profit/loss global karena punya skema sendiri (RO)
       const isAkademik = posisi.toUpperCase().includes("AKADEMIK");
       const whitelistBonus = ["CEO", "COO", "ASSISTANT CEO", "FINANCE", "SPV"];
       const isWhitelisted = !isAkademik && whitelistBonus.some(w => posisi.toUpperCase().includes(w));
 
       if (isWhitelisted) {
-        // Normalisasi nama posisi untuk KEY setting (Misal: "SPV Adv" -> "SPV_ADV")
-        const normalizedPos = posisi.toUpperCase()
-          .replace(/_/g, " ") // Ubah underscore ke spasi dulu
-          .trim()
-          .replace(/\s+/g, "_"); // Ubah spasi ke underscore
-          
-        totalBonus += calculateBonusGrossProfit(grossProfit, normalizedPos, config);
-        totalBonus += calculateSharingTOEFL(toeflProfit, normalizedPos, config);
+        // Coba cari dengan format UNDERSCORE (SPV_ADV)
+        const posUnderscore = posisi.toUpperCase().trim().replace(/\s+/g, "_");
+        const bonus1 = calculateBonusGrossProfit(grossProfit, posUnderscore, config);
+        const sharing1 = calculateSharingTOEFL(toeflProfit, posUnderscore, config);
+
+        // Coba cari dengan format SPASI (SPV ADV) jika hasil 0
+        const posSpace = posisi.toUpperCase().trim().replace(/_/g, " ");
+        const bonus2 = calculateBonusGrossProfit(grossProfit, posSpace, config);
+        const sharing2 = calculateSharingTOEFL(toeflProfit, posSpace, config);
+
+        totalBonus += (bonus1 || bonus2 || 0);
+        totalBonus += (sharing1 || sharing2 || 0);
       }
 
       const subtotal = profile.gajiPokok + profile.tunjangan + totalFee + totalBonus + extraGaji;

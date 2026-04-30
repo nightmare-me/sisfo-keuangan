@@ -76,7 +76,7 @@ interface CSData {
 // ── Tooltips ────────────────────────────────────────────────
 
 const PremiumTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
+  if (active && Array.isArray(payload) && payload.length) {
     return (
       <div className="glass" style={{ borderRadius: 12, padding: "12px 16px", boxShadow: "var(--shadow-lg)", border: "1px solid var(--border-default)" }}>
         <p style={{ color: "var(--text-muted)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", marginBottom: 8, letterSpacing: '0.05em' }}>{label}</p>
@@ -323,7 +323,7 @@ export default function DashboardPage() {
               <div className="card-header"><div className="card-title">Performa Keuangan</div></div>
               <div style={{ height: 280 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                   <LineChart data={(data?.trendData || []).map(d => ({ ...d, date: formatDate(d.date, "dd/MM") }))}>
+                   <LineChart data={(Array.isArray(data?.trendData) ? data.trendData : []).map((d: any) => ({ ...d, date: formatDate(d.date, "dd/MM") }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
                       <XAxis dataKey="date" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
                       <Tooltip content={<PremiumTooltip />} />
@@ -337,7 +337,7 @@ export default function DashboardPage() {
               <div className="card-title" style={{ marginBottom: 16 }}>Transaksi Terkini</div>
               <div className="table-wrapper" style={{ maxHeight: 280, overflowY: "auto", overflowX: 'hidden', padding: '8px 0' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {(data?.transaksiTerkini || []).slice(0, 6).map((t, idx, arr) => (
+                  {(Array.isArray(data?.transaksiTerkini) ? data.transaksiTerkini : []).slice(0, 6).map((t, idx, arr) => (
                     <div key={t.id} style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 

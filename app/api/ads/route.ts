@@ -17,6 +17,16 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") ?? "50");
 
   const where: any = {};
+  
+  // Data Privacy: Non-superusers only see their own ads
+  const userRole = (session.user as any)?.role?.toUpperCase();
+  const userId = (session.user as any)?.id;
+  const SUPER_ROLES = ["ADMIN", "CEO", "COO", "FINANCE"];
+  
+  if (!SUPER_ROLES.includes(userRole)) {
+    where.advId = userId;
+  }
+
   if (from && to) {
     where.tanggal = { gte: new Date(from), lte: new Date(to) };
   }

@@ -75,6 +75,20 @@ export async function GET(request: NextRequest) {
     prevEndDate = new Date(startDate.getTime() - 1);
 
     // 1. EFISIENSI AGREGASI (Sangat Cepat)
+    const userRole = (session.user as any)?.role?.toUpperCase();
+    const userId = (session.user as any)?.id;
+    const SUPER_ROLES = ["ADMIN", "CEO", "COO", "FINANCE"];
+    const isSuper = SUPER_ROLES.includes(userRole);
+
+    const adsWhereIni: any = { tanggal: { gte: startDate, lte: endDate } };
+    const adsWhereLalu: any = { tanggal: { gte: prevStartDate, lte: prevEndDate } };
+    
+    // Privacy filter for Ads
+    if (!isSuper) {
+      adsWhereIni.advId = userId;
+      adsWhereLalu.advId = userId;
+    }
+
     const [
       pemasukanAggIni, 
       pemasukanAggLalu,
@@ -89,8 +103,8 @@ export async function GET(request: NextRequest) {
       prisma.pemasukan.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { hargaFinal: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
-      prisma.marketingAd.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { spent: true } }),
-      prisma.marketingAd.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { spent: true } }),
+      prisma.marketingAd.aggregate({ where: adsWhereIni, _sum: { spent: true } }),
+      prisma.marketingAd.aggregate({ where: adsWhereLalu, _sum: { spent: true } }),
       prisma.refund.aggregate({ where: { status: "APPROVED", pemasukan: { tanggal: { gte: startDate, lte: endDate } } }, _sum: { jumlah: true } }),
       prisma.siswa.count({ where: { status: "AKTIF" } })
     ]);
@@ -115,7 +129,10 @@ export async function GET(request: NextRequest) {
       }),
       prisma.marketingAd.groupBy({ 
         by: ['tanggal'], 
-        where: { tanggal: { gte: startOfDay(trendStart) } }, 
+        where: { 
+          tanggal: { gte: startOfDay(trendStart) },
+          ...(!isSuper ? { advId: userId } : {})
+        }, 
         _sum: { spent: true } 
       })
     ]);
@@ -184,29 +201,36 @@ export async function GET(request: NextRequest) {
       count: p._count
     })).sort((a,b) => b.total - a.total);
 
-    return NextResponse.json({
+    // 5. PENYESUAIAN RESPON BERDASARKAN ROLE (PRIVASI)
+    const responseData: any = {
       kpi: { 
-        pemasukanHariIni: totalPemasukanIni, 
-        pemasukanKemarin: totalPemasukanLalu, 
-        pengeluaranHariIni: totalExIni, 
-        pengeluaranKemarin: (pengeluaranAggLalu._sum.jumlah || 0),
+        pemasukanHariIni: isSuper ? totalPemasukanIni : 0, 
+        pemasukanKemarin: isSuper ? totalPemasukanLalu : 0, 
+        pengeluaranHariIni: isSuper ? totalExIni : 0, 
+        pengeluaranKemarin: isSuper ? (pengeluaranAggLalu._sum.jumlah || 0) : 0,
         adsHariIni: totalAdsIni, 
         adsKemarin: adsAggLalu._sum.spent ?? 0, 
-        labaHariIni: labaIni, 
-        siswAktif: siswaAktifCount,
-        retentionRate: 0 // Will be calculated differently later if needed
+        labaHariIni: isSuper ? labaIni : 0, 
+        siswAktif: isSuper ? siswaAktifCount : 0,
+        avgCpl: totalAdsIni > 0 ? totalAdsIni / (adsAggIni._sum.leads || 1) : 0
       },
-      trendData,
-      transaksiTerkini,
-      pemasukanPerProgram,
-      pengeluaranPerKategori: pengeluaranPerKategoriRaw.map(p => ({ kategori: p.kategori, total: p._sum.jumlah || 0 })),
+      trendData: trendData.map(t => ({
+        date: t.date,
+        ads: t.ads,
+        pemasukan: isSuper ? t.pemasukan : 0,
+        pengeluaran: isSuper ? t.pengeluaran : 0
+      })),
+      transaksiTerkini: isSuper ? transaksiTerkini : [],
+      pemasukanPerProgram: isSuper ? pemasukanPerProgram : [],
+      pengeluaranPerKategori: isSuper ? pengeluaranPerKategoriRaw.map(p => ({ kategori: p.kategori, total: p._sum.jumlah || 0 })) : [],
       debug: {
-        now: now.toISOString(),
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        type
+        type,
+        role: userRole,
+        isSuper
       }
-    });
+    };
+
+    return NextResponse.json(responseData);
 
   } catch (err: any) {
     console.error("DASHBOARD_API_ERROR:", err);

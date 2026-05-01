@@ -848,12 +848,14 @@ table tbody tr:hover {
   .print-only {
     display: block !important;
   }
-  body, .main-content, .layout, .page-container {
+  body, .main-content, .layout, .page-container, .print-only {
     background: white !important;
     margin: 0 !important;
     padding: 0 !important;
+    height: auto !important;
     min-height: auto !important;
     width: 100% !important;
+    overflow: visible !important;
   }
   @page {
     margin: 1cm;

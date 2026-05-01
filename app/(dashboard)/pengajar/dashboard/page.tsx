@@ -6,9 +6,14 @@ import { useSession } from "next-auth/react";
 import { GraduationCap, Users, BookOpen, Clock, ArrowRight } from "lucide-react";
 import PayrollEstimate from "@/components/dashboard/PayrollEstimate";
 
+import { getAllRoles } from "@/lib/roles";
+
 export default function PengajarDashboard() {
   const { data: session } = useSession();
   const userName = session?.user?.name?.split(' ')[0] ?? "Tutor";
+  const allRoles = getAllRoles(session);
+  const hasSubRole = allRoles.some(r => r !== 'pengajar' && r !== 'siswa');
+
   const [kelasData, setKelasData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,9 +34,43 @@ export default function PengajarDashboard() {
     <div className="page-container">
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <h1 className="headline-lg" style={{ marginBottom: 8 }}>Halo, {userName}! 👋</h1>
+        <h1 className="headline-lg" style={{ marginBottom: 4 }}>Halo, {userName}! 👋</h1>
         <p className="body-lg" style={{ color: "var(--text-muted)" }}>Berikut adalah ringkasan kelas dan performa mengajar Anda.</p>
       </div>
+
+      {/* Sub-Role Switcher Banner */}
+      {hasSubRole && (
+        <div className="card shadow-glow animate-slide-up" style={{ 
+          marginBottom: 32, 
+          background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', 
+          color: 'white',
+          border: 'none',
+          padding: '20px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 20
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ArrowRight size={22} style={{ transform: 'rotate(-45deg)' }} />
+             </div>
+             <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Akses Manajemen Terdeteksi</h3>
+                <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Anda memiliki peran tambahan sebagai Supervisor/Admin.</p>
+             </div>
+          </div>
+          <Link href="/dashboard" className="btn btn-primary" style={{ 
+            background: 'white', 
+            color: '#1e1b4b', 
+            fontWeight: 800, 
+            borderRadius: 12,
+            border: 'none'
+          }}>
+            Masuk Mode Manajemen
+          </Link>
+        </div>
+      )}
 
       {/* Payroll Transparency */}
       <div style={{ marginBottom: 32 }}>

@@ -44,7 +44,7 @@ export const ROLE_CONFIG: Record<string, { label: string; color: string; canAcce
   finance:         { label: "Finance",         color: "#f59e0b", canAccess: ["dashboard", "finance_in", "finance_out", "report", "refund", "payroll_staff", "payroll_tutor"] },
   cs:              { label: "CS",              color: "#3b82f6", canAccess: ["dashboard", "crm", "finance_in"] },
   advertiser:      { label: "Advertiser",      color: "#8b5cf6", canAccess: ["dashboard", "ads_spent", "ads_performance"] },
-  pengajar:        { label: "Pengajar",        color: "#10b981", canAccess: ["dashboard", "kelas", "siswa"] },
+  pengajar:        { label: "Pengajar",        color: "#10b981", canAccess: ["pengajar:view"] },
   akademik:        { label: "Akademik",        color: "#06b6d4", canAccess: ["dashboard", "kelas", "siswa", "pengajar", "program"] },
   talent:          { label: "Talent",          color: "#f97316", canAccess: ["dashboard", "live_tracking", "multimedia:view"] },
   multimedia:      { label: "Multimedia",      color: "#f59e0b", canAccess: ["dashboard", "live_tracking", "multimedia:view"] },

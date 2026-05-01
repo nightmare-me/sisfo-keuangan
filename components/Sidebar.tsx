@@ -69,7 +69,9 @@ const navItems: NavGroup[] = [
     { href: "/gaji", label: "Payroll Pengajar", icon: <Wallet size={16} />, permission: "payroll_tutor:view" },
   ]},
   { group: "PENGAJAR", items: [
-    { href: "/pengajar/dashboard", label: "Kelas Saya", icon: <GraduationCap size={16} />, permission: "pengajar:view" },
+    { href: "/pengajar/dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} />, permission: "pengajar:view" },
+    { href: "/pengajar/dashboard#kelas", label: "Kelas Saya", icon: <GraduationCap size={16} />, permission: "pengajar:view" },
+    { href: "/pengajar/gaji", label: "Riwayat Honor", icon: <Wallet size={16} />, permission: "pengajar:view" },
   ]},
   { group: "OPERASIONAL", items: [
     { href: "/invoice", label: "Invoice", icon: <FileText size={16} />, permission: "invoice:view" },
@@ -176,6 +178,11 @@ export default function Sidebar() {
         <nav className="sidebar-nav">
           {mergedNavItems.map((group) => {
             const filteredItems = group.items.filter((item) => {
+              // Sembunyikan Dashboard Utama jika user adalah Pengajar (biar tidak double)
+              if (item.href === "/dashboard" && role?.toLowerCase() === "pengajar") {
+                return false;
+              }
+
               if (item.permission) {
                 return hasPermission(session, item.permission);
               }

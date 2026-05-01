@@ -2,12 +2,15 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Standardized UX & Custom Branding (v6.0) 🎨 (TERBARU!)
-*   **Universal Custom Modals**: Migrasi total seluruh dialog *native browser* (`alert`, `confirm`, `prompt`) ke komponen `ConfirmModal` yang terstandarisasi. Tidak ada lagi interupsi abu-abu bawaan browser yang membosankan dan memblokir layar.
-*   **High-Fidelity Glassmorphism Dialogs**: Setiap interaksi konfirmasi (hapus data, impor massal, update settings) kini tampil dengan desain *glassmorphism* yang mewah, lengkap dengan animasi halus dan indikator status (`success`, `danger`, `warning`, `info`).
-*   **Custom Company Branding**: Rebranding total identitas visual pada Sidebar Utama dan Halaman Login menggunakan logo resmi perusahaan. Menghilangkan elemen generik dan memberikan kesan sistem yang dibangun khusus (*custom-built*) untuk Speaking Partner.
-*   **Middleware Security Optimization**: Optimasi sistem keamanan (middleware) untuk mendukung pengiriman aset publik (logo) pada halaman publik tanpa mengorbankan integritas data rahasia di area internal.
-*   **Universal Async Handling**: Implementasi *loading state* terpusat pada seluruh aksi konfirmasi massal untuk mencegah *double-submission* dan menjamin kestabilan database saat beban tinggi.
+## 📢 Fitur Baru: Unified Teacher Portal 2.0 & Smart Receipt System (v7.0) 🎓 (TERBARU!)
+*   **Integrated Multi-Role Portal**: Transformasi Dashboard Pengajar menjadi pusat kendali mandiri. Pengajar kini dapat mengelola kelas, absensi, materi, sekaligus memantau riwayat keuangan dalam satu pintu.
+*   **Smart Multi-Role Payroll View**: Inovasi transparansi finansial. Pengajar yang merangkap sub-role (SPV, Talent, Admin) kini dapat melihat gabungan **Honor Mengajar** dan **Tunjangan/Bonus Role** dalam satu dashboard yang komprehensif.
+*   **Dual-Category Receipt Management**: Upgrade sistem arsip nota dengan dukungan **Bukti Transfer**. Pemisahan visual antara nota fisik (Nota) dan bukti transaksi digital (TRF) untuk memudahkan audit keuangan.
+*   **High-Density Print Layout (3-Column)**: Optimasi cetak laporan nota dengan layout 3-kolom yang cerdas, mampu memuat lebih banyak bukti bayar dalam satu lembar A4 tanpa mengurangi keterbacaan (Hemat kertas & lebih profesional).
+*   **Intelligent Navigation & Role-Switcher**: Implementasi sistem deteksi role otomatis. Pengajar dengan sub-role kini mendapatkan *Switcher Banner* khusus untuk berpindah ke Dashboard Manajemen dalam satu klik.
+*   **Auth Standardisation**: Migrasi total sistem autentikasi API ke pola `getServerSession` yang lebih stabil, menjamin proses simpan data dengan lampiran file 100% aman dan bebas error.
+
+## 📢 Fitur Sebelumnya: Standardized UX & Custom Branding (v6.0) 🎨 
 
 ## 📢 Fitur Sebelumnya: Multi-Role Architecture, SPV Intelligence & Smart Import (v5.1) 🚀
 *   **Expanded Role Ecosystem**: Penambahan role `CEO`, `COO`, dan `Multimedia` ke dalam ekosistem bawaan sistem, memastikan fleksibilitas akses dari level *C-Suite* hingga operasional kreatif.
@@ -103,4 +106,4 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 
 ---
 *Created with ❤️ by Antigravity (Powered by Google Deepmind) for Speaking Partner Premium Operations.*
-*Sistem v6.0 Aktif - Branding Resmi & UX Terstandarisasi Online. Selamat beristirahat, Pak Muis! ☕*
+*Sistem v7.0 Aktif - Unified Teacher Portal & Dual Receipt Management. Selamat beristirahat, Pak Muis! ☕*

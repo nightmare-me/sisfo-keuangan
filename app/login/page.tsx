@@ -33,6 +33,8 @@ export default function LoginPage() {
       
       if (session?.user?.roleSlug === "siswa") {
         router.push("/siswa/dashboard");
+      } else if (session?.user?.roleSlug === "pengajar") {
+        router.push("/pengajar/dashboard");
       } else {
         router.push("/dashboard");
       }

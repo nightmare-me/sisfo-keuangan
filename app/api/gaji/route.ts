@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     where.pengajarId = pengajarIdParam;
   }
 
-  const [data, total] = await Promise.all([
+  const [data, total, staffData] = await Promise.all([
     prisma.gajiPengajar.findMany({
       where,
       include: {
@@ -33,12 +33,17 @@ export async function GET(request: NextRequest) {
       skip: (page - 1) * limit,
       take: limit,
     }),
-    prisma.gajiPengajar.count({ where })
+    prisma.gajiPengajar.count({ where }),
+    user.roleSlug === 'pengajar' ? prisma.gajiStaf.findMany({
+      where: { userId: user.id, bulan, tahun },
+      orderBy: { createdAt: "desc" }
+    }) : Promise.resolve([])
   ]);
 
   return NextResponse.json({ 
     data,
     total,
+    staffData, // Kirim data gaji staf (tunjangan/bonus)
     page,
     totalPages: Math.ceil(total / limit)
   });

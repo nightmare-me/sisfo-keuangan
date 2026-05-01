@@ -44,6 +44,10 @@ export default function PengeluaranPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [existingNotes, setExistingNotes] = useState<any[]>([]);
+
+  const [selectedFilesTransfer, setSelectedFilesTransfer] = useState<File[]>([]);
+  const [previewUrlsTransfer, setPreviewUrlsTransfer] = useState<string[]>([]);
+  const [existingNotesTransfer, setExistingNotesTransfer] = useState<any[]>([]);
   const [newCat, setNewCat] = useState({ nama: "", color: "#ef4444" });
   const [kategoriList, setKategoriList] = useState<any[]>([]);
   const [showCatModal, setShowCatModal] = useState(false);
@@ -65,9 +69,12 @@ export default function PengeluaranPage() {
       keterangan: item.keterangan || "",
       tanggal: new Date(item.tanggal).toISOString().slice(0, 10),
     });
-    setExistingNotes(item.arsipNota || []);
+    setExistingNotes(item.arsipNota?.filter((n: any) => n.tipe === "NOTA") || []);
+    setExistingNotesTransfer(item.arsipNota?.filter((n: any) => n.tipe === "BUKTI_TRANSFER") || []);
     setSelectedFiles([]);
     setPreviewUrls([]);
+    setSelectedFilesTransfer([]);
+    setPreviewUrlsTransfer([]);
     setShowModal(true);
   }
 
@@ -77,6 +84,9 @@ export default function PengeluaranPage() {
     setSelectedFiles([]);
     setPreviewUrls([]);
     setExistingNotes([]);
+    setSelectedFilesTransfer([]);
+    setPreviewUrlsTransfer([]);
+    setExistingNotesTransfer([]);
   }
 
   const [page, setPage] = useState(1);
@@ -149,6 +159,20 @@ export default function PengeluaranPage() {
     setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   }
 
+  function handleFileTransferChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      setSelectedFilesTransfer(prev => [...prev, ...files]);
+      const newUrls = files.map(f => URL.createObjectURL(f));
+      setPreviewUrlsTransfer(prev => [...prev, ...newUrls]);
+    }
+  }
+
+  function removeFileTransfer(index: number) {
+    setSelectedFilesTransfer(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrlsTransfer(prev => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); 
     
@@ -166,20 +190,34 @@ export default function PengeluaranPage() {
     setSaving(true);
     try {
       let uploadedUrls: string[] = [];
+      let uploadedUrlsTransfer: string[] = [];
+
+      // 1. Upload Nota
       if (selectedFiles.length > 0) {
         const formData = new FormData();
         selectedFiles.forEach(f => formData.append("file", f));
         const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
         const uploadData = await uploadRes.json();
-        if (!uploadRes.ok) throw new Error(uploadData.error || "Gagal upload gambar");
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Gagal upload nota");
         uploadedUrls = uploadData.urls;
+      }
+
+      // 2. Upload Bukti Transfer
+      if (selectedFilesTransfer.length > 0) {
+        const formData = new FormData();
+        selectedFilesTransfer.forEach(f => formData.append("file", f));
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Gagal upload bukti transfer");
+        uploadedUrlsTransfer = uploadData.urls;
       }
 
       const method = editId ? "PUT" : "POST";
       const body: any = { 
         ...form, 
         jumlah: parseFloat(form.jumlah),
-        urls: uploadedUrls.length > 0 ? uploadedUrls : undefined
+        urls: uploadedUrls.length > 0 ? uploadedUrls : undefined,
+        urlsTransfer: uploadedUrlsTransfer.length > 0 ? uploadedUrlsTransfer : undefined
       };
       if (editId) body.id = editId;
 
@@ -564,6 +602,41 @@ export default function PengeluaranPage() {
                      <p style={{ fontSize: 12, color: 'var(--danger)', fontWeight: 600 }}>*Wajib menyertakan minimal 1 foto nota</p>
                   )}
                 </div>
+
+                {/* Bagian Upload Bukti Transfer (Hanya jika Metode === TRANSFER) */}
+                {form.metodeBayar === "TRANSFER" && (
+                  <div style={{ border: '2px dashed var(--info)', borderRadius: 12, padding: 24, textAlign: 'center', background: 'rgba(59,130,246,0.02)', marginBottom: 24 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--info)', marginBottom: 12 }}>📸 BUKTI TRANSFER / PEMBAYARAN</div>
+                    <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: previewUrlsTransfer.length > 0 || existingNotesTransfer.length > 0 ? 20 : 0 }}>
+                      <label className="btn btn-secondary" style={{ cursor: 'pointer', borderRadius: 'var(--radius-full)', borderColor: 'var(--info)', color: 'var(--info)' }}>
+                        <Camera size={16} style={{ marginRight: 8 }} /> Foto Bukti Transfer
+                        <input type="file" accept="image/*" capture="environment" multiple style={{ display: 'none' }} onChange={handleFileTransferChange} />
+                      </label>
+                    </div>
+                    
+                    {(previewUrlsTransfer.length > 0 || existingNotesTransfer.length > 0) && (
+                      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 10, justifyContent: (previewUrlsTransfer.length + existingNotesTransfer.length) > 2 ? 'flex-start' : 'center' }}>
+                        {existingNotesTransfer.map((nota, idx) => (
+                          <div key={`exist-tr-${idx}`} style={{ position: 'relative', width: 100, height: 120, flexShrink: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--info)' }}>
+                            <img src={nota.urlFile} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--info)', color: 'white', fontSize: 10, padding: 4 }}>Tersimpan</div>
+                          </div>
+                        ))}
+                        {previewUrlsTransfer.map((url, idx) => (
+                          <div key={`new-tr-${idx}`} style={{ position: 'relative', width: 100, height: 120, flexShrink: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--info)' }}>
+                            <img src={url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <button type="button" onClick={() => removeFileTransfer(idx)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {previewUrlsTransfer.length === 0 && existingNotesTransfer.length === 0 && (
+                       <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Opsional: Lampirkan bukti transfer bank jika ada</p>
+                    )}
+                  </div>
+                )}
 
                 <div className="form-grid-2">
                   <div className="form-group">

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -13,15 +14,27 @@ export async function GET(request: NextRequest) {
     const kategori = searchParams.get("kategori");
     const metodeBayar = searchParams.get("metodeBayar");
     const page = parseInt(searchParams.get("page") ?? "1");
-    const limit = parseInt(searchParams.get("limit") ?? "200"); // Ditambah limitnya agar data tidak terpotong
+    const limit = parseInt(searchParams.get("limit") ?? "200");
 
     const where: any = {};
-    if (from && to) where.tanggal = { gte: new Date(from), lte: new Date(to) };
-    else if (from) where.tanggal = { gte: new Date(from) };
-    else if (to) where.tanggal = { lte: new Date(to) };
+    
+    // Validasi Tanggal yang lebih ketat untuk menghindari "Invalid Date"
+    if (from && from !== "undefined" && from !== "") {
+      const fromDate = new Date(from);
+      if (!isNaN(fromDate.getTime())) {
+        where.tanggal = { ...where.tanggal, gte: fromDate };
+      }
+    }
+    
+    if (to && to !== "undefined" && to !== "") {
+      const toDate = new Date(to);
+      if (!isNaN(toDate.getTime())) {
+        where.tanggal = { ...where.tanggal, lte: toDate };
+      }
+    }
 
-    if (kategori) where.kategori = kategori;
-    if (metodeBayar) where.metodeBayar = metodeBayar;
+    if (kategori && kategori !== "") where.kategori = kategori;
+    if (metodeBayar && metodeBayar !== "") where.metodeBayar = metodeBayar;
 
     const [data, total, summary] = await Promise.all([
       prisma.pengeluaran.findMany({
@@ -31,7 +44,7 @@ export async function GET(request: NextRequest) {
         orderBy: { tanggal: "desc" },
         include: { 
           user: { select: { name: true } },
-          arsipNota: { select: { id: true, urlFile: true } }
+          arsipNota: { select: { id: true, urlFile: true, tipe: true } }
         },
       }),
       prisma.pengeluaran.count({ where }),
@@ -69,11 +82,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { jumlah, kategori, metodeBayar, keterangan, tanggal, urls } = body;
+    const { jumlah, kategori, metodeBayar, keterangan, tanggal, urls, urlsTransfer } = body;
 
     if (!jumlah || jumlah <= 0) {
       return NextResponse.json({ error: "Jumlah harus lebih dari 0" }, { status: 400 });
@@ -93,9 +106,12 @@ export async function POST(request: NextRequest) {
         metodeBayar: metodeBayar ?? "CASH",
         keterangan,
         dibuatOleh: (session.user as any).id,
-        arsipNota: urls && Array.isArray(urls) && urls.length > 0 ? {
-          create: urls.map((url: string) => ({ urlFile: url }))
-        } : undefined
+        arsipNota: {
+          create: [
+            ...(urls && Array.isArray(urls) ? urls : []).map((url: string) => ({ urlFile: url, tipe: "NOTA" })),
+            ...(urlsTransfer && Array.isArray(urlsTransfer) ? urlsTransfer : []).map((url: string) => ({ urlFile: url, tipe: "BUKTI_TRANSFER" }))
+          ]
+        }
       },
       include: { arsipNota: true }
     });
@@ -109,11 +125,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { id, jumlah, kategori, metodeBayar, keterangan, tanggal, urls } = body;
+    const { id, jumlah, kategori, metodeBayar, keterangan, tanggal, urls, urlsTransfer } = body;
 
     if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
     if (!jumlah || jumlah <= 0) {
@@ -134,9 +150,12 @@ export async function PUT(request: NextRequest) {
         kategori,
         metodeBayar,
         keterangan,
-        arsipNota: urls && Array.isArray(urls) && urls.length > 0 ? {
-          create: urls.map((url: string) => ({ urlFile: url }))
-        } : undefined
+        arsipNota: {
+          create: [
+            ...(urls && Array.isArray(urls) ? urls : []).map((url: string) => ({ urlFile: url, tipe: "NOTA" })),
+            ...(urlsTransfer && Array.isArray(urlsTransfer) ? urlsTransfer : []).map((url: string) => ({ urlFile: url, tipe: "BUKTI_TRANSFER" }))
+          ]
+        }
       },
       include: { arsipNota: true }
     });
@@ -149,7 +168,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const role = (session.user as any)?.role;

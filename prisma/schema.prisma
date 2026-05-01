@@ -520,6 +520,11 @@ enum MetodeBayar {
   QRIS
 }
 
+enum TipeArsip {
+  NOTA
+  BUKTI_TRANSFER
+}
+
 enum StatusBayar {
   LUNAS
   BELUM_BAYAR
@@ -560,6 +565,7 @@ model ArsipNota {
   id            String       @id @default(cuid())
   pengeluaranId String
   urlFile       String
+  tipe          TipeArsip    @default(NOTA)
   createdAt     DateTime     @default(now())
   pengeluaran   Pengeluaran  @relation(fields: [pengeluaranId], references: [id], onDelete: Cascade)
 }

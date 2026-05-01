@@ -15,9 +15,8 @@ export default function ArsipNotaPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ startDate: "", endDate: "" });
+  const [printDate, setPrintDate] = useState("");
   
-  // Print preview state
-  const [printingImages, setPrintingImages] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
@@ -55,28 +54,21 @@ export default function ArsipNotaPage() {
   }
 
   function handlePrint() {
-    const imagesToPrint: string[] = [];
-    data.forEach(item => {
-      item.arsipNota.forEach((nota: any) => {
-        imagesToPrint.push(nota.urlFile);
-      });
-    });
-    
-    if (imagesToPrint.length === 0) {
+    if (data.length === 0) {
       setConfirmModal({
         show: true,
-        title: "Nota Tidak Ditemukan",
-        message: "⚠️ Tidak ada file lampiran nota untuk dicetak pada periode ini.",
+        title: "Data Kosong",
+        message: "⚠️ Tidak ada data untuk dicetak pada periode ini.",
         type: "warning",
         onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
       });
       return;
     }
     
-    setPrintingImages(imagesToPrint);
-    setTimeout(() => {
-      window.print();
-    }, 500);
+    setPrintDate(new Date().toLocaleString('id-ID'));
+    
+    // We'll print the current page data
+    window.print();
   }
 
   async function exportExcel() {
@@ -84,11 +76,17 @@ export default function ArsipNotaPage() {
     setExporting(true);
     try {
       const xlsxModule = await import("xlsx");
-      const XLSX = xlsxModule.default || xlsxModule;
+      // Handle both ESM and CJS import patterns
+      const XLSX = (xlsxModule as any).utils ? xlsxModule : (xlsxModule as any).default;
+      
+      if (!XLSX || !XLSX.utils) {
+        throw new Error("Library Excel tidak termuat dengan benar.");
+      }
+
       const wb = XLSX.utils.book_new();
       
       const exportData = [
-        ["Tanggal", "Kategori", "Keterangan", "Dibuat Oleh", "Jumlah", "Total Lampiran", "Link Lampiran"],
+        ["Tanggal", "Kategori", "Keterangan", "Dibuat Oleh", "Jumlah", "Total Lampiran", "Link Nota", "Link Bukti Transfer"],
         ...data.map(item => [
           formatDateTime(item.tanggal),
           item.kategori,
@@ -96,7 +94,8 @@ export default function ArsipNotaPage() {
           item.user?.name || "Sistem",
           item.jumlah,
           item.arsipNota?.length || 0,
-          item.arsipNota?.map((n: any) => n.urlFile).join(", ") || ""
+          item.arsipNota?.filter((n: any) => n.tipe === "NOTA").map((n: any) => n.urlFile).join(", ") || "",
+          item.arsipNota?.filter((n: any) => n.tipe === "BUKTI_TRANSFER").map((n: any) => n.urlFile).join(", ") || ""
         ])
       ];
 
@@ -200,8 +199,18 @@ export default function ArsipNotaPage() {
                   <td className="text-center">
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'center', flexWrap: 'wrap' }}>
                       {item.arsipNota.map((nota: any) => (
-                        <a key={nota.id} href={nota.urlFile} target="_blank" rel="noreferrer" style={{ display: 'block', border: '1px solid var(--ghost-border)', borderRadius: 4, overflow: 'hidden' }}>
+                        <a key={nota.id} href={nota.urlFile} target="_blank" rel="noreferrer" 
+                           style={{ 
+                             display: 'block', 
+                             border: `2px solid ${nota.tipe === "BUKTI_TRANSFER" ? "var(--info)" : "var(--ghost-border)"}`, 
+                             borderRadius: 4, 
+                             overflow: 'hidden',
+                             position: 'relative'
+                           }}>
                           <img src={nota.urlFile} alt="nota" style={{ width: 40, height: 40, objectFit: 'cover' }} />
+                          {nota.tipe === "BUKTI_TRANSFER" && (
+                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--info)', color: 'white', fontSize: 6, fontWeight: 800, textAlign: 'center', padding: '1px 0' }}>TRF</div>
+                          )}
                         </a>
                       ))}
                     </div>
@@ -275,18 +284,64 @@ export default function ArsipNotaPage() {
 
       {/* Area Khusus Print */}
       <div className="print-only">
-        <h2 style={{ textAlign: 'center', marginBottom: 5 }}>Arsip Nota Pengeluaran</h2>
-        <p style={{ textAlign: 'center', marginBottom: 20, color: '#555', fontSize: '14px' }}>
-          {filter.startDate && filter.endDate 
-            ? `Periode: ${new Date(filter.startDate).toLocaleDateString('id-ID')} - ${new Date(filter.endDate).toLocaleDateString('id-ID')}`
-            : `Dicetak pada: ${new Date().toLocaleDateString('id-ID')}`}
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-          {printingImages.map((url, idx) => (
-            <div key={idx} style={{ breakInside: 'avoid', border: '1px solid #ccc', padding: 10, background: '#fff' }}>
-              <img src={url} alt={`Nota ${idx + 1}`} style={{ width: '100%', height: 'auto', display: 'block' }} />
-            </div>
-          ))}
+        <div style={{ textAlign: 'center', marginBottom: 30 }}>
+          <h1 style={{ margin: '0 0 5px 0', fontSize: 24 }}>LAPORAN ARSIP NOTA</h1>
+          <p style={{ margin: 0, color: '#666', fontSize: 14 }}>
+            {filter.startDate && filter.endDate 
+              ? `Periode: ${new Date(filter.startDate).toLocaleDateString('id-ID')} s/d ${new Date(filter.endDate).toLocaleDateString('id-ID')}`
+              : `Dicetak pada: ${printDate}`}
+          </p>
+        </div>
+
+        {/* Ringkasan Tabel di Print */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 40, fontSize: 12 }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f3f4f6' }}>
+              <th style={{ border: '1px solid #ddd', padding: 8, textAlign: 'left' }}>Tanggal</th>
+              <th style={{ border: '1px solid #ddd', padding: 8, textAlign: 'left' }}>Kategori</th>
+              <th style={{ border: '1px solid #ddd', padding: 8, textAlign: 'left' }}>Keterangan</th>
+              <th style={{ border: '1px solid #ddd', padding: 8, textAlign: 'right' }}>Jumlah</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item, idx) => (
+              <tr key={idx}>
+                <td style={{ border: '1px solid #ddd', padding: 8 }}>{formatDateTime(item.tanggal)}</td>
+                <td style={{ border: '1px solid #ddd', padding: 8 }}>{item.kategori}</td>
+                <td style={{ border: '1px solid #ddd', padding: 8 }}>{item.keterangan || "—"}</td>
+                <td style={{ border: '1px solid #ddd', padding: 8, textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(item.jumlah)}</td>
+              </tr>
+            ))}
+            <tr style={{ backgroundColor: '#f3f4f6', fontWeight: 'bold' }}>
+              <td colSpan={3} style={{ border: '1px solid #ddd', padding: 8, textAlign: 'right' }}>TOTAL</td>
+              <td style={{ border: '1px solid #ddd', padding: 8, textAlign: 'right' }}>
+                {formatCurrency(data.reduce((acc, curr) => acc + curr.jumlah, 0))}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Lampiran Gambar */}
+        <div style={{ pageBreakBefore: 'always' }}>
+          <h2 style={{ fontSize: 16, borderBottom: '1px solid #333', paddingBottom: 5, marginBottom: 15 }}>LAMPIRAN DOKUMEN</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 15 }}>
+            {data.flatMap(item => item.arsipNota).map((nota: any, idx) => (
+              <div key={idx} style={{ breakInside: 'avoid', border: '1px solid #eee', padding: 5, position: 'relative', marginBottom: 10 }}>
+                <div style={{ 
+                  position: 'absolute', top: 5, left: 5, 
+                  background: nota.tipe === "BUKTI_TRANSFER" ? '#3b82f6' : '#6b7280', 
+                  color: 'white', padding: '1px 6px', borderRadius: 3, fontSize: 8, fontWeight: 'bold' 
+                }}>
+                  {nota.tipe === "BUKTI_TRANSFER" ? "TRF" : "NOTA"}
+                </div>
+                <img 
+                  src={nota.urlFile} 
+                  alt="lampiran" 
+                  style={{ width: '100%', height: 'auto', display: 'block', marginTop: 15, borderRadius: 2 }} 
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       <ConfirmModal 

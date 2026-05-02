@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -27,12 +28,21 @@ export default function SiswaPortalLayout({ children }: { children: React.ReactN
 
   const name = session.user?.name ?? "Siswa";
 
-  // Round Robin Logika untuk 3 Nomor CS
-  const csNumbers = [
-    "6281234567890", // Ganti dengan No CS 1
-    "6281234567891", // Ganti dengan No CS 2
-    "6281234567892"  // Ganti dengan No CS 3
-  ];
+  // State untuk nomor CS dinamis
+  const [csNumbers, setCsNumbers] = useState<string[]>(["6281234567890"]); // Fallback
+
+  useEffect(() => {
+    fetch("/api/settings/system")
+      .then(r => r.json())
+      .then(data => {
+        const csSetting = data.find((s: any) => s.key === "cs_numbers");
+        if (csSetting && csSetting.value) {
+          const numbers = csSetting.value.split(",").map((n: string) => n.trim());
+          setCsNumbers(numbers);
+        }
+      })
+      .catch(err => console.error("Gagal load nomor CS:", err));
+  }, []);
   
   // Pilih nomor berdasarkan ID Siswa agar konsisten (Siswa A selalu ke CS yang sama)
   const siswaId = (session?.user as any)?.id || "0";

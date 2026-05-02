@@ -653,3 +653,12 @@ enum KategoriUsia {
   DEWASA
   UMUM
 }
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g., "cs_numbers"
+  value       String   @db.Text
+  label       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}

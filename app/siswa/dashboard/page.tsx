@@ -48,6 +48,24 @@ export default async function SiswaDashboard() {
   const kelasAktif = siswa.pendaftaran.filter(p => p.aktif);
   const riwayatKelas = siswa.pendaftaran.filter(p => !p.aktif);
 
+  // 2. Cari CS yang menangani siswa ini (Via Pembayaran terakhir atau Lead)
+  const lastPayment = await prisma.pemasukan.findFirst({
+    where: { siswaId },
+    orderBy: { tanggal: 'desc' },
+    include: { cs: true }
+  });
+
+  let assignedCS = lastPayment?.cs;
+  
+  // Jika tidak ada data pembayaran, coba cari via Lead (berdasarkan nomor HP)
+  if (!assignedCS && siswa.telepon) {
+    const lead = await prisma.lead.findFirst({
+      where: { telepon: siswa.telepon },
+      include: { cs: true }
+    });
+    assignedCS = lead?.cs;
+  }
+
   // --- LOGIKA PERHITUNGAN STATS ---
   let totalHadir = 0;
   let totalSesi = 0;
@@ -97,8 +115,34 @@ export default async function SiswaDashboard() {
             {kelasAktif.length === 0 ? (
               <div className="card" style={{ textAlign: 'center', padding: '48px', border: '1px dashed var(--ghost-border)', background: 'transparent' }}>
                 <BookOpen size={48} style={{ opacity: 0.2, marginBottom: 16 }} />
-                <p style={{ opacity: 0.6, marginBottom: 8 }}>Kamu belum memiliki kelas aktif saat ini.</p>
-                <Link href="/program" className="text-primary" style={{ fontWeight: 700, color: 'var(--brand-primary)' }}>Cari Program Baru →</Link>
+                <p style={{ opacity: 0.6, marginBottom: 24 }}>Kamu belum memiliki kelas aktif saat ini.</p>
+                
+                {assignedCS ? (
+                  <div style={{ maxWidth: 400, margin: '0 auto', padding: '24px', background: 'var(--surface-container-high)', borderRadius: 20, border: '1px solid var(--ghost-border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, textAlign: 'left' }}>
+                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                        {assignedCS.nama?.charAt(0)}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>CS Penanggung Jawab:</p>
+                        <p style={{ fontWeight: 800, margin: 0 }}>{assignedCS.nama}</p>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 13, textAlign: 'left', marginBottom: 20, lineHeight: 1.5 }}>
+                      Sudah mendaftar tapi kelas belum muncul? Silakan hubungi CS kamu untuk konfirmasi jadwal.
+                    </p>
+                    <a 
+                      href={`https://wa.me/${assignedCS.noHp?.replace(/\D/g, '')}?text=Halo%20${assignedCS.nama},%20saya%20${siswa.nama}.%20Saya%20sudah%20mendaftar%20tapi%20belum%20dimasukkan%20ke%20kelas%20aktif%20di%20portal.%20Mohon%20bantuannya%20untuk%20cek%20jadwal%20saya.`}
+                      target="_blank"
+                      className="btn btn-primary"
+                      style={{ width: '100%', justifyContent: 'center', borderRadius: 12, padding: '12px' }}
+                    >
+                      <MessageCircle size={18} /> Chat {assignedCS.nama}
+                    </a>
+                  </div>
+                ) : (
+                  <Link href="/program" className="text-primary" style={{ fontWeight: 700, color: 'var(--brand-primary)' }}>Cari Program Baru →</Link>
+                )}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

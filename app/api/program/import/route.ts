@@ -47,21 +47,28 @@ export async function POST(request: NextRequest) {
 
         const isSharing = String(findValue("isProfitSharing", ["profit_sharing", "bagi_hasil"]) || "").trim().toLowerCase() === "true";
 
-        // 1. Cek apakah sudah ada program dengan nama yang sama
+        const kategoriUsia = (findValue("kategoriUsia", ["usia", "category", "kategori_usia", "target_usia"]) || "UMUM").toUpperCase() as any;
+        const tipe = (findValue("tipe", ["type", "jenis"]) || "REGULAR").toUpperCase();
+
+        // 1. Cek apakah sudah ada program dengan kombinasi Nama + Usia + Tipe yang sama
         const existing = await prisma.program.findFirst({
-          where: { nama: { equals: String(nama), mode: 'insensitive' } }
+          where: { 
+            nama: { equals: String(nama), mode: 'insensitive' },
+            kategoriUsia: kategoriUsia,
+            tipe: tipe
+          }
         });
 
         const programData = {
           deskripsi: String(findValue("deskripsi", ["keterangan", "deskripsi produk"]) || ""),
-          tipe: (findValue("tipe", ["type", "jenis"]) || "REGULAR").toUpperCase(),
+          tipe: tipe,
           harga: harga,
           kategoriFee: findValue("kategoriFee", ["kategori_fee", "fee_type", "skema_fee"]) || "REG_1B",
           durasi: findValue("durasi", ["duration", "masa_aktif", "jangka_waktu"]) || null,
           feeClosing: parseFloat(String(findValue("feeClosing", ["fee_closing", "fee_new", "komisi"]) || 0)) || 0,
           feeClosingRO: parseFloat(String(findValue("feeClosingRO", ["fee_ro", "fee_closing_ro", "komisi_ro"]) || 0)) || 0,
           isProfitSharing: isSharing,
-          kategoriUsia: (findValue("kategoriUsia", ["usia", "category", "kategori_usia", "target_usia"]) || "UMUM").toUpperCase() as any,
+          kategoriUsia: kategoriUsia,
           aktif: true,
         };
 

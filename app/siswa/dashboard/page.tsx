@@ -60,7 +60,7 @@ export default async function SiswaDashboard() {
   // Jika tidak ada data pembayaran, coba cari via Lead (berdasarkan nomor HP)
   if (!assignedCS && siswa.telepon) {
     const lead = await prisma.lead.findFirst({
-      where: { telepon: siswa.telepon },
+      where: { whatsapp: siswa.telepon },
       include: { cs: true }
     });
     assignedCS = lead?.cs;

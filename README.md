@@ -2,7 +2,8 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Dynamic Round-Robin CS & Enhanced Student Portal (v7.5) 🎯 (TERBARU!)
+## 📢 Fitur Baru: Registration Embed Mode & System Configuration (v7.6) 🚀 (TERBARU!)
+*   **Seamless Registration Embed**: Inovasi akuisisi leads. Halaman pendaftaran kini mendukung mode embed (`?embed=true`) yang secara otomatis menyembunyikan elemen navigasi dan menyederhanakan UI agar dapat dipasang secara sempurna di dalam Iframe pada Landing Page (WordPress, Elementor, dll).
 *   **Dynamic Round-Robin CS System**: Inovasi pengelolaan layanan pelanggan. Admin kini dapat mengatur hingga banyak nomor WhatsApp Customer Care secara dinamis melalui dashboard. Sistem secara otomatis membagi beban chat siswa secara merata dan konsisten menggunakan algoritma Round-Robin berbasis ID.
 *   **System Configuration Dashboard**: Penambahan modul pengaturan sistem global di menu **Settings > Konfigurasi Sistem**. Admin kini memiliki kendali penuh atas variabel-variabel sistem yang sebelumnya *hardcoded* (seperti nomor WA), memastikan aplikasi siap berkembang tanpa perlu perubahan kode.
 *   **Student Self-Service Portal**: Peningkatan kemandirian siswa. Portal kini dilengkapi fitur **Ganti Password Mandiri** dengan validasi keamanan standar, memungkinkan siswa mengelola akun mereka tanpa bantuan admin.

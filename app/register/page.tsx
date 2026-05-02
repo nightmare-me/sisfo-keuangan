@@ -20,6 +20,7 @@ import "./register.css";
 function RegisterContent() {
   const searchParams = useSearchParams();
   const teamParam = searchParams.get("team")?.toUpperCase() || "REGULAR"; // REGULAR, RO, TOEFL, LIVE, SOSMED, AFFILIATE
+  const isEmbed = searchParams.get("embed") === "true";
   
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,47 +89,51 @@ function RegisterContent() {
 
   if (success) {
     return (
-      <div className="register-container">
-        <div className="register-card success-card">
+      <div className={`register-container ${isEmbed ? "is-embed" : ""}`}>
+        <div className={`register-card success-card ${isEmbed ? "is-embed" : ""}`}>
           <div className="success-icon">🚀</div>
-          <h2 style={{ fontSize: '3rem', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 16, color: 'var(--on-surface)' }}>Pendaftaran Berhasil!</h2>
-          <div style={{ color: "var(--secondary)", fontSize: '1.25rem', lineHeight: 1.6, maxWidth: 500, margin: "0 auto 40px" }}>
+          <h2 style={{ fontSize: isEmbed ? '2rem' : '3rem', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 16, color: 'var(--on-surface)' }}>Pendaftaran Berhasil!</h2>
+          <div style={{ color: "var(--secondary)", fontSize: isEmbed ? '1rem' : '1.25rem', lineHeight: 1.6, maxWidth: 500, margin: "0 auto 40px" }}>
             Halo <strong>{form.nama}</strong>, data kamu sudah kami terima dengan aman.
           </div>
           
-          <div className="glass" style={{ padding: 32, borderRadius: 'var(--radius-xl)', textAlign: 'left', marginBottom: 40, background: 'var(--surface-container-low)', border: 'none' }}>
+          <div className="glass" style={{ padding: 24, borderRadius: 'var(--radius-xl)', textAlign: 'left', marginBottom: 40, background: 'var(--surface-container-low)', border: 'none' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--on-surface)', marginBottom: 16 }}>
                 <ShieldCheck size={24} color="var(--success)" />
                 <span style={{ fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', fontFamily: 'var(--font-display)' }}>Langkah Selanjutnya</span>
              </div>
-             <p style={{ fontSize: '1.1rem', color: 'var(--on-secondary)' }}>
+             <p style={{ fontSize: isEmbed ? '0.95rem' : '1.1rem', color: 'var(--on-secondary)' }}>
                 Tim Customer Service kami akan segera menghubungimu melalui <strong>WhatsApp</strong> untuk konfirmasi jadwal dan instruksi pembayaran. Pastikan nomormu selalu aktif ya!
              </p>
           </div>
 
-          <a href="https://speakingpartner.id" className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-block', width: '100%', maxWidth: 300, padding: '16px', borderRadius: '100px', fontSize: '1.1rem' }}>
-             Kembali ke Beranda
-          </a>
+          {!isEmbed && (
+            <a href="https://speakingpartner.id" className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-block', width: '100%', maxWidth: 300, padding: '16px', borderRadius: '100px', fontSize: '1.1rem' }}>
+               Kembali ke Beranda
+            </a>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <a href="https://speakingpartner.id" className="back-home">
-          <ArrowLeft size={16} /> Kembali ke Beranda
-        </a>
+    <div className={`register-container ${isEmbed ? "is-embed" : ""}`}>
+      <div className={`register-card ${isEmbed ? "is-embed" : ""}`}>
+        {!isEmbed && (
+          <a href="https://speakingpartner.id" className="back-home">
+            <ArrowLeft size={16} /> Kembali ke Beranda
+          </a>
+        )}
 
-        <div className="register-header">
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--surface-container-low)', padding: '8px 16px', borderRadius: '100px', color: 'var(--on-surface)', marginBottom: 24 }}>
+        <div className="register-header" style={{ marginBottom: isEmbed ? 32 : 48 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--surface-container-low)', padding: '8px 16px', borderRadius: '100px', color: 'var(--on-surface)', marginBottom: 16 }}>
              <Sparkles size={16} color="var(--primary)" />
-             <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+             <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 {teamParam === "REGULAR" ? "New Registration" : `REGISTRATION - ${teamParam} TEAM`}
              </span>
           </div>
-          <h1>
+          <h1 style={{ fontSize: isEmbed ? '2rem' : '2.8rem' }}>
             {teamParam === "REGULAR" ? "Mulai Belajar Hari Ini!" : 
              teamParam === "RO" ? "Pendaftaran Siswa Lanjutan (RO)" :
              teamParam === "TOEFL" ? "Pendaftaran Tes TOEFL" :
@@ -136,7 +141,7 @@ function RegisterContent() {
              teamParam === "AFFILIATE" ? "Pendaftaran Partner Affiliate" :
              "Pendaftaran Kelas Live"}
           </h1>
-          <p>Tingkatkan rasa percaya diri bicaramu dengan kurikulum terbaik di Speaking Partner.</p>
+          {!isEmbed && <p>Tingkatkan rasa percaya diri bicaramu dengan kurikulum terbaik di Speaking Partner.</p>}
         </div>
 
         {loading ? (

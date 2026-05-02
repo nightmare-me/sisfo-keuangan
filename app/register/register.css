@@ -223,3 +223,22 @@
   .register-card { padding: 40px 24px; border-radius: var(--radius-xl); }
   .register-header h1 { font-size: 2.2rem; }
 }
+
+/* Embed Mode Styles */
+.register-container.is-embed {
+  padding: 0;
+  background: transparent;
+  min-height: auto;
+}
+
+.register-card.is-embed {
+  max-width: 100%;
+  padding: 20px;
+  box-shadow: none;
+  background: transparent;
+  animation: none;
+}
+
+.register-card.is-embed .back-home {
+  display: none;
+}

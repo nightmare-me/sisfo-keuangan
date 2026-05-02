@@ -92,10 +92,10 @@ export default function SPVMultimediaPage() {
           </div>
         </div>
         <div className="kpi-card" style={{ borderLeft: "4px solid #8b5cf6" }}>
-          <div className="kpi-icon" style={{ color: "#8b5cf6" }}><Film size={20} /></div>
-          <div className="kpi-label">Konten Diposting</div>
-          <div className="kpi-value">{summary.production?.posted ?? 0}</div>
-          <div className="kpi-sublabel">Dari {summary.production?.total ?? 0} Rencana</div>
+          <div className="kpi-icon" style={{ color: "#8b5cf6" }}><Wallet size={20} /></div>
+          <div className="kpi-label">Total Bonus Talent</div>
+          <div className="kpi-value">{formatCurrency(stats.reduce((a, b) => a + (b.totalFee || 0), 0))}</div>
+          <div className="kpi-sublabel">Estimasi Periode Ini</div>
         </div>
         <div className="kpi-card" style={{ borderLeft: "4px solid #f59e0b" }}>
           <div className="kpi-icon" style={{ color: "#f59e0b" }}><Users size={20} /></div>
@@ -167,13 +167,14 @@ export default function SPVMultimediaPage() {
                   <th style={{ textAlign: "right" }}>Leads</th>
                   <th style={{ textAlign: "right" }}>Closing</th>
                   <th style={{ textAlign: "right" }}>Omset</th>
+                  <th style={{ textAlign: "right" }}>Estimasi Bonus</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ textAlign: "center", padding: 32 }}>Memuat data...</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: "center", padding: 32 }}>Memuat data...</td></tr>
                 ) : (!Array.isArray(stats) || stats.length === 0) ? (
-                  <tr><td colSpan={6} style={{ textAlign: "center", padding: 48 }}>Tidak ada data talent</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: "center", padding: 48 }}>Tidak ada data talent</td></tr>
                 ) : stats.map((talent: any) => (
                   <tr key={talent.talentId}>
                     <td>
@@ -184,7 +185,8 @@ export default function SPVMultimediaPage() {
                     <td style={{ textAlign: "right" }}>{talent.totalJam ?? 0} jam</td>
                     <td style={{ textAlign: "right", fontWeight: 600 }}>{talent.totalLeads}</td>
                     <td style={{ textAlign: "right", color: "var(--success)", fontWeight: 600 }}>{talent.totalClosing}</td>
-                    <td style={{ textAlign: "right", color: "var(--primary)", fontWeight: 700 }}>{formatCurrency(talent.totalOmset)}</td>
+                    <td style={{ textAlign: "right", color: "var(--on-surface)", fontWeight: 700 }}>{formatCurrency(talent.totalOmset)}</td>
+                    <td style={{ textAlign: "right", color: "#8b5cf6", fontWeight: 800 }}>{formatCurrency(talent.totalFee)}</td>
                   </tr>
                 ))}
               </tbody>

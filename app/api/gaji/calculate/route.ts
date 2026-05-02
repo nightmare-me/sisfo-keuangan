@@ -40,10 +40,16 @@ export async function GET(request: NextRequest) {
 
     const totalCount = sessions.length;
     const totalNominal = sessions.reduce((acc, s) => acc + (s.kelas?.feePerSesi || 0), 0);
+    const details = sessions.map(s => ({
+      topik: s.topik,
+      tanggal: s.tanggal,
+      namaKelas: (s.kelas as any)?.namaKelas
+    }));
     
     return NextResponse.json({ 
       count: totalCount,
-      totalNominal: totalNominal
+      totalNominal: totalNominal,
+      details: details
     });
 
   } catch (error: any) {

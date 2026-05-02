@@ -18,21 +18,33 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Format data tidak valid, diharapkan array" }, { status: 400 });
   }
 
-  try {
-    const results = await prisma.$transaction(
-      updates.map((ab: any) => 
-        prisma.absensi.update({
-          where: { id: ab.id },
-          data: {
-            status: ab.status,
-            nilaiHuruf: ab.nilaiHuruf || null,
-            catatan: ab.catatan || null,
-          }
-        })
-      )
-    );
+    try {
+      const results = await prisma.$transaction(async (tx) => {
+        const updatedAbsensi = await Promise.all(
+          updates.map((ab: any) => 
+            tx.absensi.update({
+              where: { id: ab.id },
+              data: {
+                status: ab.status,
+                nilaiHuruf: ab.nilaiHuruf || null,
+                catatan: ab.catatan || null,
+              }
+            })
+          )
+        );
 
-    return NextResponse.json({ success: true, count: results.length });
+        // Update status SesiKelas menjadi SELESAI jika ada update absensi
+        if (updatedAbsensi.length > 0) {
+          await tx.sesiKelas.update({
+            where: { id: updatedAbsensi[0].sesiKelasId },
+            data: { status: "SELESAI" }
+          });
+        }
+
+        return updatedAbsensi;
+      });
+
+      return NextResponse.json({ success: true, count: results.length });
   } catch (error: any) {
     return NextResponse.json({ error: "Gagal menyimpan absensi", message: error.message }, { status: 500 });
   }

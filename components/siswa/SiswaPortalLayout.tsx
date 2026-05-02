@@ -20,6 +20,25 @@ export default function SiswaPortalLayout({ children }: { children: React.ReactN
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  // 1. Hooks harus di atas (Rules of Hooks)
+  const [csNumbers, setCsNumbers] = useState<string[]>(["6281234567890"]); // Fallback
+
+  useEffect(() => {
+    fetch("/api/settings/system")
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const csSetting = data.find((s: any) => s.key === "cs_numbers");
+          if (csSetting && csSetting.value) {
+            const numbers = csSetting.value.split(",").map((n: string) => n.trim());
+            setCsNumbers(numbers);
+          }
+        }
+      })
+      .catch(err => console.error("Gagal load nomor CS:", err));
+  }, []);
+
+  // 2. Baru kemudian Conditional Returns
   if (status === "loading") return <div className="flex items-center justify-center h-screen">Memuat...</div>;
   if (!session || (session.user as any).roleSlug !== "siswa") {
     router.push("/login");
@@ -27,22 +46,6 @@ export default function SiswaPortalLayout({ children }: { children: React.ReactN
   }
 
   const name = session.user?.name ?? "Siswa";
-
-  // State untuk nomor CS dinamis
-  const [csNumbers, setCsNumbers] = useState<string[]>(["6281234567890"]); // Fallback
-
-  useEffect(() => {
-    fetch("/api/settings/system")
-      .then(r => r.json())
-      .then(data => {
-        const csSetting = data.find((s: any) => s.key === "cs_numbers");
-        if (csSetting && csSetting.value) {
-          const numbers = csSetting.value.split(",").map((n: string) => n.trim());
-          setCsNumbers(numbers);
-        }
-      })
-      .catch(err => console.error("Gagal load nomor CS:", err));
-  }, []);
   
   // Pilih nomor berdasarkan ID Siswa agar konsisten (Siswa A selalu ke CS yang sama)
   const siswaId = (session?.user as any)?.id || "0";

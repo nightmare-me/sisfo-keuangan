@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const all = searchParams.get("all") === "true";
   const hasPemasukanOnly = searchParams.get("hasPemasukanOnly") === "true";
+  const search = searchParams.get("search") || "";
+  const tipe = searchParams.get("tipe") || "";
+  const kategoriUsia = searchParams.get("kategoriUsia") || "";
   const page = searchParams.get("page") ? parseInt(searchParams.get("page")!) : null;
   const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : null;
 
@@ -15,6 +18,18 @@ export async function GET(request: NextRequest) {
   
   if (hasPemasukanOnly) {
     where.pemasukan = { some: {} };
+  }
+
+  if (search) {
+    where.nama = { contains: search, mode: "insensitive" };
+  }
+
+  if (tipe) {
+    where.tipe = tipe;
+  }
+
+  if (kategoriUsia) {
+    where.kategoriUsia = kategoriUsia;
   }
 
   // If no pagination requested (usually for dropdowns)

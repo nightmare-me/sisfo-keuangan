@@ -65,10 +65,23 @@ export default function ProgramPage() {
   const [limit, setLimit] = useState(50);
   const [total, setTotal] = useState(0);
 
+  const [search, setSearch] = useState("");
+  const [filterTipe, setFilterTipe] = useState("");
+  const [filterKategori, setFilterKategori] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   function fetchData() {
     setLoading(true);
     const p = new URLSearchParams();
     if (showNonaktif) p.set("all", "true");
+    if (debouncedSearch) p.set("search", debouncedSearch);
+    if (filterTipe) p.set("tipe", filterTipe);
+    if (filterKategori) p.set("kategoriUsia", filterKategori);
     p.set("page", String(page));
     p.set("limit", String(limit));
 
@@ -86,12 +99,12 @@ export default function ProgramPage() {
       });
   }
 
-  useEffect(() => { fetchData(); }, [page, limit, showNonaktif]);
+  useEffect(() => { fetchData(); }, [page, limit, showNonaktif, debouncedSearch, filterTipe, filterKategori]);
 
-  // Reset page when toggle changes
+  // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [showNonaktif]);
+  }, [showNonaktif, debouncedSearch, filterTipe, filterKategori]);
 
   function openAdd() {
     setEditId(null);
@@ -255,6 +268,69 @@ export default function ProgramPage() {
               <Plus size={18} /> Tambah Produk
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div style={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: 12, 
+        marginBottom: 32, 
+        padding: '20px 24px', 
+        background: 'var(--surface-container-low)', 
+        borderRadius: 20,
+        alignItems: 'center',
+        border: '1px solid var(--ghost-border)'
+      }}>
+        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+          <input 
+            type="text" 
+            className="form-control" 
+            placeholder="Cari nama program..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ borderRadius: 12, paddingLeft: 40 }}
+          />
+          <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
+            <Package size={18} />
+          </div>
+        </div>
+
+        <select 
+          className="form-control" 
+          style={{ width: 180, borderRadius: 12 }}
+          value={filterTipe}
+          onChange={(e) => setFilterTipe(e.target.value)}
+        >
+          <option value="">Semua Tipe</option>
+          {TIPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+
+        <select 
+          className="form-control" 
+          style={{ width: 180, borderRadius: 12 }}
+          value={filterKategori}
+          onChange={(e) => setFilterKategori(e.target.value)}
+        >
+          <option value="">Semua Usia</option>
+          <option value="UMUM">UMUM</option>
+          <option value="KIDS">KIDS</option>
+          <option value="DEWASA">DEWASA</option>
+        </select>
+
+        {(search || filterTipe || filterKategori) && (
+          <button 
+            className="btn btn-secondary btn-sm" 
+            onClick={() => { setSearch(""); setFilterTipe(""); setFilterKategori(""); }}
+            style={{ borderRadius: 'var(--radius-full)', color: 'var(--danger)' }}
+          >
+            Hapus Filter
+          </button>
+        )}
+
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+          Menampilkan <strong>{total}</strong> produk
         </div>
       </div>
 

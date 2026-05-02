@@ -38,12 +38,14 @@ export async function GET() {
     // Jika hari ini >= cutoff, berarti kita melihat periode berjalan (Cutoff Bulan Ini - Cutoff Bulan Depan)
     // Jika hari ini < cutoff, berarti kita melihat (Cutoff Bulan Lalu - Cutoff Bulan Ini)
     let start, end;
-    if (now.getDate() >= cutoffDay) {
-      start = new Date(currentYear, currentMonth - 1, cutoffDay, 0, 0, 0);
-      end = new Date(currentYear, currentMonth, cutoffDay - 1, 23, 59, 59);
+    if (now.getDate() > cutoffDay) {
+      // Jika hari ini tanggal 26-31: Periode berjalan adalah 26 Bulan Ini s/d 25 Bulan Depan
+      start = new Date(currentYear, currentMonth - 1, cutoffDay + 1, 0, 0, 0);
+      end = new Date(currentYear, currentMonth, cutoffDay, 23, 59, 59);
     } else {
-      start = new Date(currentYear, currentMonth - 2, cutoffDay, 0, 0, 0);
-      end = new Date(currentYear, currentMonth - 1, cutoffDay - 1, 23, 59, 59);
+      // Jika hari ini tanggal 1-25: Periode berjalan adalah 26 Bulan Lalu s/d 25 Bulan Ini
+      start = new Date(currentYear, currentMonth - 2, cutoffDay + 1, 0, 0, 0);
+      end = new Date(currentYear, currentMonth - 1, cutoffDay, 23, 59, 59);
     }
 
     // 1. Ambil Profil Karyawan & User Info

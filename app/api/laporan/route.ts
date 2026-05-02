@@ -54,14 +54,18 @@ export async function GET(request: NextRequest) {
         startDate = new Date(s.getTime() - (3600000 * 7));
         endDate = new Date(e.getTime() - (3600000 * 7));
       } else {
-        if (jktDay >= cutoffDay) {
-          const s = new Date(jktYear, jktMonth, cutoffDay);
-          const e = new Date(jktYear, jktMonth + 1, cutoffDay - 1, 23, 59, 59);
+        if (jktDay > cutoffDay) {
+          // Contoh: Hari ini tgl 26 Mei. Cutoff 25.
+          // Start: 26 Mei, End: 25 Juni
+          const s = new Date(jktYear, jktMonth, cutoffDay + 1);
+          const e = new Date(jktYear, jktMonth + 1, cutoffDay, 23, 59, 59);
           startDate = new Date(s.getTime() - (3600000 * 7));
           endDate = new Date(e.getTime() - (3600000 * 7));
         } else {
-          const s = new Date(jktYear, jktMonth - 1, cutoffDay);
-          const e = new Date(jktYear, jktMonth, cutoffDay - 1, 23, 59, 59);
+          // Contoh: Hari ini tgl 2 Mei. Cutoff 25.
+          // Start: 26 April, End: 25 Mei
+          const s = new Date(jktYear, jktMonth - 1, cutoffDay + 1);
+          const e = new Date(jktYear, jktMonth, cutoffDay, 23, 59, 59);
           startDate = new Date(s.getTime() - (3600000 * 7));
           endDate = new Date(e.getTime() - (3600000 * 7));
         }

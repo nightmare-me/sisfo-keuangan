@@ -65,14 +65,21 @@ export default function AdsPage() {
       const jktMonth = now.getMonth();
       const jktYear = now.getFullYear();
 
+      const formatYMD = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
       let startDate: string, endDate: string;
 
-      if (jktDay >= cutoffDay) {
-        startDate = new Date(jktYear, jktMonth, cutoffDay).toISOString().slice(0, 10);
-        endDate = new Date(jktYear, jktMonth + 1, cutoffDay - 1).toISOString().slice(0, 10);
+      if (jktDay > cutoffDay) {
+        startDate = formatYMD(new Date(jktYear, jktMonth, cutoffDay + 1));
+        endDate = formatYMD(new Date(jktYear, jktMonth + 1, cutoffDay));
       } else {
-        startDate = new Date(jktYear, jktMonth - 1, cutoffDay).toISOString().slice(0, 10);
-        endDate = new Date(jktYear, jktMonth, cutoffDay - 1).toISOString().slice(0, 10);
+        startDate = formatYMD(new Date(jktYear, jktMonth - 1, cutoffDay + 1));
+        endDate = formatYMD(new Date(jktYear, jktMonth, cutoffDay));
       }
 
       setFilter(prev => ({ ...prev, from: startDate, to: endDate }));

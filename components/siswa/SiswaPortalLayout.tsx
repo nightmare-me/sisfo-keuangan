@@ -27,6 +27,19 @@ export default function SiswaPortalLayout({ children }: { children: React.ReactN
 
   const name = session.user?.name ?? "Siswa";
 
+  // Round Robin Logika untuk 3 Nomor CS
+  const csNumbers = [
+    "6281234567890", // Ganti dengan No CS 1
+    "6281234567891", // Ganti dengan No CS 2
+    "6281234567892"  // Ganti dengan No CS 3
+  ];
+  
+  // Pilih nomor berdasarkan ID Siswa agar konsisten (Siswa A selalu ke CS yang sama)
+  const siswaId = (session?.user as any)?.id || "0";
+  const charCodeSum = siswaId.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+  const selectedCsIndex = charCodeSum % csNumbers.length;
+  const targetNumber = csNumbers[selectedCsIndex];
+
   const navItems = [
     { href: "/siswa/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
     { href: "/siswa/kelas", label: "Kelas Saya", icon: <BookOpen size={18} /> },
@@ -96,9 +109,9 @@ export default function SiswaPortalLayout({ children }: { children: React.ReactN
         {children}
       </main>
 
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button with Round Robin */}
       <a 
-        href="https://wa.me/6281234567890?text=Halo%20Admin%20Customer%20Care%2C%20saya%20ingin%20bertanya..." 
+        href={`https://wa.me/${targetNumber}?text=Halo%20Admin%20Customer%20Care%2C%20saya%20${name}%20ingin%20bertanya...`} 
         target="_blank"
         style={{ 
           position: 'fixed', 

@@ -5,14 +5,43 @@ import { auth } from "@/lib/auth";
 import { getAllRoles } from "@/lib/roles";
 import { calculateAdvFee, AdvCategory } from "@/lib/payroll";
 
-function getDateRange(period: string) {
+async function getDateRange(period: string) {
+  const configs = await prisma.financialConfig.findMany({
+    where: { key: { in: ["PAYROLL_CUTOFF_DAY"] } }
+  });
+  const cutoffDay = configs.find(c => c.key === "PAYROLL_CUTOFF_DAY")?.value || 25;
+
   const now = new Date();
-  const start = new Date();
-  if (period === "today") { start.setHours(0, 0, 0, 0); }
-  else if (period === "week") { start.setDate(now.getDate() - now.getDay()); start.setHours(0, 0, 0, 0); }
-  else if (period === "month") { start.setDate(1); start.setHours(0, 0, 0, 0); }
-  else if (period === "year") { start.setMonth(0, 1); start.setHours(0, 0, 0, 0); }
-  return { gte: start, lte: now };
+  if (period === "today") {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    return { gte: start, lte: now };
+  } else if (period === "week") {
+    const start = new Date();
+    start.setDate(now.getDate() - now.getDay());
+    start.setHours(0, 0, 0, 0);
+    return { gte: start, lte: now };
+  } else if (period === "year") {
+    const start = new Date();
+    start.setMonth(0, 1);
+    start.setHours(0, 0, 0, 0);
+    return { gte: start, lte: now };
+  }
+  
+  // DEFAULT: CURRENT CUTOFF PERIOD (25 - 24)
+  const jktDay = now.getDate();
+  const jktMonth = now.getMonth();
+  const jktYear = now.getFullYear();
+
+  let start: Date, end: Date;
+  if (jktDay >= cutoffDay) {
+    start = new Date(jktYear, jktMonth, cutoffDay);
+    end = new Date(jktYear, jktMonth + 1, cutoffDay - 1, 23, 59, 59);
+  } else {
+    start = new Date(jktYear, jktMonth - 1, cutoffDay);
+    end = new Date(jktYear, jktMonth, cutoffDay - 1, 23, 59, 59);
+  }
+  return { gte: start, lte: end };
 }
 
 export async function GET(request: NextRequest) {
@@ -26,7 +55,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const period = searchParams.get("period") || "month";
   const search = searchParams.get("search") || "";
-  const dateRange = getDateRange(period);
+  const dateRange = await getDateRange(period);
 
   // Ambil semua user role advertiser atau spv_adv
   const advRoles = await prisma.role.findMany({ where: { slug: { in: ["advertiser", "spv_adv"] } }, select: { id: true } });

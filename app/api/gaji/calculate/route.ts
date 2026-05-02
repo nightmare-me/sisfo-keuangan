@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const pengajarId = searchParams.get("pengajarId");
+    const kelasId = searchParams.get("kelasId");
     const bulan = parseInt(searchParams.get("bulan") ?? "");
     const tahun = parseInt(searchParams.get("tahun") ?? "");
 
@@ -21,20 +22,29 @@ export async function GET(request: NextRequest) {
     const dayEnd = endOfMonth(new Date(tahun, bulan - 1));
 
     // Hitung sesi pengajar dari SesiKelas yang statusnya SELESAI
-    const sessions = await prisma.sesiKelas.count({
+    const sessions = await prisma.sesiKelas.findMany({
       where: {
         status: "SELESAI",
         tanggal: { gte: dayStart, lte: dayEnd },
         kelas: {
-          pengajarId: pengajarId
+          pengajarId: pengajarId,
+          ...(kelasId && { id: kelasId })
+        }
+      },
+      include: {
+        kelas: {
+          select: { feePerSesi: true }
         }
       }
     });
 
-    // Ambil tarif pengajar (jika ada config tarif dasar atau dari profile)
-    // Untuk saat ini kita return count-nya saja, UI akan mengalikan dengan tarif yang diinput admin
+    const totalCount = sessions.length;
+    const totalNominal = sessions.reduce((acc, s) => acc + (s.kelas?.feePerSesi || 0), 0);
     
-    return NextResponse.json({ count: sessions });
+    return NextResponse.json({ 
+      count: totalCount,
+      totalNominal: totalNominal
+    });
 
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

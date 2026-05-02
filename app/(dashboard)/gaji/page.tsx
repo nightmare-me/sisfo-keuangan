@@ -157,10 +157,18 @@ export default function GajiPage() {
       return;
     }
     const p = new URLSearchParams({ pengajarId: form.pengajarId, bulan: form.bulan, tahun: form.tahun });
+    if (form.kelasId) p.set("kelasId", form.kelasId);
+    
     const res = await fetch(`/api/gaji/calculate?${p}`);
     const d = await res.json();
     if (d.count !== undefined) {
-      setForm(f => ({ ...f, jumlahSesi: String(d.count) }));
+      const avgTarif = d.count > 0 ? (d.totalNominal / d.count) : 0;
+      setForm(f => ({ 
+        ...f, 
+        jumlahSesi: String(d.count),
+        tarifPerSesi: String(avgTarif),
+        totalGaji: String(d.totalNominal)
+      }));
     }
   }
 

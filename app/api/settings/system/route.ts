@@ -16,12 +16,26 @@ export async function GET() {
       const defaultCs = await (prisma as any).systemSetting.create({
         data: {
           key: "cs_numbers",
-          value: "6281234567890,6281234567891,6281234567892",
+          value: "6281234567890",
           label: "Nomor WhatsApp Customer Care",
-          description: "Pisahkan dengan koma jika lebih dari satu nomor untuk Round Robin"
+          description: "Pisahkan dengan koma jika lebih dari satu nomor untuk Round Robin (Bantuan Siswa)"
         }
       });
       settings.push(defaultCs);
+    }
+
+    // Jika cs_sales_numbers belum ada, buatkan defaultnya
+    const hasSales = settings.find((s: any) => s.key === "cs_sales_numbers");
+    if (!hasSales) {
+      const salesCs = await (prisma as any).systemSetting.create({
+        data: {
+          key: "cs_sales_numbers",
+          value: "6281234567890,6281234567891",
+          label: "Nomor WhatsApp CS (Sales/Leads)",
+          description: "Pisahkan dengan koma. Nomor ini akan digilir (Round Robin) untuk calon siswa baru."
+        }
+      });
+      settings.push(salesCs);
     }
 
     return NextResponse.json(settings);

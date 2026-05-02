@@ -24,6 +24,7 @@ export default function RiwayatHonorPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [summary, setSummary] = useState({ totalDiterima: 0, totalSesi: 0, totalBonus: 0 });
+  const [financeContact, setFinanceContact] = useState("6287762630406");
 
   const currentYear = new Date().getFullYear();
   const [filter, setFilter] = useState({
@@ -33,6 +34,16 @@ export default function RiwayatHonorPage() {
 
   useEffect(() => {
     fetchData();
+    // Ambil nomor WA Finance dari setting
+    fetch("/api/settings/system")
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const setting = data.find((s: any) => s.key === "whatsapp_finance");
+          if (setting && setting.value) setFinanceContact(setting.value.replace(/\D/g, ''));
+        }
+      })
+      .catch(e => console.error("Gagal load WA Finance:", e));
   }, [page, filter]);
 
   async function fetchData() {
@@ -81,11 +92,11 @@ export default function RiwayatHonorPage() {
 
       {/* Summary Cards */}
       <div className="kpi-grid" style={{ marginBottom: 40 }}>
-        <div className="kpi-card shadow-glow" style={{ background: 'linear-gradient(135deg, var(--brand-primary) 0%, #4338ca 100%)', color: 'white', border: 'none' }}>
-          <div className="kpi-icon" style={{ background: "rgba(255,255,255,0.2)", color: "white" }}><TrendingUp size={22} /></div>
-          <div className="kpi-label" style={{ color: 'rgba(255,255,255,0.8)' }}>Total Pendapatan {new Date(0, parseInt(filter.bulan)-1).toLocaleString('id-ID', {month:'long'})}</div>
-          <div className="kpi-value" style={{ fontSize: 28 }}>{formatCurrency(summary.totalDiterima)}</div>
-          <div style={{ fontSize: 11, marginTop: 8, opacity: 0.8, fontWeight: 600 }}>Total Bersih (Honor + Tunjangan)</div>
+        <div className="kpi-card shadow-sm" style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', color: 'var(--on-surface)' }}>
+          <div className="kpi-icon" style={{ background: "rgba(16,185,129,0.15)", color: "#10b981" }}><TrendingUp size={22} /></div>
+          <div className="kpi-label" style={{ color: 'var(--text-muted)' }}>Total Pendapatan {new Date(0, parseInt(filter.bulan)-1).toLocaleString('id-ID', {month:'long'})}</div>
+          <div className="kpi-value" style={{ fontSize: 28, color: '#065f46' }}>{formatCurrency(summary.totalDiterima)}</div>
+          <div style={{ fontSize: 11, marginTop: 8, color: '#10b981', fontWeight: 700 }}>Total Bersih (Honor + Tunjangan)</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-icon" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981" }}><CheckCircle2 size={22} /></div>
@@ -287,9 +298,14 @@ export default function RiwayatHonorPage() {
             <h4 style={{ margin: '0 0 4px 0', fontSize: 15, fontWeight: 800 }}>Butuh rincian slip gaji?</h4>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>Silakan hubungi tim Finance untuk permintaan cetak slip gaji fisik atau digital.</p>
          </div>
-         <button className="btn btn-primary" style={{ borderRadius: 12 }}>
+         <a 
+            href={`https://wa.me/${financeContact}?text=Halo%20Admin%20Finance%20Speaking%20Partner%2C%20saya%20ingin%20bertanya%20mengenai%20rincian%20slip%20gaji%20saya...`}
+            target="_blank"
+            className="btn btn-primary" 
+            style={{ borderRadius: 12, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+         >
             Chat Admin Finance
-         </button>
+         </a>
       </div>
     </div>
   );

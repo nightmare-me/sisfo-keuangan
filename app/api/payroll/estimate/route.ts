@@ -212,7 +212,7 @@ export async function GET() {
           prisma.pemasukan.findMany({ where: { tanggal: { gte: start, lte: end } }, include: { program: true } }),
           prisma.pengeluaran.aggregate({ where: { tanggal: { gte: start, lte: end } }, _sum: { jumlah: true } }),
           prisma.marketingAd.aggregate({ where: { tanggal: { gte: start, lte: end } }, _sum: { spent: true } }),
-          prisma.refund.aggregate({ where: { tanggal: { gte: start, lte: end } }, _sum: { jumlah: true } }),
+          prisma.refund.aggregate({ where: { createdAt: { gte: start, lte: end } }, _sum: { jumlah: true } }),
         ]);
 
         const opsTotal = pengeluaranAll._sum.jumlah || 0;

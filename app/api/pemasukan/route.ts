@@ -24,7 +24,17 @@ export async function GET(request: NextRequest) {
     if (from && to) {
       where.tanggal = { gte: new Date(from), lte: new Date(to) };
     }
-    if (csId) where.csId = csId;
+    
+    // Keamanan: Jika role adalah CS, paksa filter hanya data miliknya
+    const role = (session.user as any).role?.toUpperCase();
+    const userId = (session.user as any).id;
+    
+    if (role === "CS") {
+      where.csId = userId;
+    } else if (csId) {
+      where.csId = csId;
+    }
+    
     if (programId) where.programId = programId;
     if (metodeBayar) where.metodeBayar = metodeBayar;
 

@@ -38,6 +38,20 @@ export async function GET() {
       settings.push(salesCs);
     }
 
+    // Jika whatsapp_finance belum ada, buatkan defaultnya
+    const hasFinance = settings.find((s: any) => s.key === "whatsapp_finance");
+    if (!hasFinance) {
+      const financeSetting = await (prisma as any).systemSetting.create({
+        data: {
+          key: "whatsapp_finance",
+          value: "6287762630406",
+          label: "Nomor WhatsApp Admin Finance",
+          description: "Nomor WhatsApp untuk pengajuan slip gaji dan pertanyaan finansial pengajar."
+        }
+      });
+      settings.push(financeSetting);
+    }
+
     return NextResponse.json(settings);
   } catch (error: any) {
     console.error("GET_SYSTEM_SETTINGS_ERROR:", error);

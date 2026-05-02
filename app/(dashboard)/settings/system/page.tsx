@@ -93,30 +93,30 @@ export default function SystemSettingsPage() {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: 24 }}>
         {loading ? (
-          <div className="card skeleton" style={{ height: 200 }} />
+          [1, 2, 3, 4].map(i => <div key={i} className="card skeleton" style={{ height: 250 }} />)
         ) : settings.map((item, idx) => (
-          <div key={item.id} className="card" style={{ padding: 32 }}>
-            <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>{item.label}</h3>
-              <p style={{ fontSize: 14, opacity: 0.6 }}>{item.description}</p>
+          <div key={item.id} className="card shadow-sm" style={{ padding: 24, display: 'flex', flexDirection: 'column', margin: 0 }}>
+            <div style={{ marginBottom: 16, flex: 1 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>{item.label}</h3>
+              <p style={{ fontSize: 12, opacity: 0.6, lineHeight: 1.5 }}>{item.description}</p>
             </div>
 
-            <div className="form-group" style={{ marginBottom: 24 }}>
+            <div className="form-group" style={{ marginBottom: 20 }}>
               <textarea 
                 className="form-control" 
-                rows={3} 
+                rows={2} 
                 value={item.value}
                 onChange={e => {
                   const newSettings = [...settings];
                   newSettings[idx].value = e.target.value;
                   setSettings(newSettings);
                 }}
-                placeholder="Contoh: 628123xxx,628123xxx"
-                style={{ fontSize: 16, fontWeight: 500, padding: 16 }}
+                placeholder="Isi konfigurasi di sini..."
+                style={{ fontSize: 14, fontWeight: 500, padding: 12, borderRadius: 12, background: 'var(--surface-container-lowest)' }}
               />
-              <div style={{ marginTop: 12, fontSize: 12, color: 'var(--brand-primary)', background: 'rgba(99,102,241,0.05)', padding: '8px 16px', borderRadius: 8, display: 'inline-block' }}>
+              <div style={{ marginTop: 8, fontSize: 10, color: 'var(--brand-primary)', background: 'rgba(99,102,241,0.05)', padding: '4px 10px', borderRadius: 6, display: 'inline-block' }}>
                 Key: <code>{item.key}</code>
               </div>
             </div>
@@ -125,9 +125,9 @@ export default function SystemSettingsPage() {
               className="btn btn-primary" 
               onClick={() => handleUpdate(item.id, item.value)}
               disabled={savingId === item.id}
-              style={{ padding: '12px 32px', borderRadius: 100 }}
+              style={{ width: '100%', padding: '10px 0', borderRadius: 12, fontSize: 14 }}
             >
-              <Save size={18} /> {savingId === item.id ? "Menyimpan..." : "Simpan Perubahan"}
+              <Save size={16} /> {savingId === item.id ? "Menyimpan..." : "Simpan Perubahan"}
             </button>
           </div>
         ))}

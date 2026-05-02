@@ -12,7 +12,8 @@ export default function PengajarDashboard() {
   const { data: session } = useSession();
   const userName = session?.user?.name?.split(' ')[0] ?? "Tutor";
   const allRoles = getAllRoles(session);
-  const hasSubRole = allRoles.some(r => r !== 'pengajar' && r !== 'siswa');
+  const managementRoles = ['admin', 'ceo', 'coo', 'akademik', 'spv_akademik'];
+  const hasSubRole = allRoles.some(r => managementRoles.includes(r));
 
   const [kelasData, setKelasData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

@@ -82,11 +82,19 @@ export async function GET(request: NextRequest) {
 
     const adsWhereIni: any = { tanggal: { gte: startDate, lte: endDate } };
     const adsWhereLalu: any = { tanggal: { gte: prevStartDate, lte: prevEndDate } };
+    const pemasukanWhereIni: any = { tanggal: { gte: startDate, lte: endDate } };
+    const pemasukanWhereLalu: any = { tanggal: { gte: prevStartDate, lte: prevEndDate } };
     
-    // Privacy filter for Ads
+    // Privacy filter for Ads & Pemasukan
     if (!isSuper) {
-      adsWhereIni.advId = userId;
-      adsWhereLalu.advId = userId;
+      if (userRole === "ADVERTISER" || userRole === "SPV_ADV") {
+        adsWhereIni.advId = userId;
+        adsWhereLalu.advId = userId;
+      }
+      if (userRole === "CS" || userRole === "SPV_CS") {
+        pemasukanWhereIni.csId = userId;
+        pemasukanWhereLalu.csId = userId;
+      }
     }
 
     const [
@@ -99,13 +107,13 @@ export async function GET(request: NextRequest) {
       refundAggIni,
       siswaAktifCount
     ] = await Promise.all([
-      prisma.pemasukan.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { hargaFinal: true }, _count: true }),
-      prisma.pemasukan.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { hargaFinal: true } }),
+      prisma.pemasukan.aggregate({ where: pemasukanWhereIni, _sum: { hargaFinal: true }, _count: true }),
+      prisma.pemasukan.aggregate({ where: pemasukanWhereLalu, _sum: { hargaFinal: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
       prisma.marketingAd.aggregate({ where: adsWhereIni, _sum: { spent: true, leads: true } }),
       prisma.marketingAd.aggregate({ where: adsWhereLalu, _sum: { spent: true, leads: true } }),
-      prisma.refund.aggregate({ where: { status: "APPROVED", pemasukan: { tanggal: { gte: startDate, lte: endDate } } }, _sum: { jumlah: true } }),
+      prisma.refund.aggregate({ where: { status: "APPROVED", pemasukan: { ...pemasukanWhereIni } }, _sum: { jumlah: true } }),
       prisma.siswa.count({ where: { status: "AKTIF" } })
     ]);
 
@@ -119,7 +127,7 @@ export async function GET(request: NextRequest) {
     const trendStart = subDays(now, 29);
     const [trendIncomes, trendExes, trendAdsSpent] = await Promise.all([
       prisma.pemasukan.findMany({ 
-        where: { tanggal: { gte: startOfDay(trendStart) } }, 
+        where: { ...pemasukanWhereIni, tanggal: { gte: startOfDay(trendStart) } }, 
         select: { tanggal: true, hargaFinal: true, id: true } 
       }),
       prisma.pengeluaran.groupBy({ 
@@ -163,6 +171,7 @@ export async function GET(request: NextRequest) {
 
     // 3. TRANSAKSI TERKINI (Take 10, bukan fetch semua)
     const transaksiTerkini = await prisma.pemasukan.findMany({
+      where: pemasukanWhereIni,
       take: 10,
       orderBy: { tanggal: "desc" },
       select: {
@@ -178,7 +187,7 @@ export async function GET(request: NextRequest) {
     const [pemasukanPerProgramRaw, pengeluaranPerKategoriRaw] = await Promise.all([
       prisma.pemasukan.groupBy({
         by: ['programId'],
-        where: { tanggal: { gte: startDate, lte: endDate } },
+        where: pemasukanWhereIni,
         _sum: { hargaFinal: true },
         _count: true
       }),
@@ -204,24 +213,24 @@ export async function GET(request: NextRequest) {
     // 5. PENYESUAIAN RESPON BERDASARKAN ROLE (PRIVASI)
     const responseData: any = {
       kpi: { 
-        pemasukanHariIni: isSuper ? totalPemasukanIni : 0, 
-        pemasukanKemarin: isSuper ? totalPemasukanLalu : 0, 
+        pemasukanHariIni: totalPemasukanIni, 
+        pemasukanKemarin: totalPemasukanLalu, 
         pengeluaranHariIni: isSuper ? totalExIni : 0, 
         pengeluaranKemarin: isSuper ? (pengeluaranAggLalu._sum.jumlah || 0) : 0,
         adsHariIni: totalAdsIni, 
         adsKemarin: adsAggLalu._sum.spent ?? 0, 
-        labaHariIni: isSuper ? labaIni : 0, 
+        labaHariIni: isSuper ? labaIni : (totalPemasukanIni - totalAdsIni), 
         siswAktif: isSuper ? siswaAktifCount : 0,
         avgCpl: totalAdsIni > 0 ? totalAdsIni / (adsAggIni._sum.leads || 1) : 0
       },
       trendData: trendData.map(t => ({
         date: t.date,
         ads: t.ads,
-        pemasukan: isSuper ? t.pemasukan : 0,
+        pemasukan: t.pemasukan,
         pengeluaran: isSuper ? t.pengeluaran : 0
       })),
-      transaksiTerkini: isSuper ? transaksiTerkini : [],
-      pemasukanPerProgram: isSuper ? pemasukanPerProgram : [],
+      transaksiTerkini: transaksiTerkini,
+      pemasukanPerProgram: pemasukanPerProgram,
       pengeluaranPerKategori: isSuper ? pengeluaranPerKategoriRaw.map(p => ({ kategori: p.kategori, total: p._sum.jumlah || 0 })) : [],
       debug: {
         type,

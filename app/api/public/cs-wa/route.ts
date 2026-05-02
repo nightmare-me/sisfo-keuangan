@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       hour12: false
     }).format(new Date());
 
-    const readyNumbers = numbers.filter(num => {
+    const readyNumbers = numbers.filter((num: string) => {
       const user = availableUsers.find(u => u.noHp === num);
       if (!user) return false; // Jika nomor tidak terdaftar di User, skip
 

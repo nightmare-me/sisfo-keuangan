@@ -3,7 +3,15 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { calculateAdvFee, AdvCategory, calculateBonusTalent } from "@/lib/payroll";
+import { 
+  calculateAdvFee, 
+  AdvCategory, 
+  calculateBonusTalent, 
+  calculateCSFee, 
+  calculateBonusAkademikRO, 
+  calculateBonusGrossProfit, 
+  calculateSharingTOEFL 
+} from "@/lib/payroll";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -67,13 +75,23 @@ export async function GET() {
           csId: userId,
           tanggal: { gte: start, lte: end },
         },
+        include: { program: true }
       });
+
+      const teamTypeRaw = user.teamType;
+      const firstTeam = Array.isArray(teamTypeRaw) ? teamTypeRaw[0] : (teamTypeRaw as string);
 
       let totalFeeClosing = 0;
       closingBulanIni.forEach(p => {
-        // Logika fee closing bisa statis dari profil atau dinamis per program
-        // Di sini kita pakai feeClosing dari profil sebagai default
-        totalFeeClosing += profile?.feeClosing || 0;
+        totalFeeClosing += calculateCSFee(
+          (firstTeam || "CS_REGULAR") as any,
+          p.program?.kategoriFee || "REG_1B",
+          p.hargaFinal,
+          p.isRO,
+          0,
+          p.program as any,
+          config
+        );
       });
 
       if (totalFeeClosing > 0) {
@@ -160,11 +178,88 @@ export async function GET() {
 
     const totalEstimasi = items.reduce((acc, curr) => acc + curr.amount, 0);
 
+    // 4. Bonus Akademik (RO Omset) - Khusus untuk yang punya jabatan Akademik
+    const isAkademik = user.karyawanProfile?.posisi?.toUpperCase().includes("AKADEMIK") || 
+                       user.role?.slug === "akademik";
+    
+    if (isAkademik) {
+      const pemasukanRO = await prisma.pemasukan.findMany({
+        where: { 
+          tanggal: { gte: start, lte: end },
+          isRO: true
+        },
+        select: { hargaFinal: true }
+      });
+      const totalRO = pemasukanRO.reduce((s: number, p: any) => s + p.hargaFinal, 0);
+      const bonusRO = calculateBonusAkademikRO(totalRO, config);
+      if (bonusRO > 0) {
+        items.push({ label: "Bonus RO Akademik", amount: bonusRO, count: pemasukanRO.length });
+      }
+    }
+
+    // 5. Bonus Pimpinan & SPV (DARI PROFIT SILO)
+    const whitelistBonus = ["CEO", "COO", "ASSISTANT CEO", "FINANCE", "SPV"];
+    const allRoles = (user.secondaryRoles || []) as string[];
+    const matchedKeyword = whitelistBonus.find(w => 
+      user.karyawanProfile?.posisi?.toUpperCase().includes(w) || 
+      allRoles.some(r => r.toUpperCase().includes(w))
+    );
+
+    if (matchedKeyword) {
+        // A. Hitung Profit Silo
+        const [pemasukanAll, pengeluaranAll, adsAll, refundAll] = await Promise.all([
+          prisma.pemasukan.findMany({ where: { tanggal: { gte: start, lte: end } }, include: { program: true } }),
+          prisma.pengeluaran.aggregate({ where: { tanggal: { gte: start, lte: end } }, _sum: { jumlah: true } }),
+          prisma.marketingAd.aggregate({ where: { tanggal: { gte: start, lte: end } }, _sum: { spent: true } }),
+          prisma.refund.aggregate({ where: { tanggal: { gte: start, lte: end } }, _sum: { jumlah: true } }),
+        ]);
+
+        const opsTotal = pengeluaranAll._sum.jumlah || 0;
+        const adsTotal = adsAll._sum.spent || 0;
+        const refundTotal = refundAll._sum.jumlah || 0;
+
+        const pGlobal = pemasukanAll.filter(p => !p.program?.nama?.toUpperCase().includes("TOEFL"));
+        const pToefl = pemasukanAll.filter(p => p.program?.nama?.toUpperCase().includes("TOEFL"));
+
+        const incomeGlobal = pGlobal.reduce((s, p) => s + p.hargaFinal, 0);
+        const incomeToefl = pToefl.reduce((s, p) => s + p.hargaFinal, 0);
+        const grossProfitGlobal = incomeGlobal - adsTotal - refundTotal - opsTotal;
+        const toeflProfitNet = incomeToefl * 0.5;
+
+        // B. Hitung Bonus
+        let targetPos = user.karyawanProfile?.posisi || "";
+        if (matchedKeyword === "SPV") {
+            const spvRole = allRoles.find(r => r.toUpperCase().includes("SPV")) || 
+                            (targetPos.toUpperCase().includes("SPV") ? targetPos : "");
+            if (spvRole) targetPos = spvRole;
+        }
+
+        const pClean = targetPos.toUpperCase().trim().replace(/\s+/g, "_").replace(/__/g, "_");
+        const pSpace = pClean.replace(/_/g, " ");
+
+        // 1. Bonus Gross Global (Proteksi Akademik)
+        if (!isAkademik) {
+            const b1 = calculateBonusGrossProfit(grossProfitGlobal, pClean, config);
+            const b2 = calculateBonusGrossProfit(grossProfitGlobal, pSpace, config);
+            const totalB = (b1 || b2 || 0);
+            if (totalB !== 0) items.push({ label: `Bonus Gross Profit (${matchedKeyword})`, amount: totalB });
+        }
+
+        // 2. Sharing TOEFL
+        const s1 = calculateSharingTOEFL(toeflProfitNet, pClean, config);
+        const s2 = calculateSharingTOEFL(toeflProfitNet, pSpace, config);
+        const totalS = (s1 || s2 || 0);
+        if (totalS > 0) items.push({ label: "Sharing Profit TOEFL", amount: totalS });
+    }
+
+    const finalTotal = items.reduce((acc, curr) => acc + curr.amount, 0);
+
     return NextResponse.json({
       month: now.getMonth() + 1,
       year: now.getFullYear(),
       items,
-      totalEstimasi
+      totalEstimasi: finalTotal,
+      period: { from: start, to: end }
     });
 
   } catch (error: any) {

@@ -108,7 +108,7 @@ model Program {
   nama         String
   deskripsi    String?
   tipe         TipeKelas   @default(REGULAR)
-  kategoriUsia KategoriUsia @default(UMUM)
+  kategoriUsia KategoriUsia[] @default([UMUM])
   harga        Float
   durasiBuilan Int         @default(3)
   aktif        Boolean     @default(true)

@@ -43,7 +43,7 @@ const DURASI_LABEL: Record<string, string> = {
   "3_BULAN": "3 Bulan",   "6_BULAN": "6 Bulan", "LAINNYA": "Lainnya",
 };
 
-const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "", feeClosing: "0", feeClosingRO: "0", isProfitSharing: false, kategoriUsia: "UMUM" };
+const emptyForm = { nama: "", deskripsi: "", tipe: "REGULAR", harga: "", kategoriFee: "REG_1B", durasi: "", feeClosing: "0", feeClosingRO: "0", isProfitSharing: false, kategoriUsia: ["UMUM"] };
 
 export default function ProgramPage() {
   const { data: session } = useSession();
@@ -123,7 +123,7 @@ export default function ProgramPage() {
       feeClosing: String(p.feeClosing || 0),
       feeClosingRO: String(p.feeClosingRO || 0),
       isProfitSharing: !!p.isProfitSharing,
-      kategoriUsia: p.kategoriUsia || "UMUM"
+      kategoriUsia: Array.isArray(p.kategoriUsia) ? p.kategoriUsia : [p.kategoriUsia || "UMUM"]
     });
     setEditId(p.id);
     setShowModal(true);
@@ -136,7 +136,8 @@ export default function ProgramPage() {
       ...form, 
       harga: parseFloat(form.harga) || 0,
       feeClosing: parseFloat(form.feeClosing) || 0,
-      feeClosingRO: parseFloat(form.feeClosingRO) || 0
+      feeClosingRO: parseFloat(form.feeClosingRO) || 0,
+      kategoriUsia: form.kategoriUsia.length > 0 ? form.kategoriUsia : ["UMUM"]
     };
     console.log("SUBMITTING_PAYLOAD:", payload);
     let res;
@@ -394,9 +395,13 @@ export default function ProgramPage() {
                   </td>
                   <td><span className={`badge ${TIPE_BADGE[p.tipe] ?? "badge-muted"}`}>{p.tipe}</span></td>
                   <td>
-                    <span className={`badge ${p.kategoriUsia === "KIDS" ? "badge-info" : p.kategoriUsia === "DEWASA" ? "badge-primary" : "badge-secondary"}`}>
-                      {p.kategoriUsia}
-                    </span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {(Array.isArray(p.kategoriUsia) ? p.kategoriUsia : [p.kategoriUsia]).map((cat: string) => (
+                        <span key={cat} className={`badge ${cat === "KIDS" ? "badge-info" : cat === "DEWASA" ? "badge-primary" : "badge-secondary"}`} style={{ fontSize: 10 }}>
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td style={{ fontWeight: 700, color: "var(--success)" }}>{formatCurrency(p.harga)}</td>
                   <td style={{ color: "var(--primary)", fontWeight: 600 }}>{formatCurrency(p.feeClosing || 0)}</td>
@@ -530,12 +535,27 @@ export default function ProgramPage() {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label className="form-label required">Kategori Usia</label>
-                    <select className="form-control" value={form.kategoriUsia} onChange={e => setForm(f => ({ ...f, kategoriUsia: e.target.value }))}>
-                      <option value="UMUM">UMUM</option>
-                      <option value="KIDS">KIDS</option>
-                      <option value="DEWASA">DEWASA</option>
-                    </select>
+                    <label className="form-label required">Kategori Usia (Multi-select)</label>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', background: 'var(--surface-container-low)', padding: '10px 14px', borderRadius: 12, border: '1px solid var(--ghost-border)' }}>
+                      {["UMUM", "KIDS", "DEWASA"].map(cat => (
+                        <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', margin: 0, fontSize: 13, fontWeight: 600 }}>
+                          <input 
+                            type="checkbox" 
+                            checked={form.kategoriUsia.includes(cat)} 
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setForm(f => {
+                                const newCats = checked 
+                                  ? [...f.kategoriUsia, cat]
+                                  : f.kategoriUsia.filter(c => c !== cat);
+                                return { ...f, kategoriUsia: newCats };
+                              });
+                            }}
+                          />
+                          {cat}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="form-grid-2">

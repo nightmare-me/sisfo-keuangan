@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (kategoriUsia) {
-    where.kategoriUsia = kategoriUsia;
+    where.kategoriUsia = { has: kategoriUsia as any };
   }
 
   // If no pagination requested (usually for dropdowns)
@@ -69,12 +69,16 @@ export async function POST(request: NextRequest) {
     
     if (!nama || !harga) return NextResponse.json({ error: "Nama dan harga diperlukan" }, { status: 400 });
     
+    let cats = kategoriUsia;
+    if (typeof cats === "string") cats = cats.split(",").map((c: string) => c.trim().toUpperCase());
+    if (!Array.isArray(cats)) cats = ["UMUM"];
+
     const program = await prisma.program.create({ 
       data: { 
         nama, 
         deskripsi, 
         tipe: tipe ?? "REGULAR", 
-        kategoriUsia: kategoriUsia ?? "UMUM",
+        kategoriUsia: cats,
         harga: Number(harga) || 0, 
         kategoriFee,
         feeClosing: Number(feeClosing) || 0,
@@ -99,10 +103,14 @@ export async function PUT(request: NextRequest) {
     
     if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
 
-    // Format numeric values
+    // Format numeric and array values
     if (data.feeClosing !== undefined) data.feeClosing = Number(data.feeClosing) || 0;
     if (data.feeClosingRO !== undefined) data.feeClosingRO = Number(data.feeClosingRO) || 0;
     if (data.harga !== undefined) data.harga = Number(data.harga) || 0;
+    if (data.kategoriUsia !== undefined) {
+      if (typeof data.kategoriUsia === "string") data.kategoriUsia = data.kategoriUsia.split(",").map((c: string) => c.trim().toUpperCase());
+      if (!Array.isArray(data.kategoriUsia)) data.kategoriUsia = ["UMUM"];
+    }
 
     const program = await prisma.program.update({ where: { id }, data });
     return NextResponse.json(program);

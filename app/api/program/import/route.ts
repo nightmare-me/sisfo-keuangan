@@ -47,19 +47,19 @@ export async function POST(request: NextRequest) {
 
         const isSharing = String(findValue("isProfitSharing", ["profit_sharing", "bagi_hasil"]) || "").trim().toLowerCase() === "true";
 
-        const kategoriUsia = (findValue("kategoriUsia", ["usia", "category", "kategori_usia", "target_usia"]) || "UMUM").toUpperCase() as any;
+        const rawCats = findValue("kategoriUsia", ["usia", "category", "kategori_usia", "target_usia"]) || "UMUM";
+        const newCatsArray = String(rawCats).split(",").map(c => c.trim().toUpperCase());
         const tipe = (findValue("tipe", ["type", "jenis"]) || "REGULAR").toUpperCase();
 
-        // 1. Cek apakah sudah ada program dengan kombinasi Nama + Usia + Tipe yang sama
+        // 1. Cek apakah sudah ada program dengan Nama + Tipe yang sama
         const existing = await prisma.program.findFirst({
           where: { 
             nama: { equals: String(nama), mode: 'insensitive' },
-            kategoriUsia: kategoriUsia,
             tipe: tipe
           }
         });
 
-        const programData = {
+        const commonData = {
           deskripsi: String(findValue("deskripsi", ["keterangan", "deskripsi produk"]) || ""),
           tipe: tipe,
           harga: harga,
@@ -68,20 +68,26 @@ export async function POST(request: NextRequest) {
           feeClosing: parseFloat(String(findValue("feeClosing", ["fee_closing", "fee_new", "komisi"]) || 0)) || 0,
           feeClosingRO: parseFloat(String(findValue("feeClosingRO", ["fee_ro", "fee_closing_ro", "komisi_ro"]) || 0)) || 0,
           isProfitSharing: isSharing,
-          kategoriUsia: kategoriUsia,
           aktif: true,
         };
 
         if (existing) {
+          // GABUNGKAN KATEGORI: Ambil kategori lama + tambahkan yang baru (tanpa duplikat)
+          const mergedCats = Array.from(new Set([...existing.kategoriUsia, ...newCatsArray])) as any[];
+          
           await prisma.program.update({
             where: { id: existing.id },
-            data: programData
+            data: {
+              ...commonData,
+              kategoriUsia: mergedCats
+            }
           });
         } else {
           await prisma.program.create({
             data: {
               nama: String(nama),
-              ...programData
+              ...commonData,
+              kategoriUsia: newCatsArray as any[]
             }
           });
         }
@@ -96,7 +102,7 @@ export async function POST(request: NextRequest) {
       (session.user as any).id,
       "Import Program CSV",
       "BATCH",
-      `Import selesai. Sukses: ${results.success}, Gagal: ${results.failed}.`
+      `Import selesai (Multi-Category). Sukses: ${results.success}, Gagal: ${results.failed}.`
     );
 
     return NextResponse.json({ 

@@ -126,23 +126,23 @@ export default async function SiswaDashboard() {
                   <div style={{ maxWidth: 400, margin: '0 auto', padding: '24px', background: 'var(--surface-container-high)', borderRadius: 20, border: '1px solid var(--ghost-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, textAlign: 'left' }}>
                       <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-                        {assignedCS?.nama?.charAt(0) || 'A'}
+                        {assignedCS?.name?.charAt(0) || 'A'}
                       </div>
                       <div>
                         <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>{assignedCS?.noHp ? 'CS Penanggung Jawab:' : 'Admin Pusat:'}</p>
-                        <p style={{ fontWeight: 800, margin: 0 }}>{assignedCS?.noHp ? assignedCS.nama : 'Support Siswa'}</p>
+                        <p style={{ fontWeight: 800, margin: 0 }}>{assignedCS?.noHp ? assignedCS.name : 'Support Siswa'}</p>
                       </div>
                     </div>
                     <p style={{ fontSize: 13, textAlign: 'left', marginBottom: 20, lineHeight: 1.5 }}>
                       Sudah mendaftar tapi kelas belum muncul? Silakan hubungi admin untuk konfirmasi jadwal belajar kamu.
                     </p>
                     <a 
-                      href={`https://wa.me/${(assignedCS?.noHp || defaultOfficeNumber).replace(/\D/g, '')}?text=${encodeURIComponent(`Halo ${assignedCS?.nama || 'Admin'}, saya ${siswa.nama}. Saya sudah mendaftar tapi belum dimasukkan ke kelas aktif di portal. Mohon bantuannya untuk cek jadwal saya.`)}`}
+                      href={`https://wa.me/${(assignedCS?.noHp || defaultOfficeNumber).replace(/\D/g, '')}?text=${encodeURIComponent(`Halo ${assignedCS?.name || 'Admin'}, saya ${siswa.nama}. Saya sudah mendaftar tapi belum dimasukkan ke kelas aktif di portal. Mohon bantuannya untuk cek jadwal saya.`)}`}
                       target="_blank"
                       className="btn btn-primary"
                       style={{ width: '100%', justifyContent: 'center', borderRadius: 12, padding: '12px' }}
                     >
-                      <MessageCircle size={18} /> Chat {assignedCS?.noHp ? assignedCS.nama : 'Admin Pusat'}
+                      <MessageCircle size={18} /> Chat {assignedCS?.noHp ? assignedCS.name : 'Admin Pusat'}
                     </a>
                   </div>
                 ) : (

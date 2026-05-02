@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { TipeArsip } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -108,8 +109,8 @@ export async function POST(request: NextRequest) {
         dibuatOleh: (session.user as any).id,
         arsipNota: {
           create: [
-            ...(urls && Array.isArray(urls) ? urls : []).map((url: string) => ({ urlFile: url, tipe: "NOTA" })),
-            ...(urlsTransfer && Array.isArray(urlsTransfer) ? urlsTransfer : []).map((url: string) => ({ urlFile: url, tipe: "BUKTI_TRANSFER" }))
+            ...(urls && Array.isArray(urls) ? urls : []).map((url: string) => ({ urlFile: url, tipe: TipeArsip.NOTA })),
+            ...(urlsTransfer && Array.isArray(urlsTransfer) ? urlsTransfer : []).map((url: string) => ({ urlFile: url, tipe: TipeArsip.BUKTI_TRANSFER }))
           ]
         }
       },
@@ -143,6 +144,7 @@ export async function PUT(request: NextRequest) {
           if (!tanggal) return undefined;
           const d = new Date(tanggal);
           const now = new Date();
+          now.setHours(now.getHours() + 7); // Adjust to WIB if needed, but let's keep it simple
           d.setUTCHours(now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
           return d;
         })(),
@@ -152,8 +154,8 @@ export async function PUT(request: NextRequest) {
         keterangan,
         arsipNota: {
           create: [
-            ...(urls && Array.isArray(urls) ? urls : []).map((url: string) => ({ urlFile: url, tipe: "NOTA" })),
-            ...(urlsTransfer && Array.isArray(urlsTransfer) ? urlsTransfer : []).map((url: string) => ({ urlFile: url, tipe: "BUKTI_TRANSFER" }))
+            ...(urls && Array.isArray(urls) ? urls : []).map((url: string) => ({ urlFile: url, tipe: TipeArsip.NOTA })),
+            ...(urlsTransfer && Array.isArray(urlsTransfer) ? urlsTransfer : []).map((url: string) => ({ urlFile: url, tipe: TipeArsip.BUKTI_TRANSFER }))
           ]
         }
       },

@@ -104,6 +104,12 @@ export function hasPermission(session: any, permissionSlug: string): boolean {
   if (allRoles.includes("siswa") && permissionSlug === "siswa:dashboard") return true;
   if (allRoles.includes("talent") && ["dashboard:view", "live_tracking:view", "multimedia:view"].includes(permissionSlug)) return true;
   if (allRoles.includes("multimedia") && ["dashboard:view", "live_tracking:view", "multimedia:view", "multimedia:metrics"].includes(permissionSlug)) return true;
+  if (allRoles.includes("spv_multimedia")) {
+    if (permissionSlug === "report:view") return false; // Force hide Keuangan
+    if (["dashboard:view", "live_tracking:view", "multimedia:view", "multimedia:metrics"].includes(permissionSlug)) return true;
+  }
+  if (allRoles.includes("spv_cs") && ["dashboard:view", "crm:view", "report:view"].includes(permissionSlug)) return true;
+  if (allRoles.includes("spv_adv") && ["dashboard:view", "ads_spent:view", "report:view"].includes(permissionSlug)) return true;
   if (allRoles.includes("advertiser") && ["dashboard:view", "ads_spent:view"].includes(permissionSlug)) return true;
 
   return userPermissions.includes(permissionSlug);

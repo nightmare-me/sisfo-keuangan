@@ -48,7 +48,13 @@ export async function POST(request: NextRequest) {
         const isSharing = String(findValue("isProfitSharing", ["profit_sharing", "bagi_hasil"]) || "").trim().toLowerCase() === "true";
 
         const rawCats = findValue("kategoriUsia", ["usia", "category", "kategori_usia", "target_usia"]) || "UMUM";
-        const newCatsArray = String(rawCats).split(",").map(c => c.trim().toUpperCase());
+        const validCats = ["KIDS", "DEWASA", "UMUM"];
+        let newCatsArray = String(rawCats).split(",")
+          .map(c => c.trim().toUpperCase())
+          .filter(c => validCats.includes(c));
+        
+        if (newCatsArray.length === 0) newCatsArray.push("UMUM");
+        
         const tipe = (findValue("tipe", ["type", "jenis"]) || "REGULAR").toUpperCase();
 
         // 1. Cek apakah sudah ada program dengan Nama + Tipe yang sama
@@ -93,6 +99,7 @@ export async function POST(request: NextRequest) {
         }
         results.success++;
       } catch (rowErr: any) {
+        console.error("IMPORT_ROW_ERROR:", rowErr);
         results.failed++;
         results.errors.push(`Gagal memproses "${item.nama || 'Tanpa Nama'}": ${rowErr.message}`);
       }

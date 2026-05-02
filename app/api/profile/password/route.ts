@@ -16,24 +16,41 @@ export async function PUT(request: NextRequest) {
     }
 
     const userId = (session.user as any).id;
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const isSiswa = (session.user as any).roleSlug === "siswa";
 
-    if (!user) return NextResponse.json({ error: "User tidak ditemukan" }, { status: 404 });
+    // 1. Ambil data sesuai tipe user
+    let dbUser: any = null;
+    if (isSiswa) {
+      dbUser = await prisma.siswa.findUnique({ where: { id: userId } });
+    } else {
+      dbUser = await prisma.user.findUnique({ where: { id: userId } });
+    }
 
-    // Verifikasi password lama
-    const isValid = await bcrypt.compare(oldPassword, user.password);
+    if (!dbUser) return NextResponse.json({ error: "Data pengguna tidak ditemukan" }, { status: 404 });
+
+    // 2. Verifikasi password lama
+    // Catatan: Jika password siswa null (baru diimpor), verifikasi dilewati atau dianggap benar jika input kosong? 
+    // Tapi biasanya password default sudah di-hash saat convert.
+    const isValid = await bcrypt.compare(oldPassword, dbUser.password);
     if (!isValid) {
       return NextResponse.json({ error: "Password lama salah" }, { status: 400 });
     }
 
-    // Hash password baru
+    // 3. Hash password baru
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update ke database
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedNewPassword }
-    });
+    // 4. Update ke database
+    if (isSiswa) {
+      await prisma.siswa.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword }
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedNewPassword }
+      });
+    }
 
     return NextResponse.json({ message: "Password berhasil diperbarui" });
   } catch (error) {

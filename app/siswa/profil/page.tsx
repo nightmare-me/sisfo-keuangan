@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { User, Mail, Phone, MapPin, Calendar, Shield, Save } from "lucide-react";
+import PasswordForm from "./PasswordForm";
 
 export default async function SiswaProfil() {
   const session = await auth();
@@ -77,30 +78,7 @@ export default async function SiswaProfil() {
             <p style={{ fontSize: 12, opacity: 0.5, marginTop: 20 }}>* Untuk perubahan data di atas, silakan hubungi Customer Care.</p>
           </div>
 
-          <div className="card">
-            <h3 style={{ fontSize: 18, fontWeight: 800, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Shield size={20} style={{ color: 'var(--brand-primary)' }} /> Keamanan Akun
-            </h3>
-            <form style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div className="form-group">
-                <label className="form-label">Password Saat Ini</label>
-                <input type="password" placeholder="••••••••" className="form-control" />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                <div className="form-group">
-                  <label className="form-label">Password Baru</label>
-                  <input type="password" placeholder="••••••••" className="form-control" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Konfirmasi Password Baru</label>
-                  <input type="password" placeholder="••••••••" className="form-control" />
-                </div>
-              </div>
-              <button type="button" className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: 10, gap: 8 }}>
-                <Save size={18} /> Simpan Password Baru
-              </button>
-            </form>
-          </div>
+          <PasswordForm />
         </div>
       </div>
     </div>

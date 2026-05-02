@@ -188,33 +188,6 @@ export default async function SiswaDashboard() {
             </div>
           </div>
 
-          {/* Quick Support Card - Updated: Abu Muda background, Yellow button */}
-          <div className="card" style={{ 
-            background: 'var(--surface-container-high)', 
-            color: 'var(--on-surface)', 
-            border: '1px solid var(--ghost-border)'
-          }}>
-            <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 12 }}>Butuh Bantuan?</h3>
-            <p style={{ fontSize: 13, opacity: 0.7, marginBottom: 20, lineHeight: '1.5', fontWeight: 500 }}>
-              Tim Customer Care kami siap membantu kendala belajar atau administrasi kamu.
-            </p>
-            <a 
-              href="https://wa.me/6281234567890" 
-              className="btn" 
-              style={{ 
-                background: '#FFCC00', 
-                color: '#1B1C1C', 
-                width: '100%', 
-                fontWeight: 700, 
-                border: 'none',
-                justifyContent: 'center',
-                padding: '12px',
-                boxShadow: '0 4px 12px rgba(255, 204, 0, 0.2)'
-              }}
-            >
-              Hubungi CS Sekarang
-            </a>
-          </div>
         </div>
       </div>
     </div>

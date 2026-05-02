@@ -2,13 +2,14 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Registration Embed Mode & System Configuration (v7.6) 🚀 (TERBARU!)
-*   **Seamless Registration Embed**: Inovasi akuisisi leads. Halaman pendaftaran kini mendukung mode embed (`?embed=true`) yang secara otomatis menyembunyikan elemen navigasi dan menyederhanakan UI agar dapat dipasang secara sempurna di dalam Iframe pada Landing Page (WordPress, Elementor, dll).
-*   **Dynamic Round-Robin CS System**: Inovasi pengelolaan layanan pelanggan. Admin kini dapat mengatur hingga banyak nomor WhatsApp Customer Care secara dinamis melalui dashboard. Sistem secara otomatis membagi beban chat siswa secara merata dan konsisten menggunakan algoritma Round-Robin berbasis ID.
-*   **System Configuration Dashboard**: Penambahan modul pengaturan sistem global di menu **Settings > Konfigurasi Sistem**. Admin kini memiliki kendali penuh atas variabel-variabel sistem yang sebelumnya *hardcoded* (seperti nomor WA), memastikan aplikasi siap berkembang tanpa perlu perubahan kode.
-*   **Student Self-Service Portal**: Peningkatan kemandirian siswa. Portal kini dilengkapi fitur **Ganti Password Mandiri** dengan validasi keamanan standar, memungkinkan siswa mengelola akun mereka tanpa bantuan admin.
-*   **UI Streamlining & Optimization**: Pembersihan antarmuka dashboard siswa dengan menghapus elemen bantuan yang redundan, menciptakan pengalaman pengguna yang lebih bersih dan fokus pada progres belajar.
-*   **Enterprise-Grade Type Safety**: Perbaikan menyeluruh pada struktur data API. Penggunaan **Strict Prisma Enums (TipeArsip)** menjamin integritas data 100% dan memastikan kelancaran deployment pada lingkungan produksi (Vercel).
+## 📢 Fitur Baru: Unified Financial Standard & Smart Sales Round-Robin (v8.0) 🚀 (TERBARU!)
+*   **Unified Payroll Cutoff (Standard 25th)**: Inovasi sinkronisasi keuangan total. Seluruh portal (Advertiser, Multimedia, CS, Pengajar) kini secara dinamis mengikuti **Cutoff Tanggal 25** (atau sesuai pengaturan Admin). Tidak ada lagi perbedaan rentang data antara laporan staff dan laporan keuangan pusat.
+*   **Smart Sales Round-Robin**: Evolusi sistem pembagian leads. Penugasan nomor WhatsApp kini tidak hanya bergantian, tapi juga **Cerdas**. Sistem secara otomatis mengecek status akun (Aktif/Tidak), tombol **isLeadActive** (ON/OFF), dan **Jam Shift** kerja CS sebelum memberikan nomor WA ke calon siswa.
+*   **Auto-Redirect to CS WhatsApp**: Peningkatan konversi pendaftaran. Setelah calon siswa mengisi formulir, sistem secara otomatis mengalihkan mereka ke WhatsApp CS yang ditugaskan (beserta pesan otomatis berisi Nama & Program), menciptakan koneksi instan antara Sales dan Calon Siswa.
+*   **Real-time Bonus Transparency**: Implementasi API Gaji Global yang terstandarisasi. Semua staff kini memiliki visibilitas 100% terhadap estimasi bonus mereka (RO, Omset, CPL, Live) yang dihitung secara *real-time* sesuai aturan terbaru.
+*   **Robust Date & Utility System**: Penguatan fondasi aplikasi dengan *safety checks* menyeluruh pada pemrosesan tanggal, mencegah *crash* pada UI saat menangani data yang tidak lengkap atau rusak.
+
+## 📢 Fitur Sebelumnya: Registration Embed Mode & System Configuration (v7.6) 🚀 
 
 ## 📢 Fitur Sebelumnya: Unified Teacher Portal 2.0 & Smart Receipt System (v7.0) 🎓 
 *   **Integrated Multi-Role Portal**: Transformasi Dashboard Pengajar menjadi pusat kendali mandiri. Pengajar kini dapat mengelola kelas, absensi, materi, sekaligus memantau riwayat keuangan dalam satu pintu.
@@ -53,4 +54,4 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 ---
 
 *Created with ❤️ by Antigravity (Powered by Google Deepmind) for Speaking Partner Premium Operations.*
-*Sistem v7.5 Aktif - Dynamic Round-Robin & Enhanced Student Experience. Selamat beristirahat, Pak Muis! ☕*
+*Sistem v8.0 Aktif - Unified Synchronization & Smart Round-Robin. Selamat beristirahat, Pak Muis! ☕*

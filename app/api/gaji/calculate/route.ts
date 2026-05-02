@@ -18,8 +18,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
     }
 
-    const dayStart = startOfMonth(new Date(tahun, bulan - 1));
-    const dayEnd = endOfMonth(new Date(tahun, bulan - 1));
+    // Ambil Config Cutoff dari Database
+    const configs = await prisma.financialConfig.findMany({
+      where: { key: "PAYROLL_CUTOFF_DAY" }
+    });
+    const cutoffDay = configs.find(c => c.key === "PAYROLL_CUTOFF_DAY")?.value || 25;
+
+    // Hitung Range Berdasarkan Cutoff (Contoh: 26 April - 25 Mei untuk Gaji Mei)
+    // Sesi bulan ini (Mei) dihitung dari tgl 26 bulan lalu (April) s/d tgl 25 bulan ini (Mei)
+    const dayStart = new Date(tahun, bulan - 2, cutoffDay + 1, 0, 0, 0);
+    const dayEnd = new Date(tahun, bulan - 1, cutoffDay, 23, 59, 59);
 
     // AUTO-FIX: Jika ada sesi yang statusnya masih DIJADWALKAN tapi sudah ada absensi, set ke SELESAI
     await prisma.sesiKelas.updateMany({

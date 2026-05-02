@@ -77,7 +77,16 @@ export default function GajiPage() {
   }, [filterBulan, filterTahun]);
   useEffect(()=>{
     if (canEdit) {
-      fetch("/api/users?role=PENGAJAR").then(r=>r.json()).then(d=>setPengajarList(d??[])).catch(()=>{});
+      fetch("/api/users?role=PENGAJAR").then(r=>r.json()).then(d=>{
+        const list = Array.isArray(d?.data) ? d.data : (Array.isArray(d) ? d : []);
+        if (list.length === 0) {
+          fetch("/api/users?role=TUTOR").then(r=>r.json()).then(d2 => {
+            setPengajarList(Array.isArray(d2?.data) ? d2.data : (Array.isArray(d2) ? d2 : []));
+          });
+        } else {
+          setPengajarList(list);
+        }
+      }).catch(()=>{});
       fetch("/api/kelas").then(r=>r.json()).then(d=>setKelasList(d??[])).catch(()=>{});
     }
   },[canEdit]);

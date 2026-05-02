@@ -21,6 +21,20 @@ export async function GET(request: NextRequest) {
     const dayStart = startOfMonth(new Date(tahun, bulan - 1));
     const dayEnd = endOfMonth(new Date(tahun, bulan - 1));
 
+    // AUTO-FIX: Jika ada sesi yang statusnya masih DIJADWALKAN tapi sudah ada absensi, set ke SELESAI
+    await prisma.sesiKelas.updateMany({
+      where: {
+        status: "DIJADWALKAN",
+        tanggal: { gte: dayStart, lte: dayEnd },
+        absensi: { some: {} },
+        kelas: {
+          pengajarId: pengajarId,
+          ...(kelasId && { id: kelasId })
+        }
+      },
+      data: { status: "SELESAI" }
+    });
+
     // Hitung sesi pengajar dari SesiKelas yang statusnya SELESAI
     const sessions = await prisma.sesiKelas.findMany({
       where: {

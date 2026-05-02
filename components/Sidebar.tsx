@@ -31,7 +31,8 @@ import {
   DollarSign,
   ChevronDown,
   Video,
-  BarChart2
+  BarChart2,
+  Settings
 } from "lucide-react";
 
 interface NavItem {
@@ -90,6 +91,7 @@ const navItems: NavGroup[] = [
     { href: "/logs", label: "Audit Log", icon: <History size={16} />, permission: "audit:view" },
     { href: "/admin/archive", label: "Backup & Arsip", icon: <Download size={16} />, permission: "archive:view" },
     { href: "/settings/wa", label: "Template WhatsApp", icon: <MessageCircle size={16} />, permission: "wa_template:view" },
+    { href: "/settings/system", label: "Konfigurasi Sistem", icon: <Settings size={16} />, permission: "settings:view" },
   ]},
 ];
 

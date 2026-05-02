@@ -111,10 +111,15 @@ export async function POST(request: NextRequest) {
   if (Array.isArray(body)) {
     const results = { success: 0, failed: 0, errors: [] as string[] };
     for (const item of body) {
-      const { name, email, password, roleSlug, teamType } = item;
+      let { name, email, password, roleSlug, teamType } = item;
       
-      if (!name || !email || !password || !roleSlug) {
-        results.failed++; results.errors.push(`${email || name}: data tidak lengkap (nama, email, password, dan role wajib diisi)`); continue;
+      // Jika password kosong, gunakan default 123456
+      if (!password || password.trim() === "") {
+        password = "123456";
+      }
+
+      if (!name || !email || !roleSlug) {
+        results.failed++; results.errors.push(`${email || name}: data tidak lengkap (nama, email, dan role wajib diisi)`); continue;
       }
 
       // Role Lookup yang lebih fleksibel (bisa Slug atau Nama)
@@ -181,10 +186,16 @@ export async function POST(request: NextRequest) {
 
   try {
     // Single create
-    const { name, namaPanggilan, noHp, email, password, roleId, teamType, secondaryRoles, shiftStart, shiftEnd, isLeadActive } = body;
-    if (!name || !email || !password || !roleId) {
-      return NextResponse.json({ error: "Semua field diperlukan" }, { status: 400 });
+    let { name, namaPanggilan, noHp, email, password, roleId, teamType, secondaryRoles, shiftStart, shiftEnd, isLeadActive } = body;
+    if (!name || !email || !roleId) {
+      return NextResponse.json({ error: "Nama, Email, dan Role wajib diisi" }, { status: 400 });
     }
+
+    // Default password jika kosong
+    if (!password || password.trim() === "") {
+      password = "123456";
+    }
+
     const exists = await prisma.user.findUnique({ where: { email } });
     if (exists) return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 });
 

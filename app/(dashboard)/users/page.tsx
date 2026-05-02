@@ -199,13 +199,13 @@ export default function UsersPage() {
 
   async function handleBulkSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true);
-    const valid = bulkRows.filter(r => r.name.trim() && r.email.trim() && r.password.trim());
+    const valid = bulkRows.filter(r => r.name.trim() && r.email.trim());
     if (valid.length === 0) {
       setSaving(false);
       setConfirmModal({
         show: true,
         title: "Data Tidak Valid",
-        message: "Tidak ada baris yang valid. Isi minimal nama, email, dan password.",
+        message: "Tidak ada baris yang valid. Isi minimal nama dan email.",
         type: "warning",
         onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
       });
@@ -655,10 +655,10 @@ export default function UsersPage() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label className="form-label" style={editUser ? {} : { color: "var(--danger)" }}>
-                      Password {editUser ? "(kosongkan jika tidak diubah)" : "*"}
+                    <label className="form-label">
+                      Password {editUser ? "(kosongkan jika tidak diubah)" : "(kosongkan untuk default: 123456)"}
                     </label>
-                    <input type="password" className="form-control" placeholder={editUser ? "Kosongkan jika tidak diubah" : "Minimal 6 karakter"} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} minLength={editUser ? 0 : 6} required={!editUser} />
+                    <input type="password" className="form-control" placeholder={editUser ? "Kosongkan jika tidak diubah" : "Default: 123456"} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} minLength={6} />
                   </div>
                   <div className="form-grid-2">
                     <div className="form-group">

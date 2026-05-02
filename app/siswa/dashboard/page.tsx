@@ -92,10 +92,10 @@ export default async function SiswaDashboard() {
   const avgGpa = gradedSesi > 0 ? (totalPoints / gradedSesi) : 0;
   const gpaLabel = avgGpa >= 3.5 ? "A" : avgGpa >= 3 ? "B" : avgGpa >= 2 ? "C" : avgGpa >= 1 ? "D" : gradedSesi > 0 ? "E" : "—";
 
-  // 3. Ambil Nomor Pusat dari Settings (sebagai cadangan)
-  const officeSetting = await prisma.systemSetting.findUnique({ where: { key: 'cs_sales_numbers' } });
+  // 3. Ambil Nomor Pusat dari Settings (Customer Care sebagai cadangan)
+  const officeSetting = await prisma.systemSetting.findUnique({ where: { key: 'cs_numbers' } });
   const officeNumbers = officeSetting?.value ? String(officeSetting.value).split(',') : [];
-  const defaultOfficeNumber = officeNumbers[0] || "6281234567890"; // Ganti dengan nomor kantor default jika setting kosong
+  const defaultOfficeNumber = officeNumbers[0] || "6281234567890"; // Nomor Customer Care Utama
 
   return (
     <div className="page-container">

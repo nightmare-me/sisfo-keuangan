@@ -20,7 +20,14 @@ export default function SystemSettingsPage() {
     try {
       const res = await fetch("/api/settings/system");
       const data = await res.json();
-      setSettings(data);
+      if (Array.isArray(data)) {
+        setSettings(data);
+      } else {
+        setSettings([]);
+        if (data.error) {
+          setMessage({ type: 'error', text: data.error });
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {

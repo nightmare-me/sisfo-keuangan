@@ -78,14 +78,14 @@ export async function POST(request: NextRequest) {
         };
 
         if (existing) {
-          // GABUNGKAN KATEGORI: Ambil kategori lama + tambahkan yang baru (tanpa duplikat)
-          const mergedCats = Array.from(new Set([...existing.kategoriUsia, ...newCatsArray])) as any[];
+          // GABUNGKAN KATEGORI
+          const mergedCats = Array.from(new Set([...(Array.isArray(existing.kategoriUsia) ? existing.kategoriUsia : [existing.kategoriUsia]), ...newCatsArray])) as any[];
           
           await prisma.program.update({
             where: { id: existing.id },
             data: {
               ...commonData,
-              kategoriUsia: mergedCats
+              kategoriUsia: { set: mergedCats } // Gunakan { set: ... } untuk array Prisma
             }
           });
         } else {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
             data: {
               nama: String(nama),
               ...commonData,
-              kategoriUsia: newCatsArray as any[]
+              kategoriUsia: { set: newCatsArray as any[] } // Gunakan { set: ... } untuk array Prisma
             }
           });
         }

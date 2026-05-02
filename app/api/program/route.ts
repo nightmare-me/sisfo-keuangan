@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         nama, 
         deskripsi, 
         tipe: tipe ?? "REGULAR", 
-        kategoriUsia: cats,
+        kategoriUsia: { set: cats },
         harga: Number(harga) || 0, 
         kategoriFee,
         feeClosing: Number(feeClosing) || 0,
@@ -110,6 +110,7 @@ export async function PUT(request: NextRequest) {
     if (data.kategoriUsia !== undefined) {
       if (typeof data.kategoriUsia === "string") data.kategoriUsia = data.kategoriUsia.split(",").map((c: string) => c.trim().toUpperCase());
       if (!Array.isArray(data.kategoriUsia)) data.kategoriUsia = ["UMUM"];
+      data.kategoriUsia = { set: data.kategoriUsia };
     }
 
     const program = await prisma.program.update({ where: { id }, data });

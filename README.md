@@ -2,12 +2,15 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Unified Financial Standard & Smart Sales Round-Robin (v8.0) 🚀 (TERBARU!)
-*   **Unified Payroll Cutoff (Standard 25th)**: Inovasi sinkronisasi keuangan total. Seluruh portal (Advertiser, Multimedia, CS, Pengajar) kini secara dinamis mengikuti **Cutoff Tanggal 25** (atau sesuai pengaturan Admin). Tidak ada lagi perbedaan rentang data antara laporan staff dan laporan keuangan pusat.
-*   **Smart Sales Round-Robin**: Evolusi sistem pembagian leads. Penugasan nomor WhatsApp kini tidak hanya bergantian, tapi juga **Cerdas**. Sistem secara otomatis mengecek status akun (Aktif/Tidak), tombol **isLeadActive** (ON/OFF), dan **Jam Shift** kerja CS sebelum memberikan nomor WA ke calon siswa.
-*   **Auto-Redirect to CS WhatsApp**: Peningkatan konversi pendaftaran. Setelah calon siswa mengisi formulir, sistem secara otomatis mengalihkan mereka ke WhatsApp CS yang ditugaskan (beserta pesan otomatis berisi Nama & Program), menciptakan koneksi instan antara Sales dan Calon Siswa.
-*   **Real-time Bonus Transparency**: Implementasi API Gaji Global yang terstandarisasi. Semua staff kini memiliki visibilitas 100% terhadap estimasi bonus mereka (RO, Omset, CPL, Live) yang dihitung secara *real-time* sesuai aturan terbaru.
-*   **Robust Date & Utility System**: Penguatan fondasi aplikasi dengan *safety checks* menyeluruh pada pemrosesan tanggal, mencegah *crash* pada UI saat menangani data yang tidak lengkap atau rusak.
+## 📢 Fitur Baru: Enhanced Teacher Portal, Secure Data Privacy & Grid Layout (v8.5) 🚀 (TERBARU!)
+*   **Secure CS Data Privacy**: Implementasi sistem filter data server-side yang ketat. User dengan role **CS** kini hanya dapat melihat data Lead, Transaksi, dan Statistik Performance milik mereka sendiri. Data rahasia perusahaan (omset global, laba bersih, dll) kini benar-benar tertutup rapat untuk staf non-admin.
+*   **Teacher Financial Hub 2.0**: Pembaruan visual pada portal pengajar dengan tema premium. Tombol **"Chat Admin Finance"** kini aktif dan terhubung secara dinamis ke pengaturan sistem, memudahkan pengajar berkonsultasi mengenai slip gaji mereka.
+*   **Compact System Config (2-Column Grid)**: Redesain halaman Pengaturan Sistem menjadi layout grid 2-kolom yang lebih efisien, memudahkan admin mengelola konfigurasi global (seperti nomor WA Finance, Cutoff, dll) tanpa banyak scrolling.
+*   **Dynamic Finance Contact**: Penambahan kunci `whatsapp_finance` di database, memungkinkan admin mengubah nomor kontak keuangan secara real-time melalui UI tanpa perlu menyentuh kode program.
+*   **Strict Access Control (RBAC)**: Pengetatan banner "Masuk Mode Manajemen" pada portal pengajar, yang kini hanya muncul untuk pimpinan (Admin, CEO, COO) dan SPV Akademik, menjaga fokus kerja tim kreatif dan talent.
+*   **Zero-Error CI/CD Build**: Optimasi tipe data TypeScript di seluruh modul (Refund, Lead, User) untuk memastikan proses build di Vercel berjalan 100% lancar tanpa hambatan teknis.
+
+## 📢 Fitur Sebelumnya: Unified Financial Standard & Smart Sales Round-Robin (v8.0) 🚀 
 
 ## 📢 Fitur Sebelumnya: Registration Embed Mode & System Configuration (v7.6) 🚀 
 

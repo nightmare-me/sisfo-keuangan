@@ -199,10 +199,9 @@ export async function GET() {
 
     // 5. Bonus Pimpinan & SPV (DARI PROFIT SILO)
     const whitelistBonus = ["CEO", "COO", "ASSISTANT CEO", "FINANCE", "SPV"];
-    const allRoles = (user.secondaryRoles || []) as string[];
     const matchedKeyword = whitelistBonus.find(w => 
       user.karyawanProfile?.posisi?.toUpperCase().includes(w) || 
-      allRoles.some(r => r.toUpperCase().includes(w))
+      allRoles.some((r: any) => (r as string).toUpperCase().includes(w))
     );
 
     if (matchedKeyword) {

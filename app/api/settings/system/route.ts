@@ -5,13 +5,7 @@ import { auth } from "@/lib/auth";
 export async function GET() {
   try {
     if (!(prisma as any).systemSetting) {
-      const keys = Object.keys(prisma).filter(k => !k.startsWith('_'));
-      console.error("CRITICAL_ERROR: prisma.systemSetting is undefined.");
-      console.error("Available models in current Prisma Client:", keys.join(", "));
-      return NextResponse.json({ 
-        error: "Sistem belum siap (Prisma Client Error)", 
-        available: keys
-      }, { status: 500 });
+      return NextResponse.json({ error: "Sistem belum siap (Prisma Client Error). Silakan restart server." }, { status: 500 });
     }
 
     const settings = await (prisma as any).systemSetting.findMany();

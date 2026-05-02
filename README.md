@@ -4,10 +4,10 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 
 ## 📢 Fitur Baru: Dynamic Round-Robin CS & Enhanced Student Portal (v7.5) 🎯 (TERBARU!)
 *   **Dynamic Round-Robin CS System**: Inovasi pengelolaan layanan pelanggan. Admin kini dapat mengatur hingga banyak nomor WhatsApp Customer Care secara dinamis melalui dashboard. Sistem secara otomatis membagi beban chat siswa secara merata dan konsisten menggunakan algoritma Round-Robin berbasis ID.
+*   **System Configuration Dashboard**: Penambahan modul pengaturan sistem global di menu **Settings > Konfigurasi Sistem**. Admin kini memiliki kendali penuh atas variabel-variabel sistem yang sebelumnya *hardcoded* (seperti nomor WA), memastikan aplikasi siap berkembang tanpa perlu perubahan kode.
 *   **Student Self-Service Portal**: Peningkatan kemandirian siswa. Portal kini dilengkapi fitur **Ganti Password Mandiri** dengan validasi keamanan standar, memungkinkan siswa mengelola akun mereka tanpa bantuan admin.
 *   **UI Streamlining & Optimization**: Pembersihan antarmuka dashboard siswa dengan menghapus elemen bantuan yang redundan, menciptakan pengalaman pengguna yang lebih bersih dan fokus pada progres belajar.
 *   **Enterprise-Grade Type Safety**: Perbaikan menyeluruh pada struktur data API. Penggunaan **Strict Prisma Enums (TipeArsip)** menjamin integritas data 100% dan memastikan kelancaran deployment pada lingkungan produksi (Vercel).
-*   **System Configuration Dashboard**: Penambahan modul pengaturan sistem global. Admin kini memiliki kendali penuh atas variabel-variabel sistem yang sebelumnya *hardcoded*, memastikan aplikasi siap berkembang tanpa perlu perubahan kode.
 
 ## 📢 Fitur Sebelumnya: Unified Teacher Portal 2.0 & Smart Receipt System (v7.0) 🎓 
 *   **Integrated Multi-Role Portal**: Transformasi Dashboard Pengajar menjadi pusat kendali mandiri. Pengajar kini dapat mengelola kelas, absensi, materi, sekaligus memantau riwayat keuangan dalam satu pintu.

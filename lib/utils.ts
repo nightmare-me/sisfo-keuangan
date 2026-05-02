@@ -10,14 +10,26 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function formatDate(date: Date | string, fmt = "dd MMM yyyy"): string {
-  const d = typeof date === "string" ? parseISO(date) : date;
-  return format(d, fmt, { locale: id });
+export function formatDate(date: Date | string | null | undefined, fmt = "dd MMM yyyy"): string {
+  if (!date) return "-";
+  try {
+    const d = typeof date === "string" ? parseISO(date) : date;
+    if (isNaN(d.getTime())) return "-";
+    return format(d, fmt, { locale: id });
+  } catch (e) {
+    return "-";
+  }
 }
 
-export function formatDateTime(date: Date | string): string {
-  const d = typeof date === "string" ? parseISO(date) : date;
-  return format(d, "dd MMM yyyy HH:mm", { locale: id });
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (!date) return "-";
+  try {
+    const d = typeof date === "string" ? parseISO(date) : date;
+    if (isNaN(d.getTime())) return "-";
+    return format(d, "dd MMM yyyy HH:mm", { locale: id });
+  } catch (e) {
+    return "-";
+  }
 }
 
 export function getDateRange(type: "today" | "week" | "month" | "custom", from?: string, to?: string) {

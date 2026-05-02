@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const programs = await prisma.program.findMany({
       where: { aktif: true },
-      select: { id: true, nama: true, tipe: true, harga: true, deskripsi: true },
+      select: { id: true, nama: true, tipe: true, harga: true, deskripsi: true, kategoriUsia: true },
       orderBy: { nama: "asc" },
     });
     return NextResponse.json(programs);

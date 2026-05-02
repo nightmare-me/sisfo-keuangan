@@ -32,6 +32,7 @@ function RegisterContent() {
     whatsapp: "",
     email: "",
     programId: "",
+    kategoriUsia: "DEWASA",
     preferensiJadwal: "",
     isRO: teamParam === "RO",
   });
@@ -184,6 +185,33 @@ function RegisterContent() {
             </div>
 
             <div className="form-group">
+              <label><Sparkles size={14} style={{ marginRight: 6 }} /> Kategori Peserta <span className="req">*</span></label>
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                {["DEWASA", "KIDS"].map((cat) => (
+                  <div 
+                    key={cat}
+                    onClick={() => setForm({ ...form, kategoriUsia: cat, programId: "" })}
+                    style={{ 
+                      flex: 1, 
+                      padding: '12px', 
+                      borderRadius: '12px', 
+                      textAlign: 'center', 
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      transition: 'all 0.2s',
+                      background: form.kategoriUsia === cat ? 'var(--primary)' : 'var(--surface-container-low)',
+                      color: form.kategoriUsia === cat ? 'white' : 'var(--on-surface)',
+                      border: form.kategoriUsia === cat ? 'none' : '1px solid var(--ghost-border)'
+                    }}
+                  >
+                    {cat === "DEWASA" ? "🧑 DEWASA" : "👶 KIDS"}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
               <label style={{ marginBottom: 12 }}><Sparkles size={14} style={{ marginRight: 6 }} /> Pilih Program Belajarmu <span className="req">*</span></label>
               <select 
                 className="form-control" 
@@ -193,11 +221,13 @@ function RegisterContent() {
                 onChange={(e) => setForm({ ...form, programId: e.target.value })}
               >
                 <option value="">-- Pilih Program --</option>
-                {programs.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nama} - {formatCurrency(p.harga)}
-                  </option>
-                ))}
+                {programs
+                  .filter(p => p.kategoriUsia?.includes(form.kategoriUsia) || p.kategoriUsia?.includes("UMUM"))
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nama} - {formatCurrency(p.harga)}
+                    </option>
+                  ))}
               </select>
             </div>
 

@@ -323,6 +323,7 @@ model Lead {
   csId             String?
   talentId         String?
   keterangan       String?
+  kategoriUsia     KategoriUsia @default(DEWASA)
   tanggalLead      DateTime?
   tanggalClosing   DateTime?
   sumber           String?

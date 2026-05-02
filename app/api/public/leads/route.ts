@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nama, whatsapp, email, preferensiJadwal, programId, csId, isRO, sumber, talentId, tanggalLead } = body;
+    const { nama, whatsapp, email, preferensiJadwal, programId, csId, isRO, sumber, talentId, tanggalLead, kategoriUsia } = body;
 
     if (!nama || !whatsapp) {
       return NextResponse.json({ error: "Nama dan WhatsApp wajib diisi" }, { status: 400 });
@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
         talentId: talentId || null,
         tanggalLead: (tanggalLead && !isNaN(new Date(tanggalLead).getTime())) ? new Date(tanggalLead) : new Date(),
         sumber: sumber || null,
+        kategoriUsia: kategoriUsia || "DEWASA",
       },
     });
 

@@ -96,6 +96,7 @@ export default function CRMPage() {
     tanggalLead: new Date().toLocaleDateString('sv'),
     sumber: "MANUAL",
     talentId: "",
+    kategoriUsia: "DEWASA",
   });
   const [programs, setPrograms] = useState<any[]>([]);
   const [talentList, setTalentList] = useState<any[]>([]);
@@ -224,9 +225,9 @@ export default function CRMPage() {
           status: updatedLead.status,
           isRO: updatedLead.isRO,
           sumber: updatedLead.sumber,
-          tanggalLead: formatToDateString(updatedLead.tanggalLead),
           tanggalClosing: formatToDateString(updatedLead.tanggalClosing),
           talentId: updatedLead.talentId || null,
+          kategoriUsia: updatedLead.kategoriUsia,
         })
       });
       fetchData();
@@ -290,6 +291,7 @@ export default function CRMPage() {
         isRO: newLeadForm.isRO,
         sumber: newLeadForm.sumber,
         talentId: newLeadForm.talentId || null,
+        kategoriUsia: newLeadForm.kategoriUsia,
         csId: role === "CS" ? (session?.user as any)?.id : undefined 
       }),
     });
@@ -790,6 +792,14 @@ export default function CRMPage() {
                         ))}
                       </select>
                    </div>
+                    <div className="form-group">
+                       <label className="form-label required">Kategori Usia</label>
+                       <select className="form-control" value={newLeadForm.kategoriUsia} onChange={(e) => setNewLeadForm({ ...newLeadForm, kategoriUsia: e.target.value })} required>
+                         <option value="DEWASA">DEWASA</option>
+                         <option value="KIDS">KIDS</option>
+                         <option value="UMUM">UMUM</option>
+                       </select>
+                    </div>
                     <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: -10, marginBottom: 15 }}>
                        <input 
                          type="checkbox" 
@@ -1147,6 +1157,18 @@ export default function CRMPage() {
                   >
                     <option value="">Pilih Program</option>
                     {programs.map(p => <option key={p.id} value={p.id}>{p.nama}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Kategori Usia</label>
+                  <select 
+                    className="form-control"
+                    value={selectedEditLead.kategoriUsia || "DEWASA"}
+                    onChange={(e) => setSelectedEditLead({ ...selectedEditLead, kategoriUsia: e.target.value })}
+                  >
+                    <option value="DEWASA">DEWASA</option>
+                    <option value="KIDS">KIDS</option>
+                    <option value="UMUM">UMUM</option>
                   </select>
                 </div>
                 <div className="form-group">

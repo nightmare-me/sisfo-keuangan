@@ -115,7 +115,7 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { id, status, csId, talentId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId, isRO, tanggalLead, tanggalClosing, sumber } = body;
+  const { id, status, csId, talentId, keterangan, incrementFollowUp, setFollowUp, nama, whatsapp, programId, isRO, tanggalLead, tanggalClosing, sumber, kategoriUsia } = body;
 
   const data: any = {};
   if (status) data.status = status;
@@ -129,6 +129,7 @@ export async function PUT(request: NextRequest) {
   if (programId !== undefined) data.programId = programId === "" ? null : programId;
   if (tanggalLead !== undefined) data.tanggalLead = tanggalLead ? new Date(tanggalLead) : null;
   if (tanggalClosing !== undefined) data.tanggalClosing = tanggalClosing ? new Date(tanggalClosing) : null;
+  if (kategoriUsia) data.kategoriUsia = kategoriUsia;
   
   if (incrementFollowUp) data.followUpCount = { increment: 1 };
   if (setFollowUp !== undefined) data.followUpCount = setFollowUp;

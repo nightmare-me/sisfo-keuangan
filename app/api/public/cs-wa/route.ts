@@ -23,22 +23,59 @@ export async function GET(request: NextRequest) {
     const numbers = numbersSetting.value.split(",").map((n: string) => n.trim());
     if (numbers.length === 0) return NextResponse.json({ error: "Daftar nomor kosong" }, { status: 404 });
 
-    // 2. Ambil Index Terakhir
+    // 2. SMART FILTERING: Cek status ON/OFF & Shift di Database
+    // Kita cari User yang noHp-nya ada di daftar
+    const availableUsers = await prisma.user.findMany({
+      where: {
+        noHp: { in: numbers },
+        aktif: true,
+        isLeadActive: true,
+      },
+      select: { noHp: true, shiftStart: true, shiftEnd: true }
+    });
+
+    // Filter berdasarkan Jam Shift (WIB)
+    const currentTimeStr = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Jakarta',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(new Date());
+
+    const readyNumbers = numbers.filter(num => {
+      const user = availableUsers.find(u => u.noHp === num);
+      if (!user) return false; // Jika nomor tidak terdaftar di User, skip
+
+      const start = user.shiftStart || "00:00";
+      const end = user.shiftEnd || "23:59";
+      
+      if (start <= end) {
+        return currentTimeStr >= start && currentTimeStr <= end;
+      } else {
+        // Shift malam (melewati tengah malam)
+        return currentTimeStr >= start || currentTimeStr <= end;
+      }
+    });
+
+    // Jika tidak ada yang ready, fallback ke nomor pertama di config agar tidak mati total
+    const finalNumbers = readyNumbers.length > 0 ? readyNumbers : [numbers[0]];
+
+    // 3. Ambil Index Terakhir & Hitung Index Berikutnya
     let lastIndexSetting = settings.find((s: any) => s.key === indexKey);
     let lastIndex = lastIndexSetting ? parseInt(lastIndexSetting.value) : -1;
 
-    // 3. Hitung Index Berikutnya (Round Robin)
-    const nextIndex = (lastIndex + 1) % numbers.length;
-    const targetNumber = numbers[nextIndex];
+    const nextIndex = (lastIndex + 1) % finalNumbers.length;
+    const targetNumber = finalNumbers[nextIndex];
 
-    // 4. Update Index di Database
+    // 4. Update Index di Database (Gunakan index global terhadap daftar asli atau simpan saja)
+    // Di sini kita simpan index relatif terhadap list yang tersedia saat ini
     if (!lastIndexSetting) {
       await (prisma as any).systemSetting.create({
         data: {
           key: indexKey,
           value: String(nextIndex),
-          label: `Last used index for ${key}`,
-          description: "Internal use for Round Robin logic"
+          label: `Last index for ${key}`,
+          description: "Internal use"
         }
       });
     } else {

@@ -92,6 +92,11 @@ export default async function SiswaDashboard() {
   const avgGpa = gradedSesi > 0 ? (totalPoints / gradedSesi) : 0;
   const gpaLabel = avgGpa >= 3.5 ? "A" : avgGpa >= 3 ? "B" : avgGpa >= 2 ? "C" : avgGpa >= 1 ? "D" : gradedSesi > 0 ? "E" : "—";
 
+  // 3. Ambil Nomor Pusat dari Settings (sebagai cadangan)
+  const officeSetting = await prisma.systemSetting.findUnique({ where: { key: 'cs_sales_numbers' } });
+  const officeNumbers = officeSetting?.value ? String(officeSetting.value).split(',') : [];
+  const defaultOfficeNumber = officeNumbers[0] || "6281234567890"; // Ganti dengan nomor kantor default jika setting kosong
+
   return (
     <div className="page-container">
       {/* Header Section */}
@@ -117,27 +122,27 @@ export default async function SiswaDashboard() {
                 <BookOpen size={48} style={{ opacity: 0.2, marginBottom: 16 }} />
                 <p style={{ opacity: 0.6, marginBottom: 24 }}>Kamu belum memiliki kelas aktif saat ini.</p>
                 
-                {assignedCS ? (
+                { (assignedCS && assignedCS.noHp) || defaultOfficeNumber ? (
                   <div style={{ maxWidth: 400, margin: '0 auto', padding: '24px', background: 'var(--surface-container-high)', borderRadius: 20, border: '1px solid var(--ghost-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, textAlign: 'left' }}>
                       <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-                        {assignedCS.nama?.charAt(0)}
+                        {assignedCS?.nama?.charAt(0) || 'A'}
                       </div>
                       <div>
-                        <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>CS Penanggung Jawab:</p>
-                        <p style={{ fontWeight: 800, margin: 0 }}>{assignedCS.nama}</p>
+                        <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>{assignedCS?.noHp ? 'CS Penanggung Jawab:' : 'Admin Pusat:'}</p>
+                        <p style={{ fontWeight: 800, margin: 0 }}>{assignedCS?.noHp ? assignedCS.nama : 'Support Siswa'}</p>
                       </div>
                     </div>
                     <p style={{ fontSize: 13, textAlign: 'left', marginBottom: 20, lineHeight: 1.5 }}>
-                      Sudah mendaftar tapi kelas belum muncul? Silakan hubungi CS kamu untuk konfirmasi jadwal.
+                      Sudah mendaftar tapi kelas belum muncul? Silakan hubungi admin untuk konfirmasi jadwal belajar kamu.
                     </p>
                     <a 
-                      href={`https://wa.me/${assignedCS.noHp?.replace(/\D/g, '')}?text=Halo%20${assignedCS.nama},%20saya%20${siswa.nama}.%20Saya%20sudah%20mendaftar%20tapi%20belum%20dimasukkan%20ke%20kelas%20aktif%20di%20portal.%20Mohon%20bantuannya%20untuk%20cek%20jadwal%20saya.`}
+                      href={`https://wa.me/${(assignedCS?.noHp || defaultOfficeNumber).replace(/\D/g, '')}?text=${encodeURIComponent(`Halo ${assignedCS?.nama || 'Admin'}, saya ${siswa.nama}. Saya sudah mendaftar tapi belum dimasukkan ke kelas aktif di portal. Mohon bantuannya untuk cek jadwal saya.`)}`}
                       target="_blank"
                       className="btn btn-primary"
                       style={{ width: '100%', justifyContent: 'center', borderRadius: 12, padding: '12px' }}
                     >
-                      <MessageCircle size={18} /> Chat {assignedCS.nama}
+                      <MessageCircle size={18} /> Chat {assignedCS?.noHp ? assignedCS.nama : 'Admin Pusat'}
                     </a>
                   </div>
                 ) : (

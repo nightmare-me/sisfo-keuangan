@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       count: summary._count,
       leads: totalLeads,
       avgCpl,
+      totalFee: summary._sum.fee ?? 0,
     },
     byPlatform: combinedByPlatform,
   });

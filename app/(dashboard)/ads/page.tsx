@@ -37,7 +37,7 @@ export default function AdsPage() {
   const [data, setData] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [summary, setSummary] = useState({ total:0, count:0, leads:0, avgCpl:0 });
+  const [summary, setSummary] = useState({ total:0, count:0, leads:0, avgCpl:0, totalFee: 0 });
   const [byPlatform, setByPlatform] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [csvLoading, setCsvLoading] = useState(false);
@@ -53,7 +53,40 @@ export default function AdsPage() {
   const [limit, setLimit] = useState(50);
   const [total, setTotal] = useState(0);
 
+  // FUNGSI UNTUK MENGHITUNG DEFAULT CUTOFF (SAMA DENGAN ADMIN)
+  async function initDefaultFilter() {
+    try {
+      const res = await fetch("/api/settings/financial");
+      const configs = await res.json();
+      const cutoffDay = configs.find((c: any) => c.key === "PAYROLL_CUTOFF_DAY")?.value || 25;
+      
+      const now = new Date();
+      const jktDay = now.getDate();
+      const jktMonth = now.getMonth();
+      const jktYear = now.getFullYear();
+
+      let startDate: string, endDate: string;
+
+      if (jktDay >= cutoffDay) {
+        startDate = new Date(jktYear, jktMonth, cutoffDay).toISOString().slice(0, 10);
+        endDate = new Date(jktYear, jktMonth + 1, cutoffDay - 1).toISOString().slice(0, 10);
+      } else {
+        startDate = new Date(jktYear, jktMonth - 1, cutoffDay).toISOString().slice(0, 10);
+        endDate = new Date(jktYear, jktMonth, cutoffDay - 1).toISOString().slice(0, 10);
+      }
+
+      setFilter(prev => ({ ...prev, from: startDate, to: endDate }));
+    } catch (e) {
+      console.error("Gagal mengambil config:", e);
+    }
+  }
+
+  useEffect(() => {
+    initDefaultFilter();
+  }, []);
+
   function fetchData() {
+    if (!filter.from || !filter.to) return; // Tunggu filter diinisialisasi
     const p = new URLSearchParams({
       page: String(page),
       limit: String(limit)
@@ -318,6 +351,12 @@ export default function AdsPage() {
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 64 }}>
         {/* KPI Grid - Top of Content */}
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+           <Calendar size={14} style={{ color: 'var(--primary)' }} />
+           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>
+              Periode Gaji: <span style={{ color: 'var(--on-surface)' }}>{formatDate(filter.from, "dd MMM")} - {formatDate(filter.to, "dd MMM yyyy")}</span>
+           </span>
+        </div>
         <div className="kpi-grid" style={{ marginBottom: 32 }}>
           <div className="kpi-card" style={{ "--kpi-color": "var(--warning)", "--kpi-bg": "var(--warning-bg)" } as any}>
             <div className="kpi-icon" style={{ color: "var(--warning)" }}><TrendingUp size={24} /></div>
@@ -334,10 +373,10 @@ export default function AdsPage() {
             <div className="kpi-label">Avg CPL</div>
             <div className="kpi-value">{formatCurrency(summary.avgCpl)}</div>
           </div>
-          <div className="kpi-card" style={{ "--kpi-color": "var(--info)", "--kpi-bg": "var(--info-bg)" } as any}>
-            <div className="kpi-icon" style={{ color: "var(--info)" }}><Layers size={24} /></div>
-            <div className="kpi-label">Jumlah Input</div>
-            <div className="kpi-value">{summary.count} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-muted)' }}>records</span></div>
+          <div className="kpi-card" style={{ "--kpi-color": "#8b5cf6", "--kpi-bg": "#8b5cf615" } as any}>
+            <div className="kpi-icon" style={{ color: "#8b5cf6" }}><Plus size={24} /></div>
+            <div className="kpi-label">Estimasi Bonus</div>
+            <div className="kpi-value" style={{ color: "#8b5cf6" }}>{formatCurrency(summary.totalFee)}</div>
           </div>
         </div>
         {/* Summary Breakdown & Chart */}

@@ -103,8 +103,8 @@ export async function GET(request: NextRequest) {
       prisma.pemasukan.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { hargaFinal: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: startDate, lte: endDate } }, _sum: { jumlah: true } }),
       prisma.pengeluaran.aggregate({ where: { tanggal: { gte: prevStartDate, lte: prevEndDate } }, _sum: { jumlah: true } }),
-      prisma.marketingAd.aggregate({ where: adsWhereIni, _sum: { spent: true } }),
-      prisma.marketingAd.aggregate({ where: adsWhereLalu, _sum: { spent: true } }),
+      prisma.marketingAd.aggregate({ where: adsWhereIni, _sum: { spent: true, leads: true } }),
+      prisma.marketingAd.aggregate({ where: adsWhereLalu, _sum: { spent: true, leads: true } }),
       prisma.refund.aggregate({ where: { status: "APPROVED", pemasukan: { tanggal: { gte: startDate, lte: endDate } } }, _sum: { jumlah: true } }),
       prisma.siswa.count({ where: { status: "AKTIF" } })
     ]);

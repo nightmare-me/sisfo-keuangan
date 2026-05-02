@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { startOfMonth, endOfMonth } from "date-fns";
-import { calculateAdvFee, AdvCategory } from "@/lib/payroll";
+import { calculateAdvFee, AdvCategory, calculateBonusTalent } from "@/lib/payroll";
 
 export async function GET() {
   const session = await getServerSession(authOptions);

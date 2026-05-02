@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
           where: { 
             aktif: true,
             role: { 
-              slug: { in: ['multimedia', 'spv_multimedia', 'talent'] } 
+              slug: { in: ['multimedia', 'spv_multimedia', 'talent', 'pengajar', 'tutor'] } 
             }
           },
           include: { role: true },

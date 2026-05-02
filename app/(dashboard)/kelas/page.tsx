@@ -88,7 +88,18 @@ export default function KelasPage() {
   useEffect(() => { fetchData(); }, [filterStatus, filterTipe, filterBulan, filterProgram]);
   useEffect(() => {
     fetch("/api/program").then(r => r.json()).then(d => setPrograms(d ?? [])).catch(() => {});
-    fetch("/api/users?role=PENGAJAR").then(r => r.json()).then(d => setPengajarList(d ?? [])).catch(() => {});
+    // Fetch teachers (trying both 'pengajar' and 'tutor' slugs if needed, or just fetching all and filtering client-side)
+    fetch("/api/users?role=PENGAJAR").then(r => r.json()).then(d => {
+      const list = Array.isArray(d?.data) ? d.data : (Array.isArray(d) ? d : []);
+      if (list.length === 0) {
+        // Fallback search for 'tutor' if 'pengajar' is empty
+        fetch("/api/users?role=TUTOR").then(r => r.json()).then(d2 => {
+          setPengajarList(Array.isArray(d2?.data) ? d2.data : (Array.isArray(d2) ? d2 : []));
+        });
+      } else {
+        setPengajarList(list);
+      }
+    }).catch(() => {});
   }, []);
 
   // ── Load detail kelas ──
@@ -546,7 +557,7 @@ export default function KelasPage() {
                 <input
                   type="number"
                   min={pendaftaranList.length}
-                  max={100}
+                  max={10000}
                   defaultValue={selectedKelas.kapasitas}
                   style={{ width: 80, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-default)", background: "var(--bg-input)", color: "var(--text-primary)", fontSize: 14, fontWeight: 700 }}
                   onBlur={async e => {
@@ -758,7 +769,7 @@ export default function KelasPage() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">Kapasitas Siswa (maks)</label>
-                    <input type="number" className="form-control" value={form.kapasitas} onChange={e => setForm(f => ({ ...f, kapasitas: e.target.value }))} min={1} max={100} />
+                    <input type="number" className="form-control" value={form.kapasitas} onChange={e => setForm(f => ({ ...f, kapasitas: e.target.value }))} min={1} max={10000} />
                   </div>
                 </div>
                 <div className="form-grid-2">

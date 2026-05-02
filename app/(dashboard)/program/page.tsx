@@ -651,15 +651,15 @@ export default function ProgramPage() {
                   Gunakan format CSV berikut untuk mengimpor daftar program masal ke dalam katalog.
                 </p>
                 <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 10, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)', whiteSpace: 'nowrap' }}>
-                  nama,deskripsi,tipe,harga,kategoriFee,durasi,feeClosing,feeClosingRO,isProfitSharing
+                  nama,deskripsi,tipe,harga,kategoriFee,durasi,feeClosing,feeClosingRO,isProfitSharing,kategoriUsia
                 </div>
                 <button 
                   className="btn btn-sm" 
                   style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
                   onClick={() => {
-                    const csvContent = "nama,deskripsi,tipe,harga,kategoriFee,durasi,feeClosing,feeClosingRO,isProfitSharing\n" +
-                                     "Speaking Regular,Program speaking dasar,REGULAR,250000,REG_1B,1_BULAN,25000,15000,false\n" +
-                                     "Private VIP 10 Sesi,Program privat intensif,PRIVATE,1500000,PRIVATE_VIP,LAINNYA,100000,50000,true";
+                    const csvContent = "nama,deskripsi,tipe,harga,kategoriFee,durasi,feeClosing,feeClosingRO,isProfitSharing,kategoriUsia\n" +
+                                     "Speaking Regular,Program speaking dasar,REGULAR,250000,REG_1B,1_BULAN,25000,15000,false,DEWASA\n" +
+                                     "Private VIP 10 Sesi,Program privat intensif,PRIVATE,1500000,PRIVATE_VIP,LAINNYA,100000,50000,true,UMUM";
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");
@@ -718,11 +718,24 @@ export default function ProgramPage() {
                                     body: JSON.stringify(jsonData)
                                   });
                                   if (res.ok) {
+                                    const resData = await res.json();
                                     setConfirmModal({
                                       show: true,
-                                      title: "Import Berhasil",
-                                      message: "Berhasil mengimpor katalog program ke sistem!",
-                                      type: "success" as any,
+                                      title: resData.failed > 0 ? "Import Selesai (Ada Kendala)" : "Import Berhasil",
+                                      message: (
+                                        <div>
+                                          <p>✅ Sukses: <strong>{resData.count}</strong> baris</p>
+                                          {resData.failed > 0 && (
+                                            <>
+                                              <p>❌ Gagal: <strong>{resData.failed}</strong> baris</p>
+                                              <div style={{ maxHeight: 150, overflowY: 'auto', background: 'var(--surface-container-low)', padding: 10, borderRadius: 8, fontSize: 11, marginTop: 10, textAlign: 'left' }}>
+                                                {resData.errors.map((e: string, i: number) => <div key={i} style={{ color: 'var(--danger)', marginBottom: 4 }}>• {e}</div>)}
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                      ) as any,
+                                      type: resData.failed > 0 ? "warning" : "success",
                                       onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
                                     });
                                     fetchData();

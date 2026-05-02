@@ -109,8 +109,32 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(lead, { status: 201 });
+    // GENERATE WA REDIRECT URL
+    let waUrl = null;
+    let assignedCs = null;
+
+    if (finalCsId) {
+      assignedCs = await prisma.user.findUnique({
+        where: { id: finalCsId },
+        select: { name: true, noHp: true }
+      });
+
+      if (assignedCs?.noHp) {
+        const program = programId ? await prisma.program.findUnique({ where: { id: programId }, select: { nama: true } }) : null;
+        const programName = program?.nama || "Program Belajar";
+        const message = `Halo Admin ${assignedCs.name}, saya sudah mendaftar atas nama ${nama} untuk ${programName}. Mohon info selanjutnya.`;
+        waUrl = `https://wa.me/${assignedCs.noHp}?text=${encodeURIComponent(message)}`;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      lead,
+      assignedCs: assignedCs ? { name: assignedCs.name } : null,
+      waUrl: waUrl
+    }, { status: 201 });
   } catch (error: any) {
+    console.error("LEAD_POST_ERROR:", error);
     return NextResponse.json({ error: "Gagal memproses pendaftaran", details: error.message }, { status: 500 });
   }
 }

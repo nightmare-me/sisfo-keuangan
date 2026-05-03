@@ -23,10 +23,11 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Auto-sync kategoriUsia Siswa berdasarkan Program yang dipilih
     if (programId && siswaId) {
       const prog = await prisma.program.findUnique({ where: { id: programId } });
-      if (prog && prog.kategoriUsia !== "UMUM") {
+      const targetCat = prog?.kategoriUsia?.[0] || "UMUM";
+      if (prog && targetCat !== "UMUM") {
         await prisma.siswa.updateMany({
-          where: { id: siswaId, kategoriUsia: { not: prog.kategoriUsia } },
-          data: { kategoriUsia: prog.kategoriUsia },
+          where: { id: siswaId, kategoriUsia: { not: targetCat as any } },
+          data: { kategoriUsia: targetCat as any },
         });
       }
     }

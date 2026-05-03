@@ -113,8 +113,9 @@ export async function POST(request: NextRequest) {
 
   if (programId) {
     const prog = await prisma.program.findUnique({ where: { id: programId } });
-    if (prog && prog.kategoriUsia !== "UMUM") {
-      programKategori = prog.kategoriUsia;
+    const firstCat = prog?.kategoriUsia?.[0] || "UMUM";
+    if (prog && firstCat !== "UMUM") {
+      programKategori = firstCat;
     }
   }
 

@@ -41,17 +41,13 @@ export default function StaffLivePage() {
   const canInput = SUPER_ROLES.includes(role) || allRoles.includes("spv_multimedia") || allRoles.includes("multimedia");
 
   useEffect(() => {
-    fetch("/api/users")
+    // Ambil data user dengan filter role talent agar tidak terkena limit pagination global
+    fetch("/api/users?role=talent&limit=200")
       .then(r => r.json())
       .then(d => {
         const users = Array.isArray(d) ? d : (d.data || []);
-        // Filter: Semua yang punya jabatan/role Talent
-        setTalents(users.filter((u: any) => {
-          const pos = (u.karyawanProfile?.posisi || "").toUpperCase();
-          const roles = [u.role?.slug, ...(u.secondaryRoles || [])].map(r => String(r).toLowerCase());
-          const isTalent = pos.includes("TALENT") || roles.includes("talent");
-          return isTalent && u.aktif !== false;
-        }));
+        // Tampilkan semua yang aktif
+        setTalents(users.filter((u: any) => u.aktif !== false));
       })
       .catch(() => setTalents([]));
   }, []);

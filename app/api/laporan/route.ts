@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
         targetKey = "RO";
       } else if (item.program?.isProfitSharing) {
         targetKey = "TOEFL";
-      } else if (progName.includes("LIVE") || note.includes("LIVE")) {
+      } else if (progName.includes("LIVE") || note.includes("LIVE") || progName.includes("TALENT") || note.includes("TALENT")) {
         targetKey = "LIVE";
       } else if (progName.includes("SOSMED") || note.includes("SOSMED") || note.includes("VIRAL")) {
         targetKey = "SOSMED";

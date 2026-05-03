@@ -156,13 +156,15 @@ export async function POST(request: NextRequest) {
   }
 
   // Single create
-  const { platform, jumlah, keterangan, tanggal, leads: leadsRaw } = body;
+  const { platform, jumlah, keterangan, tanggal, leads: leadsRaw, advId: providedAdvId } = body;
   const spent = parseFloat(jumlah);
   const leads = parseInt(leadsRaw || "0") || 0;
   const cpl = leads > 0 ? spent / leads : 0;
 
-  const user = await prisma.user.findUnique({ where: { id: sessionUserId } });
-  const teamTypeRaw = (user as any)?.teamType;
+  // Gunakan advId yang dikirim, atau default ke pembuat
+  const targetAdvId = providedAdvId || sessionUserId;
+  const targetUser = await prisma.user.findUnique({ where: { id: targetAdvId } });
+  const teamTypeRaw = (targetUser as any)?.teamType;
   const firstTeam = Array.isArray(teamTypeRaw) ? teamTypeRaw[0] : (teamTypeRaw as string);
   const fee = calculateAdvFee((firstTeam || "ADV_REGULAR") as AdvCategory, cpl, leads);
 
@@ -175,7 +177,7 @@ export async function POST(request: NextRequest) {
       cpl,
       fee,
       keterangan,
-      advId: sessionUserId,
+      advId: targetAdvId,
       dibuatOleh: sessionUserId,
     },
   });
@@ -188,7 +190,7 @@ export async function PUT(request: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, platform, jumlah, keterangan, tanggal, leads: leadsRaw } = body;
+  const { id, platform, jumlah, keterangan, tanggal, leads: leadsRaw, advId: providedAdvId } = body;
 
   if (!id) return NextResponse.json({ error: "ID diperlukan untuk update" }, { status: 400 });
 
@@ -196,11 +198,13 @@ export async function PUT(request: NextRequest) {
   const leads = parseInt(leadsRaw || "0") || 0;
   const cpl = leads > 0 ? spent / leads : 0;
 
-  // Ambil data lama untuk cek teamType (perlu untuk hitung fee)
-  const existing = await prisma.marketingAd.findUnique({ where: { id }, include: { adv: true } });
+  // Jika advId diganti, ambil teamType user baru tersebut
+  const existing = await prisma.marketingAd.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Data tidak ditemukan" }, { status: 404 });
 
-  const teamTypeRaw = (existing.adv as any)?.teamType;
+  const targetAdvId = providedAdvId || existing.advId || (session.user as any).id;
+  const targetUser = await prisma.user.findUnique({ where: { id: targetAdvId } });
+  const teamTypeRaw = (targetUser as any)?.teamType;
   const firstTeam = Array.isArray(teamTypeRaw) ? teamTypeRaw[0] : (teamTypeRaw as string);
   const fee = calculateAdvFee((firstTeam || "ADV_REGULAR") as AdvCategory, cpl, leads);
 
@@ -214,6 +218,7 @@ export async function PUT(request: NextRequest) {
       cpl,
       fee,
       keterangan,
+      advId: targetAdvId,
     },
   });
 

@@ -147,7 +147,7 @@ export default function AdsPage() {
     setSaving(false);
     if (res.ok) {
       setShowModal(false);
-      setForm({ platform: "META", jumlah: "", keterangan: "", leads: "", tanggal: new Date().toISOString().slice(0, 10) });
+      setForm({ platform: "META", jumlah: "", keterangan: "", leads: "", tanggal: new Date().toISOString().slice(0, 10), advId: "" });
       setIsEditing(false);
       setEditId(null);
       fetchData();

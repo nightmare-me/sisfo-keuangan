@@ -167,8 +167,41 @@ export async function GET(request: NextRequest) {
     const totalPemasukan = (pemasukanAgg._sum.hargaFinal || 0);
     const totalRefund = (refundsAgg._sum.jumlah || 0);
     const totalPemasukanNet = totalPemasukan - totalRefund;
-    const totalPengeluaran = (pengeluaranAgg._sum.jumlah || 0);
-    const labaBersih = totalPemasukanNet - totalPengeluaran - totalAds;
+    const totalPengeluaranReal = (pengeluaranAgg._sum.jumlah || 0);
+
+    // --- LOGIKA ACCRUAL UNTUK LAPORAN KEUANGAN ---
+    // Menghitung jatah gaji yang "harus" keluar bulan ini meskipun belum diklik bayar.
+    const [allEmpProfiles, completedSessions] = await Promise.all([
+      prisma.karyawanProfile.findMany({ where: { user: { aktif: true } } }),
+      prisma.sesiKelas.findMany({
+        where: { status: "SELESAI", tanggal: dateFilter },
+        include: { kelas: true }
+      })
+    ]);
+    
+    const totalFixedSalary = allEmpProfiles.reduce((s, p) => s + (p.gajiPokok || 0) + (p.tunjangan || 0), 0);
+    const totalTeacherFees = completedSessions.reduce((s, sc) => s + (sc.kelas.feePerSesi || 0), 0);
+    
+    // Total Pengeluaran (Riil + Estimasi Gaji)
+    // Note: Kita kurangi totalPengeluaranReal dengan pengeluaran kategori gaji jika sudah ada yang dibayar, 
+    // agar tidak double count. Tapi biasanya di awal bulan kategori gaji masih 0.
+    const gajiPaidAgg = await prisma.pengeluaran.aggregate({
+      where: { 
+        tanggal: dateFilter,
+        OR: [
+          { kategori: "GAJI_STAF" },
+          { kategori: "GAJI_PENGAJAR" }
+        ]
+      },
+      _sum: { jumlah: true }
+    });
+    const totalGajiPaid = gajiPaidAgg._sum.jumlah || 0;
+
+    // Beban Gaji Terhutang = (Gapok + Guru) - (Yang sudah lunas tercatat di pengeluaran)
+    const bebanGajiTerhutang = Math.max(0, (totalFixedSalary + totalTeacherFees) - totalGajiPaid);
+
+    const totalPengeluaranEfektif = totalPengeluaranReal + bebanGajiTerhutang;
+    const labaBersih = totalPemasukanNet - totalPengeluaranEfektif - totalAds;
 
     // Hitung source breakdown
     const sourceBreakdown = {
@@ -222,7 +255,9 @@ export async function GET(request: NextRequest) {
       ringkasan: {
         totalPemasukan: totalPemasukanNet,
         totalDiskon: pemasukanAgg._sum.diskon || 0,
-        totalPengeluaran,
+        totalPengeluaran: totalPengeluaranEfektif,
+        totalPengeluaranReal,
+        bebanGajiTerhutang,
         totalAds,
         labaBersih,
         jumlahTransaksiIn: pemasukanAgg._count,

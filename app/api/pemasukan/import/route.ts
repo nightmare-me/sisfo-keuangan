@@ -13,12 +13,22 @@ export async function POST(request: NextRequest) {
     // 1. PRE-FETCH DATA MASTER (Pindah ke memori untuk kecepatan kilat)
     const [allCS, allPrograms, allUsers, allSiswaCount] = await Promise.all([
       prisma.user.findMany({
-        where: { roles: { some: { roleName: { in: ["CS", "ADMIN"] } } } },
+        where: { 
+          OR: [
+            { role: { slug: { in: ["cs", "admin"] } } },
+            { subRole: { slug: { in: ["cs", "admin"] } } }
+          ]
+        },
         select: { id: true, name: true, namaPanggilan: true }
       }),
       prisma.program.findMany({ select: { id: true, nama: true, isProfitSharing: true } }),
       prisma.user.findMany({ 
-        where: { roles: { some: { roleName: { in: ["TALENT", "PENGAJAR"] } } } },
+        where: { 
+          OR: [
+            { role: { slug: { in: ["talent", "pengajar"] } } },
+            { subRole: { slug: { in: ["talent", "pengajar"] } } }
+          ]
+        },
         select: { id: true, name: true, namaPanggilan: true } 
       }),
       prisma.siswa.count()

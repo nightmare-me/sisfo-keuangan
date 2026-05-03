@@ -20,21 +20,27 @@ export async function POST(request: NextRequest) {
       prisma.siswa.count()
     ]);
 
-    // Cache untuk mempercepat pencarian (Gunakan semua user untuk CS maupun Talent)
+    // Cache untuk mempercepat pencarian (Hanya masukkan yang namanya tidak kosong)
     const userMap = new Map();
     allActiveUsers.forEach(u => {
-      if (u.name) userMap.set(u.name.toLowerCase().trim(), u.id);
-      if (u.namaPanggilan) userMap.set(u.namaPanggilan.toLowerCase().trim(), u.id);
+      const name = (u.name || "").toLowerCase().trim();
+      const nick = (u.namaPanggilan || "").toLowerCase().trim();
+      if (name) userMap.set(name, u.id);
+      if (nick) userMap.set(nick, u.id);
     });
 
     const programMap = new Map();
-    allPrograms.forEach(p => programMap.set(p.nama.toUpperCase().trim(), p.id));
+    allPrograms.forEach(p => {
+      const pName = (p.nama || "").toUpperCase().trim();
+      if (pName) programMap.set(pName, p.id);
+    });
 
     const cleanStr = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
     const getVal = (item: any, keys: string[]) => {
       const cleanKeys = keys.map(k => cleanStr(k));
       const foundKey = Object.keys(item).find(k => cleanKeys.includes(cleanStr(k)));
-      return foundKey ? item[foundKey] : null;
+      const val = foundKey ? item[foundKey] : null;
+      return (val === null || val === undefined) ? "" : String(val).trim();
     };
 
     const parseCurrency = (val: any) => {
@@ -98,12 +104,12 @@ export async function POST(request: NextRequest) {
           programMap.set(pName.toUpperCase().trim(), pId);
         }
 
-        // Cari CS & Talent dari Map yang sudah ada
-        const csSearch = String(getVal(item, ["cs", "nama_cs", "marketing", "closhing", "clossing"]) || "").trim().toLowerCase();
-        const csId = userMap.get(csSearch) || null;
+        // Cari CS & Talent dari Map yang sudah ada (Hanya jika namanya ada)
+        const csSearch = getVal(item, ["cs", "nama_cs", "marketing", "closhing", "clossing"]).toLowerCase();
+        const csId = csSearch ? (userMap.get(csSearch) || null) : null;
 
-        const talSearch = String(getVal(item, ["talent", "host", "namatalent"]) || "").trim().toLowerCase();
-        const talId = userMap.get(talSearch) || null;
+        const talSearch = getVal(item, ["talent", "host", "namatalent"]).toLowerCase();
+        const talId = talSearch ? (userMap.get(talSearch) || null) : null;
 
         // Parsing Lainnya
         const hNorm = parseCurrency(getVal(item, ["harga_normal", "harga", "nominal"]));

@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
           diskon: disk || 0,
           hargaFinal: finalP,
           metodeBayar: met,
-          isRO: String(getVal(item, ["ro", "isro"]) || "").toLowerCase() === "true" || getVal(item, ["ro"]) === "1" || getVal(item, ["ro"]) === 1,
+          isRO: String(getVal(item, ["ro", "isro"]) || "").toLowerCase() === "true" || getVal(item, ["ro"]) === "1" || Number(getVal(item, ["ro"])) === 1,
           keterangan: `[TYPE:${prodT}] ${getVal(item, ["keterangan", "note"]) || ""}`.trim(),
         });
 

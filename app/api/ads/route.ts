@@ -121,8 +121,9 @@ export async function POST(request: NextRequest) {
           let advId = sessionUserId;
           let teamTypeRaw = (session.user as any).teamType || "ADV_REGULAR";
 
-          if (item.email_advertiser) {
-            const adv = await tx.user.findUnique({ where: { email: item.email_advertiser } });
+          if (item.email_advertiser && item.email_advertiser.trim() !== "") {
+            const emailLower = item.email_advertiser.trim().toLowerCase();
+            const adv = await tx.user.findUnique({ where: { email: emailLower } });
             if (adv) {
               advId = adv.id;
               teamTypeRaw = adv.teamType || "ADV_REGULAR";

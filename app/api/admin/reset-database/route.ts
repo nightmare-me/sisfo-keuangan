@@ -13,16 +13,24 @@ export async function POST(request: NextRequest) {
     console.log('--- MEMULAI HARD RESET VIA API ---');
 
     // Urutan hapus untuk menghindari foreign key error
-    await prisma.absensiSiswa.deleteMany({});
+    await prisma.absensi.deleteMany({});
     await prisma.refund.deleteMany({});
+    await prisma.invoice.deleteMany({});
     await prisma.pemasukan.deleteMany({});
     await prisma.marketingAd.deleteMany({});
     await prisma.sesiKelas.deleteMany({});
     await prisma.kelas.deleteMany({});
+    await prisma.pendaftaran.deleteMany({});
     await prisma.gajiPengajar.deleteMany({});
     await prisma.gajiStaf.deleteMany({});
-    await prisma.studentProfile.deleteMany({});
+    await prisma.siswa.deleteMany({});
     await prisma.karyawanProfile.deleteMany({});
+    await prisma.lead.deleteMany({});
+    await prisma.auditLog.deleteMany({});
+    await prisma.contentProduction.deleteMany({});
+    await prisma.socialMetric.deleteMany({});
+    await prisma.liveSession.deleteMany({});
+    await prisma.inventaris.deleteMany({});
     
     const admins = await prisma.user.findMany({
       where: {

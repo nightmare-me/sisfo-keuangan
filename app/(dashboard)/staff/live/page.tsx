@@ -45,11 +45,13 @@ export default function StaffLivePage() {
       .then(r => r.json())
       .then(d => {
         const users = Array.isArray(d) ? d : (d.data || []);
-        // Filter: Hanya yang posisinya "Talent Live"
-        setTalents(users.filter((u: any) => 
-          u.karyawanProfile?.posisi?.toUpperCase() === "TALENT LIVE" &&
-          u.aktif !== false
-        ));
+        // Filter: Semua yang punya jabatan/role Talent
+        setTalents(users.filter((u: any) => {
+          const pos = (u.karyawanProfile?.posisi || "").toUpperCase();
+          const roles = [u.role?.slug, ...(u.secondaryRoles || [])].map(r => String(r).toLowerCase());
+          const isTalent = pos.includes("TALENT") || roles.includes("talent");
+          return isTalent && u.aktif !== false;
+        }));
       })
       .catch(() => setTalents([]));
   }, []);

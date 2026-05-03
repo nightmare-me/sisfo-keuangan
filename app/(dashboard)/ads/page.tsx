@@ -271,7 +271,7 @@ export default function AdsPage() {
           }
 
           // CEK FORMAT KOLOM (SATPAM IMPORT)
-          const firstRow = rows[0];
+          const firstRow = rows[0] as any;
           const requiredKeys = ["tanggal", "platform", "jumlah"];
           const missingKeys = requiredKeys.filter(key => !Object.keys(firstRow).some(k => k.toLowerCase() === key));
 

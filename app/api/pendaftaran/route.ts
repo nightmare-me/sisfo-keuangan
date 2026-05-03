@@ -58,10 +58,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Sync KategoriUsia
-  if (kelas.program?.kategoriUsia && kelas.program.kategoriUsia !== "UMUM") {
+  const targetCat = kelas.program?.kategoriUsia?.[0] || "UMUM";
+  if (kelas.program?.kategoriUsia && targetCat !== "UMUM") {
     await prisma.siswa.updateMany({
-      where: { id: siswaId, kategoriUsia: { not: kelas.program.kategoriUsia as any } },
-      data: { kategoriUsia: kelas.program.kategoriUsia as any }
+      where: { id: siswaId, kategoriUsia: { not: targetCat as any } },
+      data: { kategoriUsia: targetCat as any }
     });
   }
 
@@ -125,10 +126,11 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Sync KategoriUsia
-      if (kelas.program?.kategoriUsia && kelas.program.kategoriUsia !== "UMUM") {
+      const targetCatBatch = kelas.program?.kategoriUsia?.[0] || "UMUM";
+      if (kelas.program?.kategoriUsia && targetCatBatch !== "UMUM") {
         await prisma.siswa.updateMany({
-          where: { id: siswaId, kategoriUsia: { not: kelas.program.kategoriUsia as any } },
-          data: { kategoriUsia: kelas.program.kategoriUsia as any }
+          where: { id: siswaId, kategoriUsia: { not: targetCatBatch as any } },
+          data: { kategoriUsia: targetCatBatch as any }
         });
       }
     } catch {

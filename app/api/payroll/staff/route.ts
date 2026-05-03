@@ -77,8 +77,18 @@ export async function GET(request: NextRequest) {
     });
     const totalFixedSalary = allEmpProfiles.reduce((s, p) => s + (p.gajiPokok || 0) + (p.tunjangan || 0), 0);
 
-    // Gunakan Laba Kotor yang sudah dikurangi estimasi beban gaji tetap
-    const grossProfitGlobal = grossProfitGlobalActual - totalFixedSalary;
+    // 2. Hitung Total Honor Mengajar (Beban Variabel yang sudah terjadi)
+    const completedSessions = await prisma.sesiKelas.findMany({
+      where: {
+        status: "SELESAI",
+        tanggal: { gte: dayStart, lte: dayEnd }
+      },
+      include: { kelas: true }
+    });
+    const totalTeacherFees = completedSessions.reduce((s, sc) => s + (sc.kelas.feePerSesi || 0), 0);
+
+    // Gunakan Laba Kotor yang sudah dikurangi estimasi beban gaji tetap + honor mengajar
+    const grossProfitGlobal = grossProfitGlobalActual - totalFixedSalary - totalTeacherFees;
 
     // Metrik untuk dikirim ke frontend
     const incomeTotal = globalRevenue + toeflRevenue;

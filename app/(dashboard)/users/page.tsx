@@ -774,6 +774,10 @@ export default function UsersPage() {
                         { val: "advertiser", label: "Advertiser", desc: "Bisa input & kelola data iklan sendiri" },
                         { val: "talent", label: "Talent Live", desc: "Bisa tampil sebagai Talent di Live Session" },
                       ],
+                      akademik: [
+                        { val: "pengajar", label: "Pengajar", desc: "Bisa melakukan absensi & input nilai siswa" },
+                        { val: "talent", label: "Talent Live", desc: "Bisa tampil sebagai Talent di Live Session" },
+                      ],
                       advertiser: [
                         { val: "cs", label: "Customer Service", desc: "Bisa input closing & kelola leads" },
                         { val: "spv_adv", label: "SPV Advertiser", desc: "Akses supervisory tim ADV" },

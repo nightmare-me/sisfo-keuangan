@@ -30,18 +30,6 @@ export async function POST(request: NextRequest) {
     const programMap = new Map();
     allPrograms.forEach(p => programMap.set(p.nama.toUpperCase().trim(), p.id));
 
-    const csMap = new Map();
-    allCS.forEach(c => {
-      if (c.name) csMap.set(c.name.toLowerCase().trim(), c.id);
-      if (c.namaPanggilan) csMap.set(c.namaPanggilan.toLowerCase().trim(), c.id);
-    });
-
-    const talentMap = new Map();
-    allUsers.forEach(u => {
-      if (u.name) talentMap.set(u.name.toLowerCase().trim(), u.id);
-      if (u.namaPanggilan) talentMap.set(u.namaPanggilan.toLowerCase().trim(), u.id);
-    });
-
     const cleanStr = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
     const getVal = (item: any, keys: string[]) => {
       const cleanKeys = keys.map(k => cleanStr(k));
@@ -51,15 +39,15 @@ export async function POST(request: NextRequest) {
 
     const parseCurrency = (val: any) => {
       if (!val) return 0;
-      return parseFloat(String(val).replace(/[^0-9.-]/g, "")) || 0;
+      const s = String(val).replace(/[^0-9.-]/g, "");
+      return parseFloat(s) || 0;
     };
 
     let nextSiswaNumber = allSiswaCount + 1;
     const recordsToCreate: any[] = [];
     const errors: any[] = [];
 
-    // TAHAP 1: SIAPKAN DATA & BUAT SISWA/PROGRAM BARU JIKA PERLU
-    // Agar cepat, kita akan kumpulkan dulu apa yang perlu dibuat
+    // TAHAP 1: SIAPKAN DATA
     for (let i = 0; i < body.length; i++) {
       const item = body[i];
       try {
@@ -69,7 +57,7 @@ export async function POST(request: NextRequest) {
         
         if (!sName) continue;
 
-        // Cari/Buat Siswa (Pakai pencarian langsung agar akurat)
+        // Cari/Buat Siswa (Pakai findFirst untuk akurasi)
         let sId: string | null = null;
         const existingSiswa = await prisma.siswa.findFirst({
            where: {
@@ -110,7 +98,7 @@ export async function POST(request: NextRequest) {
           programMap.set(pName.toUpperCase().trim(), pId);
         }
 
-        // Cari CS & Talent
+        // Cari CS & Talent dari Map yang sudah ada
         const csSearch = String(getVal(item, ["cs", "nama_cs", "marketing", "closhing", "clossing"]) || "").trim().toLowerCase();
         const csId = userMap.get(csSearch) || null;
 
@@ -126,7 +114,7 @@ export async function POST(request: NextRequest) {
         let met = String(getVal(item, ["metode", "metode_bayar", "payment"]) || "TRANSFER").toUpperCase();
         if (!["TRANSFER", "QRIS", "CASH"].includes(met)) met = "TRANSFER";
 
-        // Aturan Emas untuk Label
+        // 6 Aturan Emas
         let prodT = "REGULAR";
         const pUpper = pName.toUpperCase();
         if (pUpper.includes("LIVE")) prodT = "LIVE";
@@ -134,7 +122,6 @@ export async function POST(request: NextRequest) {
         else if (pUpper.includes("AFFILIATE")) prodT = "AFFILIATE";
         else if (pUpper.includes("TOEFL") || pUpper.includes("IELTS")) prodT = "TOEFL";
 
-        // Parsing Tanggal
         let tgl = new Date();
         const tglIn = getVal(item, ["tanggal", "date"]);
         if (tglIn) {
@@ -165,7 +152,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // TAHAP 2: BULK INSERT (Sangat Cepat)
+    // TAHAP 2: BULK INSERT
     if (recordsToCreate.length > 0) {
       await prisma.pemasukan.createMany({
         data: recordsToCreate,

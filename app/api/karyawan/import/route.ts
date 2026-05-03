@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
           finalRoleId = targetRole?.id || allRoles.find(r => r.slug === 'cs')?.id || allRoles[0]?.id || "";
         }
 
-        const roleSlug = roles.find(r => r.id === finalRoleId)?.slug?.toLowerCase() || "";
+        const roleSlug = allRoles.find(r => r.id === finalRoleId)?.slug?.toLowerCase() || "";
 
         // --- NORMALIZE VALUES ---
         let jk = item.jenis_kelamin?.toUpperCase() || undefined;

@@ -157,20 +157,12 @@ export async function GET(request: NextRequest) {
     const csMap: Record<string, string> = {};
     activeCS.forEach(c => csMap[c.id] = c.name);
 
-    // 5. SOURCE BREAKDOWN (Mesti narik data Pemasukan atau pakai groupBy isRO & programId)
-    const sourceData = await prisma.pemasukan.groupBy({
-      by: ['programId', 'isRO'],
-      where: { tanggal: dateFilter },
-      _sum: { hargaFinal: true }
-    });
-
     const totalPemasukan = (pemasukanAgg._sum.hargaFinal || 0);
     const totalRefund = (refundsAgg._sum.jumlah || 0);
     const totalPemasukanNet = totalPemasukan - totalRefund;
     const totalPengeluaranReal = (pengeluaranAgg._sum.jumlah || 0);
 
     // --- LOGIKA ACCRUAL UNTUK LAPORAN KEUANGAN ---
-    // Menghitung jatah gaji yang "harus" keluar bulan ini meskipun belum diklik bayar.
     const [allEmpProfiles, completedSessions] = await Promise.all([
       prisma.karyawanProfile.findMany({ where: { user: { aktif: true } } }),
       prisma.sesiKelas.findMany({
@@ -182,9 +174,6 @@ export async function GET(request: NextRequest) {
     const totalFixedSalary = allEmpProfiles.reduce((s, p) => s + (p.gajiPokok || 0) + (p.tunjangan || 0), 0);
     const totalTeacherFees = completedSessions.reduce((s, sc) => s + (sc.kelas.feePerSesi || 0), 0);
     
-    // Total Pengeluaran (Riil + Estimasi Gaji)
-    // Note: Kita kurangi totalPengeluaranReal dengan pengeluaran kategori gaji jika sudah ada yang dibayar, 
-    // agar tidak double count. Tapi biasanya di awal bulan kategori gaji masih 0.
     const gajiPaidAgg = await prisma.pengeluaran.aggregate({
       where: { 
         tanggal: dateFilter,
@@ -196,43 +185,59 @@ export async function GET(request: NextRequest) {
       _sum: { jumlah: true }
     });
     const totalGajiPaid = gajiPaidAgg._sum.jumlah || 0;
-
-    // Beban Gaji Terhutang = (Gapok + Guru) - (Yang sudah lunas tercatat di pengeluaran)
     const bebanGajiTerhutang = Math.max(0, (totalFixedSalary + totalTeacherFees) - totalGajiPaid);
-
     const totalPengeluaranEfektif = totalPengeluaranReal + bebanGajiTerhutang;
     const labaBersih = totalPemasukanNet - totalPengeluaranEfektif - totalAds;
 
-    // Hitung source breakdown
+    // 5. SOURCE BREAKDOWN (Lebih Detail & Sinkron dengan Kategori Baru)
+    const detailedPemasukan = await prisma.pemasukan.findMany({
+      where: { tanggal: dateFilter },
+      select: {
+        hargaFinal: true,
+        isRO: true,
+        keterangan: true,
+        program: { select: { nama: true, isProfitSharing: true } },
+        siswa: { select: { kategoriUsia: true } }
+      }
+    });
+    
     const sourceBreakdown = {
       REGULAR: 0,
       RO: 0,
       SOSMED: 0,
       AFFILIATE: 0,
       LIVE: 0,
-      TOEFL: 0
+      TOEFL: 0,
+      KIDS: 0,
+      ELITE: 0,
+      MASTER: 0
     };
 
-    // Kita hitung gross dulu, lalu nanti kita adjust proporsional terhadap net (jika ada refund)
     let totalGrossCalculated = 0;
-    sourceData.forEach(item => {
-      const revenue = item._sum.hargaFinal || 0;
+    detailedPemasukan.forEach(item => {
+      const revenue = item.hargaFinal || 0;
       totalGrossCalculated += revenue;
 
       if (item.isRO) {
         sourceBreakdown.RO += revenue;
+      } else if (item.siswa?.kategoriUsia === "KIDS") {
+        sourceBreakdown.KIDS += revenue;
       } else {
-        const prog = item.programId ? progMap[item.programId] : null;
-        const name = (prog?.nama || "").toUpperCase();
+        const name = (item.program?.nama || "").toUpperCase();
+        const note = (item.keterangan || "").toUpperCase();
 
-        if (prog?.isProfitSharing) {
+        if (item.program?.isProfitSharing) {
           sourceBreakdown.TOEFL += revenue;
-        } else if (name.includes("SOSMED")) {
+        } else if (name.includes("SOSMED") || note.includes("SOSMED")) {
           sourceBreakdown.SOSMED += revenue;
-        } else if (name.includes("AFFILIATE")) {
+        } else if (name.includes("AFFILIATE") || note.includes("AFFILIATE")) {
           sourceBreakdown.AFFILIATE += revenue;
-        } else if (name.includes("LIVE")) {
+        } else if (name.includes("LIVE") || note.includes("LIVE")) {
           sourceBreakdown.LIVE += revenue;
+        } else if (name.includes("ELITE") || note.includes("ELITE")) {
+          sourceBreakdown.ELITE += revenue;
+        } else if (name.includes("MASTER") || note.includes("MASTER")) {
+          sourceBreakdown.MASTER += revenue;
         } else {
           sourceBreakdown.REGULAR += revenue;
         }
@@ -242,12 +247,9 @@ export async function GET(request: NextRequest) {
     // Adjust proporsional agar totalnya sesuai dengan totalPemasukanNet (net setelah refund)
     if (totalGrossCalculated > 0 && totalRefund > 0) {
       const factor = totalPemasukanNet / totalGrossCalculated;
-      sourceBreakdown.REGULAR *= factor;
-      sourceBreakdown.RO *= factor;
-      sourceBreakdown.SOSMED *= factor;
-      sourceBreakdown.AFFILIATE *= factor;
-      sourceBreakdown.LIVE *= factor;
-      sourceBreakdown.TOEFL *= factor;
+      Object.keys(sourceBreakdown).forEach(key => {
+        (sourceBreakdown as any)[key] *= factor;
+      });
     }
 
     return NextResponse.json({

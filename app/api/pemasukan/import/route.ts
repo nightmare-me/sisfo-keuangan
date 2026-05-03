@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
           const newP = await prisma.program.create({
             data: { 
               nama: pName.toUpperCase().trim(),
-              isProfitSharing: isSharing
+              isProfitSharing: isSharing,
+              harga: 0 // Default harga untuk program baru dari import
             }
           });
           pId = newP.id;

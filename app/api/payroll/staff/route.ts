@@ -193,8 +193,8 @@ export async function GET(request: NextRequest) {
       const omsetTalent = emp.pemasukanTalent.reduce((s: number, p: any) => s + p.hargaFinal, 0);
       totalBonus += calculateBonusTalent(omsetTalent);
 
-      // E. Bonus Akademik (RO Omset) - If role is Akademik or SPV Akademik
-      if (posisi.toUpperCase().includes("AKADEMIK")) {
+      // E. Bonus Akademik (RO Omset) - HANYA UNTUK SPV AKADEMIK
+      if (posisi.toUpperCase().includes("SPV AKADEMIK")) {
           const totalRO = pemasukanAll.filter((p: any) => p.isRO).reduce((s: number, p: any) => s + p.hargaFinal, 0);
           totalBonus += calculateBonusAkademikRO(totalRO, config);
       }

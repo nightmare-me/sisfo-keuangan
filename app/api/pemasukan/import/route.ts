@@ -10,33 +10,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Data harus berupa array" }, { status: 400 });
     }
 
-    // 1. PRE-FETCH DATA MASTER (Pindah ke memori untuk kecepatan kilat)
-    const [allCS, allPrograms, allUsers, allSiswaCount] = await Promise.all([
+    // 1. PRE-FETCH DATA MASTER (Ambil semua user aktif agar tidak ada yang terlewat)
+    const [allActiveUsers, allPrograms, allSiswaCount] = await Promise.all([
       prisma.user.findMany({
-        where: { 
-          OR: [
-            { role: { slug: { in: ["cs", "admin"] } } },
-            { subRole: { name: { contains: "CS", mode: 'insensitive' } } },
-            { subRole: { name: { contains: "ADMIN", mode: 'insensitive' } } }
-          ]
-        },
+        where: { aktif: true },
         select: { id: true, name: true, namaPanggilan: true }
       }),
       prisma.program.findMany({ select: { id: true, nama: true, isProfitSharing: true } }),
-      prisma.user.findMany({ 
-        where: { 
-          OR: [
-            { role: { slug: { in: ["talent", "pengajar"] } } },
-            { subRole: { name: { contains: "TALENT", mode: 'insensitive' } } },
-            { subRole: { name: { contains: "PENGAJAR", mode: 'insensitive' } } }
-          ]
-        },
-        select: { id: true, name: true, namaPanggilan: true } 
-      }),
       prisma.siswa.count()
     ]);
 
-    // Cache untuk mempercepat pencarian
+    // Cache untuk mempercepat pencarian (Gunakan semua user untuk CS maupun Talent)
+    const userMap = new Map();
+    allActiveUsers.forEach(u => {
+      if (u.name) userMap.set(u.name.toLowerCase().trim(), u.id);
+      if (u.namaPanggilan) userMap.set(u.namaPanggilan.toLowerCase().trim(), u.id);
+    });
+
     const programMap = new Map();
     allPrograms.forEach(p => programMap.set(p.nama.toUpperCase().trim(), p.id));
 
@@ -121,11 +111,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Cari CS & Talent
-        const csSearch = String(getVal(item, ["cs", "nama_cs", "marketing"]) || "").trim().toLowerCase();
-        const csId = csMap.get(csSearch) || null;
+        const csSearch = String(getVal(item, ["cs", "nama_cs", "marketing", "closhing", "clossing"]) || "").trim().toLowerCase();
+        const csId = userMap.get(csSearch) || null;
 
         const talSearch = String(getVal(item, ["talent", "host", "namatalent"]) || "").trim().toLowerCase();
-        const talId = talentMap.get(talSearch) || null;
+        const talId = userMap.get(talSearch) || null;
 
         // Parsing Lainnya
         const hNorm = parseCurrency(getVal(item, ["harga_normal", "harga", "nominal"]));

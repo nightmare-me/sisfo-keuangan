@@ -298,7 +298,7 @@ export default function CRMPage() {
 
     if (res.ok) {
       setShowNewLeadModal(false);
-      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false, tanggalLead: new Date().toLocaleDateString('sv'), sumber: "MANUAL", talentId: "" });
+      setNewLeadForm({ nama: "", whatsapp: "", programId: "", preferensiJadwal: "", isRO: false, tanggalLead: new Date().toLocaleDateString('sv'), sumber: "MANUAL", talentId: "", kategoriUsia: "DEWASA" });
       fetchData();
     } else {
       const errData = await res.json().catch(() => ({}));

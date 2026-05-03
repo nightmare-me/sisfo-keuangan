@@ -86,6 +86,26 @@ export async function GET(request: NextRequest) {
     return { advId: adv.id, name: adv.name, teamTypes: adv.teamType, totalSpent, totalLeads, totalFee };
   }));
 
+  // AMBIL DATA YANG TIDAK TER-ASSIGN (Unassigned Ads)
+  const unassignedAds = await prisma.marketingAd.findMany({
+    where: { advId: null, tanggal: dateRange },
+    select: { spent: true, leads: true }
+  });
+
+  const unassignedSpent = unassignedAds.reduce((a, b) => a + b.spent, 0);
+  const unassignedLeads = unassignedAds.reduce((a, b) => a + b.leads, 0);
+
+  if (unassignedSpent > 0 || unassignedLeads > 0) {
+    advStats.push({
+      advId: "unassigned",
+      name: "Tanpa Advertiser (Kosong)",
+      teamTypes: ["⚠️ PERLU EDIT"],
+      totalSpent: unassignedSpent,
+      totalLeads: unassignedLeads,
+      totalFee: 0
+    });
+  }
+
   const summary = {
     totalSpent: advStats.reduce((a, b) => a + b.totalSpent, 0),
     totalLeads: advStats.reduce((a, b) => a + b.totalLeads, 0),

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
           where: { 
             aktif: true,
             OR: [
-              { role: { slug: { in: ['multimedia', 'spv_multimedia', 'talent', 'pengajar', 'tutor', 'advertiser', 'spv_adv'] } } },
+              { role: { slug: filterRoleSlug ? filterRoleSlug.toLowerCase() : { in: ['multimedia', 'spv_multimedia', 'talent', 'pengajar', 'tutor', 'advertiser', 'spv_adv'] } } },
               { subRole: { name: { contains: targetRole, mode: 'insensitive' } } },
               { secondaryRoles: { has: targetRole } }
             ]

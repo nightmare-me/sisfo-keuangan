@@ -45,7 +45,8 @@ export default function AdsPage() {
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [filter, setFilter] = useState({ from:"", to:"", platform:"" });
-  const [form, setForm] = useState({ platform:"META", jumlah:"", keterangan:"", leads:"", tanggal: new Date().toISOString().slice(0,10) });
+  const [form, setForm] = useState({ platform:"META", jumlah:"", keterangan:"", leads:"", tanggal: new Date().toISOString().slice(0,10), advId: "" });
+  const [allAdvs, setAllAdvs] = useState<any[]>([]);
   const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: () => {}, type: "danger" as "danger" | "warning" | "info" | "success" });
 
   const [page, setPage] = useState(1);
@@ -115,6 +116,10 @@ export default function AdsPage() {
   useEffect(()=>{ fetchData(); },[filter, page, limit]);
 
   useEffect(() => {
+    fetch("/api/users?role=advertiser").then(r => r.json()).then(d => setAllAdvs(d.users || []));
+  }, []);
+
+  useEffect(() => {
     setPage(1);
   }, [filter]);
 
@@ -123,8 +128,8 @@ export default function AdsPage() {
     const url = isEditing ? "/api/ads" : "/api/ads";
     const method = isEditing ? "PUT" : "POST";
     const payload = isEditing 
-      ? { ...form, id: editId, jumlah: parseFloat(form.jumlah), leads: parseInt(form.leads || "0") }
-      : { ...form, jumlah: parseFloat(form.jumlah), leads: parseInt(form.leads || "0") };
+      ? { ...form, id: editId, jumlah: parseFloat(form.jumlah), leads: parseInt(form.leads || "0"), advId: form.advId }
+      : { ...form, jumlah: parseFloat(form.jumlah), leads: parseInt(form.leads || "0"), advId: form.advId };
 
     const res = await fetch(url, { 
       method, 
@@ -162,7 +167,8 @@ export default function AdsPage() {
       jumlah: item.spent.toString(),
       leads: (item.leads || 0).toString(),
       keterangan: item.keterangan || "",
-      tanggal: item.tanggal.slice(0, 10)
+      tanggal: item.tanggal.slice(0, 10),
+      advId: item.advId || ""
     });
     setEditId(item.id);
     setIsEditing(true);
@@ -613,37 +619,50 @@ export default function AdsPage() {
       {showModal && (
         <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) setShowModal(false); }}>
           <div className="modal">
-            <div className="modal-header">
+              <div className="modal-header">
               <div className="modal-title">{isEditing ? "Edit Spent Ads" : "Input Spent Ads"}</div>
               <button className="modal-close" onClick={() => { setShowModal(false); setIsEditing(false); }}>✕</button>
             </div>
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
+                {/* Platform & Advertiser */}
                 <div className="form-grid-2">
                   <div className="form-group">
                     <label className="form-label required">Platform</label>
-                    <select id="sel-platform" className="form-control" value={form.platform} onChange={e=>setForm(f=>({...f,platform:e.target.value}))}>
+                    <select className="form-control" value={form.platform} onChange={e=>setForm(f=>({...f,platform:e.target.value}))}>
                       {PLATFORMS.map(p=><option key={p} value={p}>{p}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
+                    <label className="form-label">Advertiser</label>
+                    <select className="form-control" value={form.advId} onChange={e=>setForm(f=>({...f,advId:e.target.value}))}>
+                      <option value="">-- Pilih Advertiser --</option>
+                      {allAdvs.map((adv: any) => (
+                        <option key={adv.id} value={adv.id}>{adv.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-grid-2">
+                  <div className="form-group">
                     <label className="form-label required">Tanggal</label>
                     <input type="date" className="form-control" value={form.tanggal} onChange={e=>setForm(f=>({...f,tanggal:e.target.value}))} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label required">Jumlah Ads Spend (Rp)</label>
+                    <input type="number" className="form-control" placeholder="0" value={form.jumlah} onChange={e=>setForm(f=>({...f,jumlah:e.target.value}))} required min={1} />
                   </div>
                 </div>
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label className="form-label required">Jumlah Ads Spend (Rp)</label>
-                    <input id="inp-jumlah-ads" type="number" className="form-control" placeholder="0" value={form.jumlah} onChange={e=>setForm(f=>({...f,jumlah:e.target.value}))} required min={1} />
-                  </div>
-                  <div className="form-group">
                     <label className="form-label">Leads Didapat</label>
                     <input type="number" className="form-control" placeholder="0" value={form.leads} onChange={e=>setForm(f=>({...f,leads:e.target.value}))} min={0} />
                   </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Keterangan</label>
-                  <input type="text" className="form-control" placeholder="Nama campaign, target audience, dll..." value={form.keterangan} onChange={e=>setForm(f=>({...f,keterangan:e.target.value}))} />
+                  <div className="form-group">
+                    <label className="form-label">Keterangan</label>
+                    <input type="text" className="form-control" placeholder="Nama campaign, target audience, dll..." value={form.keterangan} onChange={e=>setForm(f=>({...f,keterangan:e.target.value}))} />
+                  </div>
                 </div>
               </div>
               <div className="modal-footer">

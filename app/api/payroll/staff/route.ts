@@ -67,7 +67,18 @@ export async function GET(request: NextRequest) {
     const globalAds = adsAll.filter((a: any) => !a.kategori?.toUpperCase().includes("TOEFL")).reduce((s, a) => s + (a.spent || 0), 0);
     const globalExpenses = pengeluaranAll.filter((e: any) => !e.kategori?.toUpperCase().includes("TOEFL")).reduce((s, e) => s + e.jumlah, 0);
     
-    const grossProfitGlobal = globalRevenue - globalRefund - globalAds - globalExpenses;
+    const grossProfitGlobalActual = globalRevenue - globalRefund - globalAds - globalExpenses;
+
+    // --- LOGIKA ACCRUAL UNTUK BONUS MANAJEMEN ---
+    // Karena gaji sekarang sistemnya "Approve dulu baru Lunas", kita harus menghitung 
+    // "Estimasi Beban Gaji" agar profit tidak terlihat terlalu tinggi saat menghitung bonus.
+    const allEmpProfiles = await prisma.karyawanProfile.findMany({
+      where: { user: { aktif: true } }
+    });
+    const totalFixedSalary = allEmpProfiles.reduce((s, p) => s + (p.gajiPokok || 0) + (p.tunjangan || 0), 0);
+
+    // Gunakan Laba Kotor yang sudah dikurangi estimasi beban gaji tetap
+    const grossProfitGlobal = grossProfitGlobalActual - totalFixedSalary;
 
     // Metrik untuk dikirim ke frontend
     const incomeTotal = globalRevenue + toeflRevenue;

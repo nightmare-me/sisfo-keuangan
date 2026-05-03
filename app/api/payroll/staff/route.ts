@@ -329,6 +329,20 @@ export async function PUT(request: NextRequest) {
                     dibuatOleh: (session.user as any).id
                 }
             });
+
+            // SINKRONISASI: Jika dia punya draf di Gaji Pengajar, ikut dilunaskan
+            await prisma.gajiPengajar.updateMany({
+                where: {
+                    pengajarId: existing.userId,
+                    bulan: existing.bulan,
+                    tahun: existing.tahun,
+                    statusBayar: "BELUM_BAYAR"
+                },
+                data: {
+                    statusBayar: "LUNAS",
+                    tanggalBayar: new Date()
+                }
+            });
         }
 
         return NextResponse.json(record);

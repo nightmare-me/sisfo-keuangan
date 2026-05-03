@@ -115,10 +115,27 @@ export async function DELETE(request: NextRequest) {
 
   if (all === "true") {
     await prisma.gajiPengajar.deleteMany({});
+    // Juga bersihkan laporan pengeluaran kas yang terkait
+    await prisma.pengeluaran.deleteMany({
+      where: { kategori: "GAJI_PENGAJAR" }
+    });
     return NextResponse.json({ success: true });
   }
 
   if (!id) return NextResponse.json({ error: "ID diperlukan" }, { status: 400 });
+
+  // Cari dulu datanya untuk tahu detail pengeluaran yang mau dihapus
+  const existing = await prisma.gajiPengajar.findUnique({ where: { id } });
+  if (existing) {
+    // Hapus pengeluaran yang cocok (berdasarkan keterangan atau nominal di hari yang sama)
+    // Untuk lebih aman, kita hapus berdasarkan pola keterangan yang kita buat di POST
+    await prisma.pengeluaran.deleteMany({
+      where: {
+        kategori: "GAJI_PENGAJAR",
+        keterangan: { contains: existing.id } // Pastikan ID tersimpan di keterangan saat POST
+      }
+    });
+  }
 
   await prisma.gajiPengajar.delete({ where: { id } });
   return NextResponse.json({ success: true });

@@ -206,6 +206,34 @@ export default function GajiPage() {
           )}
           {canEdit && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ borderRadius: 'var(--radius-full)', color: 'var(--primary)', borderColor: 'var(--primary)' }} 
+                onClick={async () => {
+                  setLoading(true);
+                  const res = await fetch("/api/gaji/generate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ bulan: filterBulan, tahun: filterTahun })
+                  });
+                  const d = await res.json();
+                  if (res.ok) {
+                    setConfirmModal({
+                      show: true,
+                      title: "Berhasil",
+                      message: d.message || "Estimasi gaji berhasil di-generate.",
+                      type: "success",
+                      onConfirm: () => {
+                        setConfirmModal(prev => ({ ...prev, show: false }));
+                        fetchData();
+                      }
+                    });
+                  }
+                  setLoading(false);
+                }}
+              >
+                <RefreshCw size={18} /> Generate Estimasi
+              </button>
               <button className="btn btn-secondary" style={{ borderRadius: 'var(--radius-full)' }} onClick={()=>setShowTarifModal(true)}>
                 <Settings size={18} /> Atur Tarif
               </button>

@@ -55,19 +55,18 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { pengajarId, kelasId, bulan, tahun, jumlahSesi, tarifPerSesi, totalGaji, metodeBayar, keterangan } = body;
   const gaji = await prisma.gajiPengajar.create({
-    data: { pengajarId, kelasId: kelasId || null, bulan, tahun, jumlahSesi, tarifPerSesi, totalGaji, metodeBayar: metodeBayar ?? "TRANSFER", keterangan, statusBayar: "LUNAS", tanggalBayar: new Date() },
-  });
-
-  // OTOMATIS CATAT KE PENGELUARAN
-  await prisma.pengeluaran.create({
-    data: {
-      tanggal: new Date(),
-      jumlah: totalGaji,
-      kategori: "GAJI_PENGAJAR",
-      metodeBayar: metodeBayar || "TRANSFER",
-      keterangan: `Gaji Pengajar: ${gaji.id} (${bulan}/${tahun}). ${keterangan || ""}`,
-      dibuatOleh: (session.user as any).id
-    }
+    data: { 
+      pengajarId, 
+      kelasId: kelasId || null, 
+      bulan, 
+      tahun, 
+      jumlahSesi, 
+      tarifPerSesi, 
+      totalGaji, 
+      metodeBayar: metodeBayar ?? "TRANSFER", 
+      keterangan, 
+      statusBayar: "BELUM_BAYAR" 
+    },
   });
 
   return NextResponse.json(gaji, { status: 201 });

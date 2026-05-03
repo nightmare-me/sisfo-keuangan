@@ -1003,15 +1003,15 @@ export default function CRMPage() {
                   Gunakan format CSV berikut untuk mengimpor data masal calon siswa.
                 </p>
                 <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
-                  nama,whatsapp,program,status,nama_cs,nominal,tanggal_lead,tanggal_closing,keterangan
+                  nama,whatsapp,program,kategori_usia,status,nama_cs,nominal,tanggal_lead,tanggal_closing,keterangan
                 </div>
                 <button 
                   className="btn btn-sm" 
                   style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
                   onClick={() => {
-                    const csvContent = "nama,whatsapp,program,status,nama_cs,nominal,tanggal_lead,tanggal_closing,keterangan\n" +
-                                     "Ahmad Fauzi,081234567890,REGULAR 1 BULAN,FOLLOW_UP,Admin,1500000,2024-03-20,,Tertarik kelas malam\n" +
-                                     "Linda Sari,089988776655,IELTS PREPARATION,PAID,Lisa,2500123,2024-03-21,2024-03-22,Lunas via Transfer";
+                    const csvContent = "nama,whatsapp,program,kategori_usia,status,nama_cs,nominal,tanggal_lead,tanggal_closing,keterangan\n" +
+                                     "Ahmad Fauzi,081234567890,REGULAR 1 BULAN,DEWASA,FOLLOW_UP,Admin,1500000,2024-03-20,,Tertarik kelas malam\n" +
+                                     "Linda Sari,089988776655,IELTS PREPARATION,KIDS,PAID,Lisa,2500123,2024-03-21,2024-03-22,Lunas via Transfer";
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");

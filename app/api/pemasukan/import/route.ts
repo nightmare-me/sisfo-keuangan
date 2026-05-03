@@ -82,6 +82,11 @@ export async function POST(request: NextRequest) {
         const sKey = `${sName.toLowerCase()}|${cleanWA}`;
         let sId = siswaCache.get(sKey);
 
+        const kUsiaRaw = String(getVal(item, ["kategori_usia", "usia", "category"]) || "DEWASA").toUpperCase();
+        let kUsia: any = "DEWASA";
+        if (kUsiaRaw.includes("KID")) kUsia = "KIDS";
+        else if (kUsiaRaw.includes("UMUM")) kUsia = "UMUM";
+
         if (!sId) {
           const matchByName = allSiswa.find(s => s.nama.toLowerCase() === sName.toLowerCase() && (!cleanWA || s.telepon === cleanWA));
           if (matchByName) {
@@ -93,6 +98,7 @@ export async function POST(request: NextRequest) {
                 noSiswa: `S${countSiswa.toString().padStart(4, '0')}`, 
                 nama: sName, 
                 telepon: cleanWA || null,
+                kategoriUsia: kUsia,
                 createdAt: tgl // SINKRONKAN TANGGAL SISWA DENGAN TRANSAKSI
               }
             });

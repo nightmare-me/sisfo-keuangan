@@ -596,15 +596,15 @@ export default function PemasukanPage() {
                   Gunakan format CSV berikut untuk mengimpor transaksi masal.
                 </p>
                 <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
-                  tanggal,nama_siswa,whatsapp,program,harga_normal,diskon,metode,nama_cs,talent,ro,sharing_profit,keterangan
+                  tanggal,nama_siswa,whatsapp,program,kategori_usia,harga_normal,diskon,metode,nama_cs,talent,ro,sharing_profit,keterangan
                 </div>
                 <button 
                   className="btn btn-sm" 
                   style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
                   onClick={() => {
-                    const csvContent = "tanggal,nama_siswa,whatsapp,program,harga_normal,diskon,metode,nama_cs,talent,ro,sharing_profit,keterangan\n" +
-                                     "2024-02-15,Budi Santoso,08123456789,REGULAR 1 BULAN,1500000,100000,TRANSFER,Adinda,,0,0,Bayar Lunas\n" +
-                                     "2024-02-16,Siska Putri,08123456789,TIKTOK LIVE,2500000,0,QRIS,Lisa,TalentA,1,1,Pendaftaran Baru";
+                    const csvContent = "tanggal,nama_siswa,whatsapp,program,kategori_usia,harga_normal,diskon,metode,nama_cs,talent,ro,sharing_profit,keterangan\n" +
+                                     "2024-02-15,Budi Santoso,08123456789,REGULAR 1 BULAN,DEWASA,1500000,100000,TRANSFER,Adinda,,0,0,Bayar Lunas\n" +
+                                     "2024-02-16,Siska Putri,08123456789,TIKTOK LIVE,KIDS,2500000,0,QRIS,Lisa,TalentA,1,1,Pendaftaran Baru";
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");

@@ -62,27 +62,38 @@ export async function GET(request: NextRequest) {
   const config: Record<string, number> = {};
   configRaw.forEach(c => config[c.key] = c.value);
 
-  // Ambil semua Live Session di periode ini (groupby talent)
-  const liveSessions = await prisma.liveSession.findMany({
-    where: { tanggal: dateRange },
-    include: { user: { select: { id: true, name: true } } }
-  });
+  // 1. Ambil semua Talent ID yang terlibat (baik dari Live Session maupun Pemasukan)
+  const [sessions, allPemasukan] = await Promise.all([
+    prisma.liveSession.findMany({
+      where: { tanggal: dateRange },
+      include: { user: { select: { id: true, name: true } } }
+    }),
+    prisma.pemasukan.findMany({
+      where: { talentId: { not: null }, tanggal: dateRange },
+      select: { talentId: true, talent: { select: { name: true } } }
+    })
+  ]);
 
-  // Group by talentId
+  // Gabungkan semua Talent ID unik
   const talentMap: Record<string, any> = {};
-  for (const session of liveSessions) {
-    const id = session.userId;
+  
+  // Masukkan dari Live Session
+  sessions.forEach(s => {
+    const id = s.userId;
     if (!talentMap[id]) {
-      talentMap[id] = {
-        talentId: id,
-        name: session.user?.name || "Unknown",
-        totalSesi: 0,
-        totalJam: 0,
-      };
+      talentMap[id] = { talentId: id, name: s.user?.name || "Unknown", totalSesi: 0, totalJam: 0, totalLeads: 0, totalClosing: 0, totalOmset: 0, totalFee: 0 };
     }
     talentMap[id].totalSesi++;
-    talentMap[id].totalJam += session.durasi ?? 0;
-  }
+    talentMap[id].totalJam += (s.durasi ?? 0);
+  });
+
+  // Masukkan dari Pemasukan (Jika ada talent yang jualan tapi belum input live)
+  allPemasukan.forEach(p => {
+    const id = p.talentId;
+    if (id && !talentMap[id]) {
+      talentMap[id] = { talentId: id, name: p.talent?.name || "Unknown", totalSesi: 0, totalJam: 0, totalLeads: 0, totalClosing: 0, totalOmset: 0, totalFee: 0 };
+    }
+  });
 
   // Tambahkan data leads & omset dari pemasukan (talentId)
   await Promise.all(Object.keys(talentMap).map(async (talentId) => {

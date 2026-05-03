@@ -189,28 +189,23 @@ export async function GET(request: NextRequest) {
     const totalPengeluaranEfektif = totalPengeluaranReal + bebanGajiTerhutang;
     const labaBersih = totalPemasukanNet - totalPengeluaranEfektif - totalAds;
 
-    // 5. SOURCE BREAKDOWN (Lebih Detail & Sinkron dengan Kategori Baru)
+    // 5. SOURCE BREAKDOWN (Aturan Baru yang Bersih & Tegas)
     const detailedPemasukan = await prisma.pemasukan.findMany({
       where: { tanggal: dateFilter },
       select: {
         hargaFinal: true,
         isRO: true,
-        keterangan: true,
-        program: { select: { nama: true, isProfitSharing: true } },
-        siswa: { select: { kategoriUsia: true } }
+        program: { select: { nama: true, isProfitSharing: true } }
       }
     });
     
     const sourceBreakdown = {
-      REGULAR: 0,
       RO: 0,
+      TOEFL: 0,
+      LIVE: 0,
       SOSMED: 0,
       AFFILIATE: 0,
-      LIVE: 0,
-      SHARING_PROFIT: 0,
-      KIDS: 0,
-      ELITE: 0,
-      MASTER: 0
+      REGULAR: 0
     };
 
     let totalGrossCalculated = 0;
@@ -218,29 +213,21 @@ export async function GET(request: NextRequest) {
       const revenue = item.hargaFinal || 0;
       totalGrossCalculated += revenue;
 
-      if (item.isRO) {
-        sourceBreakdown.RO += revenue;
-      } else if (item.siswa?.kategoriUsia === "KIDS") {
-        sourceBreakdown.KIDS += revenue;
-      } else {
-        const name = (item.program?.nama || "").toUpperCase();
-        const note = (item.keterangan || "").toUpperCase();
+      const progName = (item.program?.nama || "").toUpperCase();
 
-        if (item.program?.isProfitSharing || note.includes("SHARING")) {
-          sourceBreakdown.SHARING_PROFIT += revenue;
-        } else if (name.includes("SOSMED") || note.includes("SOSMED")) {
-          sourceBreakdown.SOSMED += revenue;
-        } else if (name.includes("AFFILIATE") || note.includes("AFFILIATE")) {
-          sourceBreakdown.AFFILIATE += revenue;
-        } else if (name.includes("LIVE") || note.includes("LIVE")) {
-          sourceBreakdown.LIVE += revenue;
-        } else if (name.includes("ELITE") || note.includes("ELITE")) {
-          sourceBreakdown.ELITE += revenue;
-        } else if (name.includes("MASTER") || note.includes("MASTER")) {
-          sourceBreakdown.MASTER += revenue;
-        } else {
-          sourceBreakdown.REGULAR += revenue;
-        }
+      // --- EKSEKUSI 6 ATURAN EMAS ---
+      if (item.isRO) {
+        sourceBreakdown.RO += revenue; // 1. Kolom RO = 1
+      } else if (item.program?.isProfitSharing) {
+        sourceBreakdown.TOEFL += revenue; // 2. Kolom Sharing = 1 (Produk TOEFL)
+      } else if (progName.includes("LIVE")) {
+        sourceBreakdown.LIVE += revenue; // 3. Nama ada LIVE
+      } else if (progName.includes("SOSMED")) {
+        sourceBreakdown.SOSMED += revenue; // 4. Nama ada SOSMED
+      } else if (progName.includes("AFFILIATE")) {
+        sourceBreakdown.AFFILIATE += revenue; // 5. Nama ada AFFILIATE
+      } else {
+        sourceBreakdown.REGULAR += revenue; // 6. Sisanya REGULAR
       }
     });
 

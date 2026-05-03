@@ -2,7 +2,14 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Enhanced Teacher Portal, Secure Data Privacy & Grid Layout (v8.5) 🚀 (TERBARU!)
+## 📢 Fitur Baru: Executive Financial Intelligence & Unified Data Sync (v10.0) 🚀 (TERBARU!)
+*   **Smart Financial Grouping (6-Rule Hierarchy)**: Implementasi logika pengelompokan laporan keuangan yang sangat bersih dan sinkron 100% dengan hitungan manual CSV. Sistem kini memprioritaskan RO, Sharing Profit (TOEFL), lalu kategori berbasis keyword (Live, Sosmed, Affiliate) secara presisi.
+*   **Executive Transaction Insights**: Peningkatan transparansi data dengan menampilkan **Jumlah Transaksi** di bawah nominal omset pada dashboard laporan. Memberikan konteks instan mengenai volume penjualan di balik setiap angka rupiah.
+*   **Unified Age Category Support**: Standarisasi kolom `kategori_usia` (KIDS, DEWASA, UMUM) pada seluruh template import (CRM & Pemasukan), memastikan sinkronisasi data siswa otomatis sejak tahap prospek hingga pembayaran.
+*   **Admin CS Performance Filter**: Penambahan dropdown filter CS pada halaman Pemasukan khusus untuk Admin, memudahkan monitoring performa closing per individu secara real-time langsung dari modul keuangan.
+*   **Enhanced Multi-Format Export**: Pembaruan sistem export Excel dan PDF yang kini menyertakan detail jumlah transaksi per kategori, memberikan laporan yang lebih komprehensif untuk kebutuhan audit bulanan.
+
+## 📢 Fitur Sebelumnya: Enhanced Teacher Portal, Secure Data Privacy & Grid Layout (v8.5) 🚀
 *   **Secure CS Data Privacy**: Implementasi sistem filter data server-side yang ketat. User dengan role **CS** kini hanya dapat melihat data Lead, Transaksi, dan Statistik Performance milik mereka sendiri. Data rahasia perusahaan (omset global, laba bersih, dll) kini benar-benar tertutup rapat untuk staf non-admin.
 *   **Teacher Financial Hub 2.0**: Pembaruan visual pada portal pengajar dengan tema premium. Tombol **"Chat Admin Finance"** kini aktif dan terhubung secara dinamis ke pengaturan sistem, memudahkan pengajar berkonsultasi mengenai slip gaji mereka.
 *   **Compact System Config (2-Column Grid)**: Redesain halaman Pengaturan Sistem menjadi layout grid 2-kolom yang lebih efisien, memudahkan admin mengelola konfigurasi global (seperti nomor WA Finance, Cutoff, dll) tanpa banyak scrolling.
@@ -57,4 +64,4 @@ Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma ti
 ---
 
 *Created with ❤️ by Antigravity (Powered by Google Deepmind) for Speaking Partner Premium Operations.*
-*Sistem v8.0 Aktif - Unified Synchronization & Smart Round-Robin. Selamat beristirahat, Pak Muis! ☕*
+*Sistem v10.0 Aktif - Executive Insights & Unified Sync. Selamat beristirahat, Pak Muis! ☕*

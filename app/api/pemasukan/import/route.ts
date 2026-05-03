@@ -192,36 +192,37 @@ export async function POST(request: NextRequest) {
         let met = String(getVal(item, ["metode", "metode_bayar", "payment"]) || "TRANSFER").toUpperCase();
         if (!["TRANSFER", "QRIS", "CASH"].includes(met)) met = "TRANSFER";
 
+        // 4. LOGIKA KATEGORI UNTUK KETERANGAN (Sinkron dengan 6 Aturan Emas)
         let prodT = "REGULAR";
-        if (pName.toUpperCase().includes("ELITE")) prodT = "ELITE";
-        else if (pName.toUpperCase().includes("MASTER")) prodT = "MASTER";
-        else if (pName.toUpperCase().includes("TOEFL") || pName.toUpperCase().includes("IELTS")) prodT = "TOEFL";
+        const pUpper = pName.toUpperCase();
+        if (pUpper.includes("LIVE") || pUpper.includes("TALENT")) prodT = "LIVE";
+        else if (pUpper.includes("SOSMED") || pUpper.includes("VIRAL")) prodT = "SOSMED";
+        else if (pUpper.includes("AFFILIATE")) prodT = "AFFILIATE";
+        else if (pUpper.includes("TOEFL") || pUpper.includes("IELTS")) prodT = "TOEFL";
+        else if (pUpper.includes("ELITE")) prodT = "ELITE";
+        else if (pUpper.includes("MASTER")) prodT = "MASTER";
 
-        recordsToCreate.push({
-          tanggal: tgl,
-          siswaId: sId,
-          programId: pId,
-          csId: csId,
-          talentId: talId,
-          hargaNormal: hNorm || finalP || 0,
-          diskon: disk || 0,
-          hargaFinal: finalP,
-          metodeBayar: met,
-          keterangan: `[TYPE:${prodT}] ${getVal(item, ["keterangan", "note"]) || ""}`.trim(),
-          isRO: String(getVal(item, ["ro", "isro"]) || "").toLowerCase() === "true" || getVal(item, ["ro"]) === "1" || getVal(item, ["ro"]) === 1,
+        // 5. CREATE PEMASUKAN LANGSUNG (Agar jika satu gagal, tidak mematikan semua)
+        await prisma.pemasukan.create({
+          data: {
+            tanggal: tgl,
+            siswaId: sId,
+            programId: pId,
+            csId: csId,
+            talentId: talId,
+            hargaNormal: hNorm || finalP || 0,
+            diskon: disk || 0,
+            hargaFinal: finalP,
+            metodeBayar: met,
+            isRO: String(getVal(item, ["ro", "isro"]) || "").toLowerCase() === "true" || getVal(item, ["ro"]) === "1" || getVal(item, ["ro"]) === 1,
+            keterangan: `[TYPE:${prodT}] ${getVal(item, ["keterangan", "note"]) || ""}`.trim(),
+          }
         });
 
+        recordsToCreate.push({ success: true }); // Dummy for counting
       } catch (err: any) {
         errors.push({ line: i + 1, error: err.message });
       }
-    }
-
-    // 3. TAHAP 2: BULK INSERT
-    if (recordsToCreate.length > 0) {
-      await prisma.pemasukan.createMany({
-        data: recordsToCreate,
-        skipDuplicates: false,
-      });
     }
 
     return NextResponse.json({ 

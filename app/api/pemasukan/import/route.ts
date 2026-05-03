@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
         where: { 
           OR: [
             { role: { slug: { in: ["cs", "admin"] } } },
-            { subRole: { slug: { in: ["cs", "admin"] } } }
+            { subRole: { name: { contains: "CS", mode: 'insensitive' } } },
+            { subRole: { name: { contains: "ADMIN", mode: 'insensitive' } } }
           ]
         },
         select: { id: true, name: true, namaPanggilan: true }
@@ -26,7 +27,8 @@ export async function POST(request: NextRequest) {
         where: { 
           OR: [
             { role: { slug: { in: ["talent", "pengajar"] } } },
-            { subRole: { slug: { in: ["talent", "pengajar"] } } }
+            { subRole: { name: { contains: "TALENT", mode: 'insensitive' } } },
+            { subRole: { name: { contains: "PENGAJAR", mode: 'insensitive' } } }
           ]
         },
         select: { id: true, name: true, namaPanggilan: true } 

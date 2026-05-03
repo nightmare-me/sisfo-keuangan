@@ -102,7 +102,8 @@ export async function POST(request: NextRequest) {
         fee_closing: getVal(['fee_closing', 'fee closing']),
         fee_lead: getVal(['fee_lead', 'fee lead']),
         bonus_target: getVal(['bonus_target', 'bonus target']),
-        bonus_nominal: getVal(['bonus_nominal', 'bonus nominal'])
+        bonus_nominal: getVal(['bonus_nominal', 'bonus nominal']),
+        secondary_roles: cleanStr(getVal(['secondary_roles', 'role_tambahan', 'roles', 'secondary roles']))
       };
 
       if (!item.email) {
@@ -158,6 +159,11 @@ export async function POST(request: NextRequest) {
         const teamType = teamTypeRaw 
           ? String(teamTypeRaw).split(',').map(t => t.trim().toUpperCase()).filter(Boolean)
           : undefined;
+        
+        const sRolesRaw = item.secondary_roles || "";
+        const sRoles = sRolesRaw 
+          ? String(sRolesRaw).split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+          : undefined;
 
         if (!user) {
           const hashedPassword = await bcrypt.hash("password123", 10);
@@ -171,6 +177,7 @@ export async function POST(request: NextRequest) {
               roleId: finalRoleId,
               subRoleId: finalSubRoleId,
               teamType: teamType || [],
+              secondaryRoles: sRoles || [],
               aktif: true
             }
           });
@@ -183,7 +190,8 @@ export async function POST(request: NextRequest) {
               subRoleId: finalSubRoleId,
               namaPanggilan: item.nama_panggilan || undefined,
               noHp: phone || undefined,
-              teamType: teamType
+              teamType: teamType,
+              secondaryRoles: sRoles
             }
           });
         }

@@ -630,14 +630,14 @@ export default function KaryawanPage() {
                   Gunakan format CSV berikut untuk mengimpor data masal. Baris pertama wajib judul kolom.
                 </p>
                 <div style={{ background: 'var(--surface-container-low)', padding: 12, borderRadius: 8, fontSize: 11, fontFamily: 'monospace', overflowX: 'auto', border: '1px solid var(--ghost-border)' }}>
-                  nama,email,no_hp,posisi,role,nip,nik,tempat_lahir,tanggal_lahir,jenis_kelamin,status_pernikahan,alamat,tanggal_masuk,bank_name,rekening_nomor,rekening_nama,gaji_pokok,tunjangan,fee_closing,fee_lead,bonus_target,bonus_nominal
+                  nama,email,no_hp,posisi,role,secondary_roles,nip,nik,tempat_lahir,tanggal_lahir,jenis_kelamin,status_pernikahan,alamat,tanggal_masuk,bank_name,rekening_nomor,rekening_nama,gaji_pokok,tunjangan,fee_closing,fee_lead,bonus_target,bonus_nominal
                 </div>
                 <button 
                   className="btn btn-sm" 
                   style={{ marginTop: 8, fontSize: 11, color: 'var(--primary)', textDecoration: 'underline', padding: 0, background: 'none' }}
                   onClick={() => {
                     const headers = [
-                      "nama", "nama_panggilan", "email", "no_hp", "posisi", "role", 
+                      "nama", "nama_panggilan", "email", "no_hp", "posisi", "role", "secondary_roles", 
                       "nip", "nik", "tempat_lahir", "tanggal_lahir", "jenis_kelamin", 
                       "status_pernikahan", "alamat", "tanggal_masuk", 
                       "bank_name", "rekening_nomor", "rekening_nama", 
@@ -645,7 +645,7 @@ export default function KaryawanPage() {
                       "bonus_target", "bonus_nominal"
                     ];
                     const csvContent = headers.join(",") + "\n" + 
-                      "Budi Santoso,Budi,budi@email.com,08123456789,Staff Akademik,Akademik,SP-00001,1234567890,Jakarta,1990-01-01,Laki-laki,Menikah,Jl. Merdeka No. 1,2024-01-01,BCA,12345678,Budi Santoso,3500000,500000,50000,1000,10,100000";
+                      "Roza Lailia,Roza,roza@email.com,08123456789,Talent Live,Staff,pengajar,SP-00001,1234567890,Jakarta,1995-01-01,Perempuan,Lajang,Jl. Merdeka No. 1,2024-01-01,BCA,12345678,Roza Lailia,3500000,500000,50000,1000,10,100000";
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement("a");

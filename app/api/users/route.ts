@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
   if (Array.isArray(body)) {
     const results = { success: 0, failed: 0, errors: [] as string[] };
     for (const item of body) {
-      let { name, email, password, roleSlug, teamType } = item;
+      let { name, email, password, roleSlug, teamType, secondaryRoles } = item;
       
       // Jika password kosong, gunakan default 123456
       if (!password || password.trim() === "") {
@@ -144,6 +144,15 @@ export async function POST(request: NextRequest) {
       try {
         const hashedPassword = await bcrypt.hash(password, 10);
         
+        // Parsing Secondary Roles (Comma separated string or array)
+        let sRoles: string[] = [];
+        if (Array.isArray(secondaryRoles)) {
+          sRoles = secondaryRoles;
+        } else {
+          const raw = item.secondary_roles || item.secondaryRoles || "";
+          sRoles = String(raw).split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+        }
+
         // Buat User sekaligus KaryawanProfile-nya
         await prisma.user.create({ 
           data: { 
@@ -151,6 +160,7 @@ export async function POST(request: NextRequest) {
             email: email.toLowerCase(), 
             password: hashedPassword, 
             roleId: roleObj.id, 
+            secondaryRoles: sRoles,
             namaPanggilan: item.nama_panggilan || item.namaPanggilan || null,
             noHp: String(item.no_hp || item.noHp || ""),
             teamType: Array.isArray(teamType) ? teamType : (teamType ? [teamType] : []),

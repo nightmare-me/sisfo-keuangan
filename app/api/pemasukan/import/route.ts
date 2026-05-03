@@ -192,10 +192,10 @@ export async function POST(request: NextRequest) {
         let met = String(getVal(item, ["metode", "metode_bayar", "payment"]) || "TRANSFER").toUpperCase();
         if (!["TRANSFER", "QRIS", "CASH"].includes(met)) met = "TRANSFER";
 
-        // 4. LOGIKA KATEGORI UNTUK KETERANGAN (Sinkron dengan 6 Aturan Emas)
+        // 4. LOGIKA KATEGORI UNTUK LABEL KETERANGAN (Murni 6 Aturan Emas)
         let prodT = "REGULAR";
         const pUpper = pName.toUpperCase();
-        if (pUpper.includes("LIVE") || pUpper.includes("TALENT")) prodT = "LIVE";
+        if (pUpper.includes("LIVE")) prodT = "LIVE";
         else if (pUpper.includes("SOSMED") || pUpper.includes("VIRAL")) prodT = "SOSMED";
         else if (pUpper.includes("AFFILIATE")) prodT = "AFFILIATE";
         else if (pUpper.includes("TOEFL") || pUpper.includes("IELTS")) prodT = "TOEFL";

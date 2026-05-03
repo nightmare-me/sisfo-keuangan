@@ -220,11 +220,11 @@ export async function GET(request: NextRequest) {
         targetKey = "RO";
       } else if (item.program?.isProfitSharing) {
         targetKey = "TOEFL";
-      } else if (progName.includes("LIVE") || note.includes("LIVE") || progName.includes("TALENT") || note.includes("TALENT")) {
+      } else if (progName.includes("LIVE")) {
         targetKey = "LIVE";
-      } else if (progName.includes("SOSMED") || note.includes("SOSMED") || note.includes("VIRAL")) {
+      } else if (progName.includes("SOSMED") || progName.includes("VIRAL")) {
         targetKey = "SOSMED";
-      } else if (progName.includes("AFFILIATE") || note.includes("AFFILIATE")) {
+      } else if (progName.includes("AFFILIATE")) {
         targetKey = "AFFILIATE";
       }
 

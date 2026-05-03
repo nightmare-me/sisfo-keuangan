@@ -61,6 +61,13 @@ export async function GET() {
 
     const profile = user.karyawanProfile;
     const items = [];
+    const allRoles = user.secondaryRoles || [];
+    const primaryRole = user.role?.slug || "";
+    
+    const isCS = primaryRole === "cs" || allRoles.includes("cs");
+    const isPengajar = primaryRole === "pengajar" || allRoles.includes("pengajar");
+    const isAdv = primaryRole === "advertiser" || allRoles.includes("advertiser");
+    const isTalent = primaryRole === "talent" || allRoles.includes("talent");
 
     // 2. Gaji Pokok & Tunjangan (Jika ada)
     if (profile?.gajiPokok && profile.gajiPokok > 0) {
@@ -71,7 +78,7 @@ export async function GET() {
     }
 
     // 3. Insentif CS (Berdasarkan Pemasukan Bulan Ini)
-    if (user.role?.slug === "cs") {
+    if (isCS) {
       const closingBulanIni = await prisma.pemasukan.findMany({
         where: {
           csId: userId,
@@ -102,7 +109,7 @@ export async function GET() {
     }
 
     // 4. Honor Mengajar (Berdasarkan Sesi Selesai Bulan Ini)
-    if (user.role?.slug === "pengajar") {
+    if (isPengajar) {
       const sesiBulanIni = await prisma.sesiKelas.findMany({
         where: {
           kelas: { pengajarId: userId },
@@ -123,8 +130,7 @@ export async function GET() {
     }
 
     // 5. Fee Advertiser (Berdasarkan Average CPL Bulan Ini)
-    const allRoles = user.secondaryRoles || [];
-    if (user.role?.slug === "advertiser" || allRoles.includes("advertiser")) {
+    if (isAdv) {
       const adsBulanIni = await prisma.marketingAd.aggregate({
         where: {
           advId: userId,

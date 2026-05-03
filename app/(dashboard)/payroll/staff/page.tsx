@@ -245,19 +245,59 @@ export default function StaffPayrollPage() {
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--primary)' }}>{formatCurrency(item.total)}</div>
+                    {item.statusBayar && (
+                      <span className={`badge ${item.statusBayar === 'LUNAS' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: 9, marginTop: 4 }}>
+                        {item.statusBayar === 'LUNAS' ? 'LUNAS' : 'PENDING'}
+                      </span>
+                    )}
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                        <button className="btn btn-secondary btn-icon" style={{ width: 42, height: 42, borderRadius: 12 }} onClick={() => setShowDetail(item)} title="Detail Breakdown"><Eye size={20} /></button>
-                       <button 
-                        className="btn btn-primary btn-icon" 
-                        onClick={() => handlePay(item)}
-                        disabled={processing || !isAdmin}
-                        style={{ width: 42, height: 42, borderRadius: 12 }}
-                        title="Approve"
-                       >
-                         {processing ? "..." : <CheckCircle size={20} />}
-                       </button>
+                       
+                       {item.statusBayar === "LUNAS" ? (
+                         <div style={{ width: 42, height: 42, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)', background: 'rgba(16,185,129,0.1)' }}>
+                           <CheckCircle size={20} />
+                         </div>
+                       ) : item.statusBayar === "BELUM_BAYAR" ? (
+                         <button 
+                          className="btn btn-primary btn-icon" 
+                          onClick={async () => {
+                            setConfirmModal({
+                              show: true,
+                              title: "Konfirmasi Pelunasan?",
+                              message: `Apakah Anda sudah mentransfer gaji sebesar ${formatCurrency(item.total)} ke ${item.name}?`,
+                              type: "info",
+                              onConfirm: async () => {
+                                setProcessing(true);
+                                const res = await fetch("/api/payroll/staff", {
+                                  method: "PUT",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ id: item.recordId, statusBayar: "LUNAS" })
+                                });
+                                if (res.ok) fetchPayroll();
+                                setProcessing(false);
+                                setConfirmModal(prev => ({ ...prev, show: false }));
+                              }
+                            });
+                          }}
+                          disabled={processing || !isAdmin}
+                          style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--warning)', borderColor: 'var(--warning)' }}
+                          title="Bayar Lunas"
+                         >
+                           {processing ? "..." : <Wallet size={20} />}
+                         </button>
+                       ) : (
+                         <button 
+                          className="btn btn-primary btn-icon" 
+                          onClick={() => handlePay(item)}
+                          disabled={processing || !isAdmin}
+                          style={{ width: 42, height: 42, borderRadius: 12 }}
+                          title="Approve"
+                         >
+                           {processing ? "..." : <CheckCircle size={20} />}
+                         </button>
+                       )}
                     </div>
                   </td>
                 </tr>
@@ -377,6 +417,12 @@ export default function StaffPayrollPage() {
                          <span>Gaji Live ({showDetail.details.jamLive} jam)</span>
                          <span style={{ fontWeight: 700 }}>{formatCurrency(showDetail.gajiLive)}</span>
                       </div>
+                      {showDetail.honorMengajar > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                           <span>Honor Mengajar</span>
+                           <span style={{ fontWeight: 700 }}>{formatCurrency(showDetail.honorMengajar)}</span>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                          <span>Bonus & Sharing Profit</span>
                          <span style={{ fontWeight: 700, color: 'var(--success)' }}>{formatCurrency(showDetail.bonus)}</span>

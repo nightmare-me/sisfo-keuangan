@@ -95,12 +95,18 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where: empWhere })
     ]);
 
-    const results = employees.map((emp: any) => {
+    const results = employees.map(async (emp: any) => {
       const profile = emp.karyawanProfile!;
       const posisi = profile.posisi || "";
       const roleSlug = emp.role?.slug?.toLowerCase();
       // Gabungkan semua role (primary + secondary) untuk logika fee
       const allRoles: string[] = [roleSlug, ...(emp.secondaryRoles || []).map((r: string) => r.toLowerCase())].filter(Boolean);
+      
+      // Cek apakah sudah ada record gaji di DB untuk bulan/tahun ini
+      const existingRecord = await prisma.gajiStaf.findFirst({
+        where: { userId: emp.id, bulan, tahun }
+      });
+
       let totalFee = 0;
       let feeCS = 0;
       let feeAdv = 0;
@@ -176,38 +182,45 @@ export async function GET(request: NextRequest) {
       const isAkademik = posisi.toUpperCase().includes("AKADEMIK");
       const whitelistBonus = ["CEO", "COO", "ASSISTANT CEO", "FINANCE", "SPV"];
       
-      // Cari apakah ada salah satu role atau posisi yang masuk whitelist
       const matchedKeyword = whitelistBonus.find(w => 
         posisi.toUpperCase().includes(w) || 
         allRoles.some(r => r.toUpperCase().includes(w))
       );
 
-      // SPV Akademik sekarang boleh masuk sini
       if (matchedKeyword) {
-        // Tentukan "Nama Posisi"
         let targetPos = posisi;
         if (matchedKeyword === "SPV") {
             const spvRole = allRoles.find(r => r.toUpperCase().includes("SPV")) || 
                             (posisi.toUpperCase().includes("SPV") ? posisi : "");
             if (spvRole) targetPos = spvRole;
         }
-
         const pClean = targetPos.toUpperCase().trim().replace(/\s+/g, "_").replace(/__/g, "_");
         const pSpace = pClean.replace(/_/g, " ");
 
-        // 1. BONUS DARI KANTONG GLOBAL (NON-TOEFL)
-        // PROTEKSI: Akademik TIDAK BOLEH dapat ini (agar tidak ikut menanggung rugi global)
         if (!isAkademik) {
             const b1 = calculateBonusGrossProfit(grossProfitGlobal, pClean, config);
             const b2 = calculateBonusGrossProfit(grossProfitGlobal, pSpace, config);
             totalBonus += (b1 || b2 || 0);
         }
 
-        // 2. SHARING DARI KANTONG TOEFL
-        // SPV Akademik BOLEH dapat ini
         const s1 = calculateSharingTOEFL(toeflProfitNet, pClean, config);
         const s2 = calculateSharingTOEFL(toeflProfitNet, pSpace, config);
         totalBonus += (s1 || s2 || 0);
+      }
+
+      // G. Honor Mengajar (Jika punya role pengajar — primary ATAU secondary)
+      let honorMengajar = 0;
+      if (allRoles.includes("pengajar")) {
+        const sesi = await prisma.sesiKelas.findMany({
+          where: {
+            kelas: { pengajarId: emp.id },
+            tanggal: { gte: dayStart, lte: dayEnd },
+            status: "SELESAI",
+          },
+          include: { kelas: true }
+        });
+        honorMengajar = sesi.reduce((s: number, sc: any) => s + (sc.kelas.feePerSesi || 0), 0);
+        extraGaji += honorMengajar;
       }
 
       const subtotal = profile.gajiPokok + profile.tunjangan + totalFee + totalBonus + extraGaji;
@@ -216,7 +229,7 @@ export async function GET(request: NextRequest) {
         id: emp.id,
         name: emp.name,
         posisi,
-        roles: allRoles, // Kirim semua role ke frontend untuk tampilan
+        roles: allRoles,
         gapok: profile.gajiPokok,
         tunjangan: profile.tunjangan,
         fee: totalFee,
@@ -224,7 +237,10 @@ export async function GET(request: NextRequest) {
         feeAdv,
         bonus: totalBonus,
         gajiLive: extraGaji,
+        honorMengajar,
         total: subtotal,
+        statusBayar: existingRecord?.statusBayar || null,
+        recordId: existingRecord?.id || null,
         details: {
           jamLive: totalJam,
           omsetTalent
@@ -232,8 +248,10 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    const finalResults = await Promise.all(results);
+
     return NextResponse.json({ 
-        data: results,
+        data: finalResults,
         total: totalEmp,
         page,
         totalPages: Math.ceil(totalEmp / limit),
@@ -268,22 +286,51 @@ export async function POST(request: NextRequest) {
         const record = await prisma.gajiStaf.create({
             data: {
                 userId, bulan, tahun, gapok, tunjangan, fee, bonus, total, metodeBayar, keterangan,
-                statusBayar: "LUNAS",
-                tanggalBayar: new Date()
+                statusBayar: "BELUM_BAYAR"
             }
         });
 
-        // OTOMATIS CATAT KE PENGELUARAN
-        await prisma.pengeluaran.create({
-            data: {
-                tanggal: new Date(),
-                jumlah: total,
-                kategori: "GAJI_STAF",
-                metodeBayar: metodeBayar || "TRANSFER",
-                keterangan: `Gaji Staff: ${record.userId} (${bulan}/${tahun}). ${keterangan || ""}`,
-                dibuatOleh: (session.user as any).id
+        return NextResponse.json(record);
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+export async function PUT(request: NextRequest) {
+    try {
+        const session = await auth();
+        if (!session || (session.user as any).role !== 'ADMIN') {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const body = await request.json();
+        const { id, statusBayar, metodeBayar } = body;
+
+        const existing = await prisma.gajiStaf.findUnique({ where: { id } });
+        if (!existing) return NextResponse.json({ error: "Data tidak ditemukan" }, { status: 404 });
+
+        const record = await prisma.gajiStaf.update({
+            where: { id },
+            data: { 
+                statusBayar,
+                tanggalBayar: statusBayar === "LUNAS" ? new Date() : undefined,
+                metodeBayar: metodeBayar || existing.metodeBayar
             }
         });
+
+        // Jika berubah jadi LUNAS, catat ke Pengeluaran
+        if (statusBayar === "LUNAS" && existing.statusBayar !== "LUNAS") {
+            await prisma.pengeluaran.create({
+                data: {
+                    tanggal: new Date(),
+                    jumlah: existing.total,
+                    kategori: "GAJI_STAF",
+                    metodeBayar: metodeBayar || existing.metodeBayar || "TRANSFER",
+                    keterangan: `LUNAS: Gaji Staff ${existing.userId} (${existing.bulan}/${existing.tahun})`,
+                    dibuatOleh: (session.user as any).id
+                }
+            });
+        }
 
         return NextResponse.json(record);
     } catch (err: any) {

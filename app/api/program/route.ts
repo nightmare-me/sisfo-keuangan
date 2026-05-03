@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const page = searchParams.get("page") ? parseInt(searchParams.get("page")!) : null;
   const limit = searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : null;
 
-  const where: any = all ? {} : { aktif: true };
+  const where: any = (all || hasPemasukanOnly) ? {} : { aktif: true };
   
   if (hasPemasukanOnly) {
     where.pemasukan = { some: {} };

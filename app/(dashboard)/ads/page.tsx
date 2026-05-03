@@ -116,7 +116,14 @@ export default function AdsPage() {
   useEffect(()=>{ fetchData(); },[filter, page, limit]);
 
   useEffect(() => {
-    fetch("/api/users?role=advertiser").then(r => r.json()).then(d => setAllAdvs(d.users || []));
+    fetch("/api/users?role=advertiser")
+      .then(r => r.json())
+      .then(d => {
+        // Handle if response is array or object with data/users
+        if (Array.isArray(d)) setAllAdvs(d);
+        else if (d.data) setAllAdvs(d.data);
+        else if (d.users) setAllAdvs(d.users);
+      });
   }, []);
 
   useEffect(() => {

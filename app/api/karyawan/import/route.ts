@@ -132,6 +132,8 @@ export async function POST(request: NextRequest) {
           finalRoleId = targetRole?.id || allRoles.find(r => r.slug === 'cs')?.id || allRoles[0]?.id || "";
         }
 
+        const roleSlug = roles.find(r => r.id === finalRoleId)?.slug?.toLowerCase() || "";
+
         // --- NORMALIZE VALUES ---
         let jk = item.jenis_kelamin?.toUpperCase() || undefined;
         if (jk) {
@@ -159,8 +161,8 @@ export async function POST(request: NextRequest) {
         const teamType = teamTypeRaw 
           ? String(teamTypeRaw).split(',').map(t => {
               const val = t.trim().toUpperCase();
-              if (inputRole === 'cs' && !val.startsWith('CS_')) return `CS_${val}`;
-              if (inputRole === 'advertiser' && !val.startsWith('ADV_')) return `ADV_${val}`;
+              if (roleSlug === 'cs' && !val.startsWith('CS_')) return `CS_${val}`;
+              if (roleSlug === 'advertiser' && !val.startsWith('ADV_')) return `ADV_${val}`;
               return val;
             }).filter(Boolean)
           : undefined;

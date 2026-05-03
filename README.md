@@ -2,7 +2,20 @@
 
 Sistem informasi keuangan terintegrasi dengan CRM Lead Management berperforma tinggi.
 
-## 📢 Fitur Baru: Executive Financial Intelligence & Unified Data Sync (v10.0) 🚀 (TERBARU!)
+## 📢 Fitur Baru: Executive Financial Intelligence & Unified Data Sync (v10.5) 🚀 (TERBARU!)
+### [v10.5] - 2026-05-03
+**Sistem Keuangan & Dashboard Advertiser Update**
+- **Fitur Baru: Satpam Import Iklan**: Penambahan validasi kolom wajib (tanggal, platform, jumlah) pada import CSV iklan untuk mencegah error format.
+- **Perbaikan Dashboard Advertiser**:
+  - Penugasan Advertiser (`advId`) kini tersimpan dengan benar saat input baru maupun edit data.
+  - Perhitungan fee/bonus otomatis menggunakan kategori tim dari advertiser yang ditugaskan.
+- **Audit & Penyesuaian Payroll**:
+  - Bonus Omset RO Akademik kini dibatasi eksklusif hanya untuk jabatan **SPV AKADEMIK**.
+  - Perbaikan bug dropdown "Pilih Staf" di Input Jam Live yang sempat memotong nama-nama berawalan huruf awal (A, B, C) akibat limitasi pagination.
+- **Optimasi Backend & Vercel**:
+  - Perbaikan 5+ TypeScript errors yang menghambat proses build di Vercel.
+  - Pencarian email advertiser pada import CSV kini bersifat case-insensitive.
+
 *   **Smart Financial Grouping (6-Rule Hierarchy)**: Implementasi logika pengelompokan laporan keuangan yang sangat bersih dan sinkron 100% dengan hitungan manual CSV. Sistem kini memprioritaskan RO, Sharing Profit (TOEFL), lalu kategori berbasis keyword (Live, Sosmed, Affiliate) secara presisi.
 *   **Executive Transaction Insights**: Peningkatan transparansi data dengan menampilkan **Jumlah Transaksi** di bawah nominal omset pada dashboard laporan. Memberikan konteks instan mengenai volume penjualan di balik setiap angka rupiah.
 *   **Unified Age Category Support**: Standarisasi kolom `kategori_usia` (KIDS, DEWASA, UMUM) pada seluruh template import (CRM & Pemasukan), memastikan sinkronisasi data siswa otomatis sejak tahap prospek hingga pembayaran.

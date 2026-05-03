@@ -81,13 +81,13 @@ export default function LaporanPage() {
       ["RINGKASAN"],
       ["Laba Bersih", data.ringkasan.labaBersih],
       [],
-      ["BREAKDOWN SUMBER PEMASUKAN"],
-      ["Regular (Murid Baru)", data.ringkasan.sourceBreakdown?.REGULAR || 0],
-      ["Repeat Order (RO)", data.ringkasan.sourceBreakdown?.RO || 0],
-      ["Sosmed (Viral)", data.ringkasan.sourceBreakdown?.SOSMED || 0],
-      ["Jalur Affiliate", data.ringkasan.sourceBreakdown?.AFFILIATE || 0],
-      ["Produk Live", data.ringkasan.sourceBreakdown?.LIVE || 0],
-      ["Produk TOEFL (Shared)", data.ringkasan.sourceBreakdown?.TOEFL || 0],
+      ["BREAKDOWN SUMBER PEMASUKAN", "TOTAL", "JUMLAH TRANSAKSI"],
+      ["Regular (Murid Baru)", data.ringkasan.sourceBreakdown?.REGULAR?.total || 0, data.ringkasan.sourceBreakdown?.REGULAR?.count || 0],
+      ["Repeat Order (RO)", data.ringkasan.sourceBreakdown?.RO?.total || 0, data.ringkasan.sourceBreakdown?.RO?.count || 0],
+      ["Sosmed (Viral)", data.ringkasan.sourceBreakdown?.SOSMED?.total || 0, data.ringkasan.sourceBreakdown?.SOSMED?.count || 0],
+      ["Jalur Affiliate", data.ringkasan.sourceBreakdown?.AFFILIATE?.total || 0, data.ringkasan.sourceBreakdown?.AFFILIATE?.count || 0],
+      ["Produk Live", data.ringkasan.sourceBreakdown?.LIVE?.total || 0, data.ringkasan.sourceBreakdown?.LIVE?.count || 0],
+      ["Produk TOEFL (Shared)", data.ringkasan.sourceBreakdown?.TOEFL?.total || 0, data.ringkasan.sourceBreakdown?.TOEFL?.count || 0],
     ];
     const ws1 = XLSX.utils.aoa_to_sheet(ringkasanData);
     XLSX.utils.book_append_sheet(wb, ws1, "Ringkasan");
@@ -140,12 +140,12 @@ export default function LaporanPage() {
         ["Spent Ads", `- ${formatCurrency(d.ringkasan.totalAds)}`],
         ["LABA BERSIH", formatCurrency(d.ringkasan.labaBersih)],
         [],
-        ["SUMBER: REGULAR", formatCurrency(d.ringkasan.sourceBreakdown?.REGULAR || 0)],
-        ["SUMBER: REPEAT ORDER", formatCurrency(d.ringkasan.sourceBreakdown?.RO || 0)],
-        ["SUMBER: SOSMED/VIRAL", formatCurrency(d.ringkasan.sourceBreakdown?.SOSMED || 0)],
-        ["SUMBER: AFFILIATE", formatCurrency(d.ringkasan.sourceBreakdown?.AFFILIATE || 0)],
-        ["SUMBER: PRODUK LIVE", formatCurrency(d.ringkasan.sourceBreakdown?.LIVE || 0)],
-        ["SUMBER: PRODUK TOEFL", formatCurrency(d.ringkasan.sourceBreakdown?.TOEFL || 0)],
+        ["SUMBER: REGULAR", `${formatCurrency(d.ringkasan.sourceBreakdown?.REGULAR?.total || 0)} (${d.ringkasan.sourceBreakdown?.REGULAR?.count || 0} trx)`],
+        ["SUMBER: REPEAT ORDER", `${formatCurrency(d.ringkasan.sourceBreakdown?.RO?.total || 0)} (${d.ringkasan.sourceBreakdown?.RO?.count || 0} trx)`],
+        ["SUMBER: SOSMED/VIRAL", `${formatCurrency(d.ringkasan.sourceBreakdown?.SOSMED?.total || 0)} (${d.ringkasan.sourceBreakdown?.SOSMED?.count || 0} trx)`],
+        ["SUMBER: AFFILIATE", `${formatCurrency(d.ringkasan.sourceBreakdown?.AFFILIATE?.total || 0)} (${d.ringkasan.sourceBreakdown?.AFFILIATE?.count || 0} trx)`],
+        ["SUMBER: PRODUK LIVE", `${formatCurrency(d.ringkasan.sourceBreakdown?.LIVE?.total || 0)} (${d.ringkasan.sourceBreakdown?.LIVE?.count || 0} trx)`],
+        ["SUMBER: PRODUK TOEFL", `${formatCurrency(d.ringkasan.sourceBreakdown?.TOEFL?.total || 0)} (${d.ringkasan.sourceBreakdown?.TOEFL?.count || 0} trx)`],
       ],
       styles: { fontSize:9 },
       headStyles: { fillColor:[99,102,241] },
@@ -312,7 +312,9 @@ export default function LaporanPage() {
                   { label: "Produk Live", key: "LIVE", color: "#f59e0b", icon: "📹" },
                   { label: "Produk TOEFL", key: "TOEFL", color: "#3b82f6", icon: "📝" }
                 ].map(s => {
-                  const val = data.ringkasan.sourceBreakdown?.[s.key] || 0;
+                  const item = data.ringkasan.sourceBreakdown?.[s.key] || { total: 0, count: 0 };
+                  const val = item.total;
+                  const count = item.count;
                   const total = data.ringkasan.totalPemasukan || 1;
                   const pct = (val / total) * 100;
                   return (
@@ -324,6 +326,9 @@ export default function LaporanPage() {
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{s.label}</div>
                       <div style={{ fontSize: 18, fontWeight: 800 }}>{formatCurrency(val)}</div>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                         <Search size={10} /> {count} Transaksi
+                      </div>
                     </div>
                   );
                 })}

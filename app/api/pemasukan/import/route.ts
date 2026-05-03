@@ -116,6 +116,33 @@ export async function POST(request: NextRequest) {
         const sharingProfitInput = String(getVal(item, ["sharing_profit", "issharingprofit", "profitsharing"]) || "0");
         const isSharing = sharingProfitInput === "1" || sharingProfitInput.toLowerCase() === "true";
 
+        // CARI TALENT JIKA ADA (Hanya yang punya Role Talent/Pengajar)
+        let talentId: string | null = null;
+        const talentNameRaw = String(getVal(item, ["talent", "namatalent", "nama_talent"]) || "").trim();
+        if (talentNameRaw) {
+          const matchedTalent = await prisma.user.findFirst({
+            where: {
+              AND: [
+                {
+                  OR: [
+                    { name: { contains: talentNameRaw, mode: 'insensitive' } },
+                    { email: { contains: talentNameRaw, mode: 'insensitive' } }
+                  ]
+                },
+                {
+                  roles: {
+                    some: {
+                      roleName: { in: ["TALENT", "PENGAJAR"] }
+                    }
+                  }
+                },
+                { aktif: true }
+              ]
+            }
+          });
+          if (matchedTalent) talentId = matchedTalent.id;
+        }
+
         if (!pId && pName !== "") {
           const newP = await prisma.program.create({
             data: { 

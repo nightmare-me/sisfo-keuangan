@@ -216,11 +216,26 @@ export async function GET(request: NextRequest) {
 
       let targetKey = "REGULAR";
 
+      // 1. PRIORITAS UTAMA: RO
       if (item.isRO) {
         targetKey = "RO";
-      } else if (item.program?.isProfitSharing) {
+      } 
+      // 2. PRIORITAS KEDUA: CEK LABEL TYPE DARI IMPORT (Agar sinkron 100% dengan tabel Pemasukan)
+      else if (note.includes("[TYPE:LIVE]")) {
+        targetKey = "LIVE";
+      } else if (note.includes("[TYPE:SOSMED]")) {
+        targetKey = "SOSMED";
+      } else if (note.includes("[TYPE:AFFILIATE]")) {
+        targetKey = "AFFILIATE";
+      } else if (note.includes("[TYPE:TOEFL]")) {
         targetKey = "TOEFL";
-      } else if (progName.includes("LIVE")) {
+      }
+      // 3. PRIORITAS KETIGA: SHARING PROFIT (TOEFL)
+      else if (item.program?.isProfitSharing) {
+        targetKey = "TOEFL";
+      }
+      // 4. FALLBACK: KATA KUNCI DI NAMA (Jaga-jaga jika data input manual tanpa label)
+      else if (progName.includes("LIVE")) {
         targetKey = "LIVE";
       } else if (progName.includes("SOSMED") || progName.includes("VIRAL")) {
         targetKey = "SOSMED";

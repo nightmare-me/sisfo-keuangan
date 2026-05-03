@@ -348,6 +348,12 @@ export default function PemasukanPage() {
                  <span>→</span>
                  <input type="date" className="form-control" value={filter.to} onChange={e => setFilter(f => ({ ...f, to: e.target.value }))} />
               </div>
+              {isAdmin && (
+                <select className="form-control" style={{ width: 180 }} value={filter.csId} onChange={e => { setFilter(f => ({ ...f, csId: e.target.value })); setPage(1); }}>
+                   <option value="">Semua CS</option>
+                   {csList.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              )}
               <select className="form-control" style={{ width: 200 }} value={filter.programId} onChange={e => { setFilter(f => ({ ...f, programId: e.target.value })); setPage(1); }}>
                  <option value="">Semua Program</option>
                  {filterPrograms.map(p => <option key={p.id} value={p.id}>{p.nama}</option>)}

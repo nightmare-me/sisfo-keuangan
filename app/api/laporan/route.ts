@@ -189,12 +189,13 @@ export async function GET(request: NextRequest) {
     const totalPengeluaranEfektif = totalPengeluaranReal + bebanGajiTerhutang;
     const labaBersih = totalPemasukanNet - totalPengeluaranEfektif - totalAds;
 
-    // 5. SOURCE BREAKDOWN (Aturan Baru yang Bersih & Tegas)
+    // 5. SOURCE BREAKDOWN (Aturan Baru yang Bersih & Sinkron 100% dengan CSV)
     const detailedPemasukan = await prisma.pemasukan.findMany({
       where: { tanggal: dateFilter },
       select: {
         hargaFinal: true,
         isRO: true,
+        keterangan: true,
         program: { select: { nama: true, isProfitSharing: true } }
       }
     });
@@ -208,36 +209,28 @@ export async function GET(request: NextRequest) {
       REGULAR: 0
     };
 
-    let totalGrossCalculated = 0;
     detailedPemasukan.forEach(item => {
       const revenue = item.hargaFinal || 0;
-      totalGrossCalculated += revenue;
-
       const progName = (item.program?.nama || "").toUpperCase();
+      const note = (item.keterangan || "").toUpperCase();
 
-      // --- EKSEKUSI 6 ATURAN EMAS ---
+      // --- EKSEKUSI 6 ATURAN EMAS DENGAN CEK KETERANGAN ---
       if (item.isRO) {
         sourceBreakdown.RO += revenue; // 1. Kolom RO = 1
       } else if (item.program?.isProfitSharing) {
         sourceBreakdown.TOEFL += revenue; // 2. Kolom Sharing = 1 (Produk TOEFL)
-      } else if (progName.includes("LIVE")) {
-        sourceBreakdown.LIVE += revenue; // 3. Nama ada LIVE
-      } else if (progName.includes("SOSMED")) {
-        sourceBreakdown.SOSMED += revenue; // 4. Nama ada SOSMED
-      } else if (progName.includes("AFFILIATE")) {
-        sourceBreakdown.AFFILIATE += revenue; // 5. Nama ada AFFILIATE
+      } else if (progName.includes("LIVE") || note.includes("LIVE")) {
+        sourceBreakdown.LIVE += revenue; // 3. Nama/Ket ada LIVE
+      } else if (progName.includes("SOSMED") || note.includes("SOSMED") || note.includes("VIRAL")) {
+        sourceBreakdown.SOSMED += revenue; // 4. Nama/Ket ada SOSMED/VIRAL
+      } else if (progName.includes("AFFILIATE") || note.includes("AFFILIATE")) {
+        sourceBreakdown.AFFILIATE += revenue; // 5. Nama/Ket ada AFFILIATE
       } else {
         sourceBreakdown.REGULAR += revenue; // 6. Sisanya REGULAR
       }
     });
 
-    // Adjust proporsional agar totalnya sesuai dengan totalPemasukanNet (net setelah refund)
-    if (totalGrossCalculated > 0 && totalRefund > 0) {
-      const factor = totalPemasukanNet / totalGrossCalculated;
-      Object.keys(sourceBreakdown).forEach(key => {
-        (sourceBreakdown as any)[key] *= factor;
-      });
-    }
+    // Note: Faktor refund tidak lagi digunakan untuk membagi proporsi agar sinkron dengan Gross CSV Bapak
 
     return NextResponse.json({
       periode: { from: startDate, to: endDate },

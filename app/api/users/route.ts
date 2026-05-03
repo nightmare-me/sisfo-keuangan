@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     if (!hasUserManage && !isAdmin) {
       if (hasMultimediaView || filterRoleSlug) {
         const targetRole = filterRoleSlug?.toLowerCase() || "multimedia";
+        const users = await prisma.user.findMany({
           where: { 
             aktif: true,
             OR: [

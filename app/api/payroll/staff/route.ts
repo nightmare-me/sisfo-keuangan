@@ -220,10 +220,9 @@ export async function GET(request: NextRequest) {
           include: { kelas: true }
         });
         honorMengajar = sesi.reduce((s: number, sc: any) => s + (sc.kelas.feePerSesi || 0), 0);
-        extraGaji += honorMengajar;
       }
 
-      const subtotal = profile.gajiPokok + profile.tunjangan + totalFee + totalBonus + extraGaji;
+      const subtotal = profile.gajiPokok + profile.tunjangan + totalFee + totalBonus + extraGaji + honorMengajar;
 
       return {
         id: emp.id,

@@ -9,37 +9,39 @@ async function getDateRange(period: string) {
   const configs = await prisma.financialConfig.findMany({
     where: { key: { in: ["PAYROLL_CUTOFF_DAY"] } }
   });
-  const cutoffDay = configs.find(c => c.key === "PAYROLL_CUTOFF_DAY")?.value || 25;
+  const cutoffDay = parseInt(configs.find(c => c.key === "PAYROLL_CUTOFF_DAY")?.value?.toString() || "25");
 
   const now = new Date();
+  const start = new Date(now);
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+
   if (period === "today") {
-    const start = new Date();
     start.setHours(0, 0, 0, 0);
-    return { gte: start, lte: now };
   } else if (period === "week") {
-    const start = new Date();
-    start.setDate(now.getDate() - now.getDay());
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); 
+    start.setDate(diff);
     start.setHours(0, 0, 0, 0);
-    return { gte: start, lte: now };
   } else if (period === "year") {
-    const start = new Date();
     start.setMonth(0, 1);
     start.setHours(0, 0, 0, 0);
-    return { gte: start, lte: now };
-  }
-  
-  // DEFAULT: CURRENT CUTOFF PERIOD (25 - 24)
-  const jktDay = now.getDate();
-  const jktMonth = now.getMonth();
-  const jktYear = now.getFullYear();
-
-  let start: Date, end: Date;
-  if (jktDay >= cutoffDay) {
-    start = new Date(jktYear, jktMonth, cutoffDay);
-    end = new Date(jktYear, jktMonth + 1, cutoffDay - 1, 23, 59, 59);
   } else {
-    start = new Date(jktYear, jktMonth - 1, cutoffDay);
-    end = new Date(jktYear, jktMonth, cutoffDay - 1, 23, 59, 59);
+    const jktDay = now.getDate();
+    const jktMonth = now.getMonth();
+    const jktYear = now.getFullYear();
+
+    if (jktDay >= cutoffDay) {
+      start.setFullYear(jktYear, jktMonth, cutoffDay);
+      start.setHours(0, 0, 0, 0);
+      end.setFullYear(jktYear, jktMonth + 1, cutoffDay - 1);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      start.setFullYear(jktYear, jktMonth - 1, cutoffDay);
+      start.setHours(0, 0, 0, 0);
+      end.setFullYear(jktYear, jktMonth, cutoffDay - 1);
+      end.setHours(23, 59, 59, 999);
+    }
   }
   return { gte: start, lte: end };
 }
@@ -57,14 +59,15 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("search") || "";
   const dateRange = await getDateRange(period);
 
-  // Ambil semua user role advertiser atau spv_adv
-  const advRoles = await prisma.role.findMany({ where: { slug: { in: ["advertiser", "spv_adv"] } }, select: { id: true } });
-  const advRoleIds = advRoles.map(r => r.id);
-
+  // Ambil semua user yang memiliki role advertiser atau spv_adv (baik role utama maupun sub-role)
   const advUsers = await prisma.user.findMany({
     where: {
-      roleId: { in: advRoleIds },
       aktif: true,
+      OR: [
+        { role: { slug: { in: ["advertiser", "spv_adv"] } } },
+        { subRole: { name: { contains: "ADVERTISER", mode: "insensitive" } } },
+        { subRole: { name: { contains: "SPV ADV", mode: "insensitive" } } }
+      ],
       ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
     },
     select: { id: true, name: true, teamType: true }

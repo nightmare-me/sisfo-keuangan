@@ -207,7 +207,7 @@ export async function GET(request: NextRequest) {
       SOSMED: 0,
       AFFILIATE: 0,
       LIVE: 0,
-      TOEFL: 0,
+      SHARING_PROFIT: 0,
       KIDS: 0,
       ELITE: 0,
       MASTER: 0
@@ -226,8 +226,8 @@ export async function GET(request: NextRequest) {
         const name = (item.program?.nama || "").toUpperCase();
         const note = (item.keterangan || "").toUpperCase();
 
-        if (item.program?.isProfitSharing) {
-          sourceBreakdown.TOEFL += revenue;
+        if (item.program?.isProfitSharing || note.includes("SHARING")) {
+          sourceBreakdown.SHARING_PROFIT += revenue;
         } else if (name.includes("SOSMED") || note.includes("SOSMED")) {
           sourceBreakdown.SOSMED += revenue;
         } else if (name.includes("AFFILIATE") || note.includes("AFFILIATE")) {

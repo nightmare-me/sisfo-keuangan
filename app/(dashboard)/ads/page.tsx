@@ -256,11 +256,30 @@ export default function AdsPage() {
       complete: async (results) => {
         try {
           const rows = results.data.filter((row: any) => row.tanggal && !row.tanggal.toString().startsWith("#"));
+          
           if (rows.length === 0) {
             setConfirmModal({
               show: true,
-              title: "CSV Tidak Valid",
-              message: "⚠️ File CSV kosong atau tidak memiliki data yang valid. Periksa format kolom Anda.",
+              title: "CSV Kosong",
+              message: "⚠️ File CSV tidak memiliki data yang bisa diproses. Pastikan baris data tidak diawali tanda #.",
+              type: "warning",
+              onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
+            });
+            setCsvLoading(false);
+            if (fileRef.current) fileRef.current.value = "";
+            return;
+          }
+
+          // CEK FORMAT KOLOM (SATPAM IMPORT)
+          const firstRow = rows[0];
+          const requiredKeys = ["tanggal", "platform", "jumlah"];
+          const missingKeys = requiredKeys.filter(key => !Object.keys(firstRow).some(k => k.toLowerCase() === key));
+
+          if (missingKeys.length > 0) {
+            setConfirmModal({
+              show: true,
+              title: "Format CSV Salah",
+              message: `⚠️ Kolom wajib berikut tidak ditemukan: ${missingKeys.join(", ")}. \n\nSilakan download dan gunakan Template yang sudah disediakan.`,
               type: "warning",
               onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false }))
             });

@@ -157,7 +157,12 @@ export async function POST(request: NextRequest) {
         let user = await prisma.user.findUnique({ where: { email: item.email } });
         const teamTypeRaw = item.team_type || "";
         const teamType = teamTypeRaw 
-          ? String(teamTypeRaw).split(',').map(t => t.trim().toUpperCase()).filter(Boolean)
+          ? String(teamTypeRaw).split(',').map(t => {
+              const val = t.trim().toUpperCase();
+              if (inputRole === 'cs' && !val.startsWith('CS_')) return `CS_${val}`;
+              if (inputRole === 'advertiser' && !val.startsWith('ADV_')) return `ADV_${val}`;
+              return val;
+            }).filter(Boolean)
           : undefined;
         
         const sRolesRaw = item.secondary_roles || "";

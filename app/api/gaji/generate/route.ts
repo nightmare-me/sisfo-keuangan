@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
     for (const key in payrollDrafts) {
       const draft = payrollDrafts[key];
       
-      // Cek apakah sudah ada record gaji untuk pengajar, kelas, bulan, tahun ini
-      const existing = await prisma.gajiPengajar.findFirst({
+      // 1. Cek apakah sudah ada record di GajiPengajar (Tabel ini)
+      const existingGaji = await prisma.gajiPengajar.findFirst({
         where: {
           pengajarId: draft.pengajarId,
           kelasId: draft.kelasId,
@@ -78,7 +78,16 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      if (!existing && draft.count > 0) {
+      // 2. Cek apakah sudah ada record di GajiStaf (Karena honor mengajar sudah include di sana)
+      const existingStaf = await prisma.gajiStaf.findFirst({
+        where: {
+          userId: draft.pengajarId,
+          bulan: parseInt(bulan),
+          tahun: parseInt(tahun)
+        }
+      });
+
+      if (!existingGaji && !existingStaf && draft.count > 0) {
         const newGaji = await prisma.gajiPengajar.create({
           data: {
             pengajarId: draft.pengajarId,

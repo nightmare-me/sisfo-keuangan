@@ -26,12 +26,13 @@ export async function GET(request: NextRequest) {
     if (!hasUserManage && !isAdmin) {
       if (hasMultimediaView || filterRoleSlug) {
         const targetRole = filterRoleSlug?.toLowerCase() || "multimedia";
-        const users = await prisma.user.findMany({
           where: { 
             aktif: true,
-            role: { 
-              slug: { in: ['multimedia', 'spv_multimedia', 'talent', 'pengajar', 'tutor'] } 
-            }
+            OR: [
+              { role: { slug: { in: ['multimedia', 'spv_multimedia', 'talent', 'pengajar', 'tutor', 'advertiser', 'spv_adv'] } } },
+              { subRole: { name: { contains: targetRole, mode: 'insensitive' } } },
+              { secondaryRoles: { has: targetRole } }
+            ]
           },
           include: { role: true },
           orderBy: { name: "asc" },
@@ -47,7 +48,14 @@ export async function GET(request: NextRequest) {
     }
 
     const where: any = {};
-    if (filterRoleSlug) where.role = { slug: filterRoleSlug.toLowerCase() };
+    if (filterRoleSlug) {
+      const slug = filterRoleSlug.toLowerCase();
+      where.OR = [
+        { role: { slug: slug } },
+        { subRole: { name: { contains: slug, mode: 'insensitive' } } },
+        { secondaryRoles: { has: slug } }
+      ];
+    }
     if (status === "aktif") where.aktif = true;
     if (status === "nonaktif") where.aktif = false;
     if (search) {

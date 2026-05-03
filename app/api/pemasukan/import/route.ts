@@ -128,11 +128,30 @@ export async function POST(request: NextRequest) {
         else if (pUpper.includes("AFFILIATE")) prodT = "AFFILIATE";
         else if (pUpper.includes("TOEFL") || pUpper.includes("IELTS")) prodT = "TOEFL";
 
+        // Parsing Tanggal (Paham Format Indonesia DD/MM/YYYY)
         let tgl = new Date();
         const tglIn = getVal(item, ["tanggal", "date"]);
         if (tglIn) {
           const s = String(tglIn).trim();
-          if (/^\d+$/.test(s) && parseInt(s) > 10000) tgl = new Date((parseInt(s) - 25569) * 86400 * 1000);
+          // 1. Jika Format Angka Excel (Serial Number)
+          if (/^\d+$/.test(s) && parseInt(s) > 10000) {
+            tgl = new Date((parseInt(s) - 25569) * 86400 * 1000);
+          } 
+          // 2. Jika Format String DD/MM/YYYY atau DD-MM-YYYY
+          else if (s.includes("/") || s.includes("-")) {
+            const separator = s.includes("/") ? "/" : "-";
+            const parts = s.split(separator);
+            if (parts.length === 3) {
+              const day = parseInt(parts[0]);
+              const month = parseInt(parts[1]) - 1; // JS month 0-11
+              let year = parseInt(parts[2]);
+              if (year < 100) year += 2000; // Handle 2 digit year
+              
+              const d = new Date(year, month, day);
+              if (!isNaN(d.getTime())) tgl = d;
+            }
+          }
+          // 3. Fallback standard
           else {
             const d = new Date(s);
             if (!isNaN(d.getTime())) tgl = d;
